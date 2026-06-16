@@ -1215,6 +1215,11 @@ export default function TaxiTycoon() {
                   </div>
                 );
               })}
+              <div style={{ display: "flex", justifyContent: "center", marginTop: 10 }}>
+                <button className="tt-shop-close-btn" onClick={() => setShopOpen(false)}>
+                  ❌ Fermer la boutique
+                </button>
+              </div>
             </div>
           </div>
         )}
