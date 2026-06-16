@@ -533,7 +533,10 @@ export default function TaxiTycoon() {
     };
   };
 
-  const depotXY = useMemo(() => getXY(pathLen * (admin.depotPosNorm || DEFAULT_DEPOT_POS)), [pathLen, admin.depotPosNorm]);
+  const depotXY = useMemo(() => {
+    if (admin.hqUseFreePos) return { x: admin.hqX, y: admin.hqY, angle: 0 };
+    return getXY(pathLen * (admin.depotPosNorm || DEFAULT_DEPOT_POS));
+  }, [pathLen, admin.depotPosNorm, admin.hqUseFreePos, admin.hqX, admin.hqY]);
 
   // === Actions UI ===
   const taxiCount = save.taxis.length;
