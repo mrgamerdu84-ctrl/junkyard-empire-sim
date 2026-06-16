@@ -418,8 +418,11 @@ export default function City3D({ drawRoadStrips = false }: City3DProps) {
       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 3 }}
       onCreated={({ scene }) => { scene.background = null; }}
     >
+      <OrthographicCamera makeDefault position={[0, 90, 25]} near={0.1} far={500} />
       <FitCam />
       <DayNight onPhase={(d) => setNight(1 - d)} />
+
+
       
 
       {drawRoadStrips && <RoadStrips />}
