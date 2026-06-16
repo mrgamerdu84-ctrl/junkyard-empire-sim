@@ -58,6 +58,13 @@ export const DEFAULT_ADMIN: AdminConfig = {
   fuelConsumption: 0.6,
   gasStationX: 1450,
   gasStationY: 540,
+
+  rivalEnabled: true,
+  rivalHQX: 1650,
+  rivalHQY: 220,
+  rivalTaxiCount: 2,
+  rivalReactionTime: 5,
+  rivalSpeedMult: 1,
 };
 
 const KEY = "taxi-tycoon-admin-v2";
