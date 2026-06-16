@@ -160,7 +160,7 @@ function TaxiSprite({
   moving,
   image,
   faceRight,
-  size = 110,
+  size = 48,
 }: {
   withClient: boolean;
   moving: boolean;
