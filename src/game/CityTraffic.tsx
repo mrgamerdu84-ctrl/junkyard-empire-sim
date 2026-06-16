@@ -37,18 +37,18 @@ type CarSpec = {
 };
 
 const CARS: CarSpec[] = [
-  { color: "#d83a2a", accent: "#7c1c10", duration: 24, delay: -2, pathIdx: 0, scale: 1.04 },
-  { color: "#f5c542", accent: "#9c7a1c", duration: 27, delay: -11, pathIdx: 0, scale: 1.06 },
-  { color: "#2b6ed8", accent: "#143f7c", duration: 23, delay: -8, pathIdx: 0, scale: 1.05 },
-  { color: "#e8edf2", accent: "#8a8e94", duration: 25, delay: -17, pathIdx: 1, flip: true, scale: 1.0 },
-  { color: "#12151a", accent: "#050607", duration: 28, delay: -6, pathIdx: 1, flip: true, scale: 1.0 },
-  { color: "#3a8a48", accent: "#1c4a22", duration: 31, delay: -21, pathIdx: 2, scale: 0.96 },
-  { color: "#d97a2a", accent: "#7a3a10", duration: 29, delay: -14, pathIdx: 2, scale: 0.98 },
-  { color: "#b81c4a", accent: "#5c0a20", duration: 32, delay: -4, pathIdx: 3, flip: true, scale: 0.96 },
-  { color: "#1a3a6a", accent: "#0a1c40", duration: 35, delay: -18, pathIdx: 3, flip: true, scale: 0.96 },
-  { color: "#8f969e", accent: "#3a3e44", duration: 34, delay: -25, pathIdx: 4, scale: 0.9 },
-  { color: "#ff6b35", accent: "#8f2d10", duration: 36, delay: -13, pathIdx: 5, flip: true, scale: 0.92 },
-  { color: "#4ed6c5", accent: "#187266", duration: 30, delay: -22, pathIdx: 6, scale: 0.9 },
+  { color: "#d83a2a", accent: "#7c1c10", duration: 24, delay: -2, pathIdx: 0, scale: 0.64 },
+  { color: "#f5c542", accent: "#9c7a1c", duration: 27, delay: -11, pathIdx: 0, scale: 0.66 },
+  { color: "#2b6ed8", accent: "#143f7c", duration: 23, delay: -8, pathIdx: 0, scale: 0.65 },
+  { color: "#e8edf2", accent: "#8a8e94", duration: 25, delay: -17, pathIdx: 1, flip: true, scale: 0.62 },
+  { color: "#12151a", accent: "#050607", duration: 28, delay: -6, pathIdx: 1, flip: true, scale: 0.62 },
+  { color: "#3a8a48", accent: "#1c4a22", duration: 31, delay: -21, pathIdx: 2, scale: 0.6 },
+  { color: "#d97a2a", accent: "#7a3a10", duration: 29, delay: -14, pathIdx: 2, scale: 0.62 },
+  { color: "#b81c4a", accent: "#5c0a20", duration: 32, delay: -4, pathIdx: 3, flip: true, scale: 0.6 },
+  { color: "#1a3a6a", accent: "#0a1c40", duration: 35, delay: -18, pathIdx: 3, flip: true, scale: 0.6 },
+  { color: "#8f969e", accent: "#3a3e44", duration: 30, delay: -25, pathIdx: 0, flip: true, scale: 0.58 },
+  { color: "#ff6b35", accent: "#8f2d10", duration: 34, delay: -13, pathIdx: 1, scale: 0.6 },
+  { color: "#4ed6c5", accent: "#187266", duration: 33, delay: -22, pathIdx: 2, flip: true, scale: 0.58 },
 ];
 
 const LAMPS: [number, number][] = [
