@@ -72,13 +72,34 @@ type Job = {
 };
 
 const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
-const SAVE_KEY = "taxi-tycoon-v3";
+const SAVE_KEY = "taxi-tycoon-v4";
 const BASE_SPEED = 60; // px (sur viewBox 1920) par seconde
 const SPEED_UPGRADE_COST_BASE = 800;
 const TAXI_COST_BASE = 600;
 const MAX_JOBS_BASE = 3;
 const FUEL_REFILL_MS = 4000;
 const FUEL_LOW_THRESHOLD = 25;
+
+// === Livrées de taxi inspirées de vraies compagnies (yellow body only) ===
+export type Livery = {
+  id: string;
+  name: string;        // nom de la compagnie
+  city: string;        // ville/pays
+  roofLabel: string;   // texte sur le panneau de toit
+  roofBg: string;      // couleur du panneau de toit
+  roofFg: string;      // couleur du texte du toit
+  stripe: "checker" | "band" | "dots" | "none";
+  stripeColor: string;
+};
+
+export const LIVERIES: Livery[] = [
+  { id: "classic",  name: "Classic Cab",   city: "Origine",     roofLabel: "TAXI",      roofBg: "#1a1d22", roofFg: "#fde047", stripe: "none",    stripeColor: "#1a1d22" },
+  { id: "nyc",      name: "Yellow Cab",    city: "New York",    roofLabel: "NYC TAXI",  roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "checker", stripeColor: "#1a1d22" },
+  { id: "london",   name: "Black Cab Co.", city: "London",      roofLabel: "TAXI",      roofBg: "#0a0c10", roofFg: "#ffffff", stripe: "band",    stripeColor: "#0a0c10" },
+  { id: "paris",    name: "G7 Cab",        city: "Paris",       roofLabel: "G7",        roofBg: "#0f3a8a", roofFg: "#ffffff", stripe: "band",    stripeColor: "#0f3a8a" },
+  { id: "tokyo",    name: "Nihon Kotsu",   city: "Tokyo",       roofLabel: "東京",       roofBg: "#c8102e", roofFg: "#ffffff", stripe: "dots",    stripeColor: "#c8102e" },
+  { id: "rome",     name: "Roma Taxi",     city: "Roma",        roofLabel: "ROMA",      roofBg: "#16a34a", roofFg: "#ffffff", stripe: "band",    stripeColor: "#16a34a" },
+];
 
 type SaveData = {
   money: number;
@@ -89,6 +110,7 @@ type SaveData = {
   taxis: { colorId: string }[];
   defaultColor: string;
   jobsCompleted: number;
+  liveryId: string;
 };
 
 const DEFAULT_SAVE: SaveData = {
@@ -100,6 +122,7 @@ const DEFAULT_SAVE: SaveData = {
   taxis: [{ colorId: "yellow" }],
   defaultColor: "yellow",
   jobsCompleted: 0,
+  liveryId: "classic",
 };
 
 
