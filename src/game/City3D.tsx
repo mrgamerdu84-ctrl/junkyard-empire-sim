@@ -393,10 +393,12 @@ export type City3DProps = {
 
 export default function City3D({ drawRoadStrips = false }: City3DProps) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => { setMounted(true); console.log("[City3D] mounted"); }, []);
   const [night, setNight] = useState(0.4);
 
   if (!mounted) return null;
+  console.log("[City3D] rendering Canvas");
+
 
   /* Lampadaires alignés le long des routes principales visibles */
   const lamps: [number, number][] = [
