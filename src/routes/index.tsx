@@ -29,13 +29,33 @@ type Zone = {
 
 const ZONES: Zone[] = [
   { id: "casse", name: "VOTRE CASSE", top: "62%", left: "16%", reward: 250, scrap: 5 },
-  { id: "casino", name: "CASINO", unlock: 50, status: "Bientôt disponible", top: "30%", left: "32%" },
-  { id: "concession", name: "CONCESSION PREMIUM", unlock: 40, status: "Bientôt disponible", top: "30%", left: "68%" },
-  { id: "centre", name: "CENTRE COMMERCIAL", unlock: 60, status: "Bientôt disponible", top: "50%", left: "48%" },
-  { id: "ville", name: "VILLE ABANDONNÉE", status: "Prochaine expansion", top: "58%", left: "84%" },
-  { id: "construction", name: "ZONE EN CONSTRUCTION", status: "Plus de bâtiments à venir !", top: "82%", left: "42%" },
-  { id: "international", name: "CASSE INTERNATIONALE", status: "En développement", top: "82%", left: "80%" },
+  { id: "garage", name: "GARAGE EXPRESS", unlock: 5, status: "Débloqué au niveau 5", top: "62%", left: "84%", reward: 180, scrap: 3 },
+  { id: "carwash", name: "CAR WASH", unlock: 10, status: "Débloqué au niveau 10", top: "82%", left: "20%", reward: 320, scrap: 6 },
+  { id: "concession", name: "CONCESSION PREMIUM", unlock: 20, status: "Bientôt disponible", top: "30%", left: "68%", reward: 600, scrap: 10 },
+  { id: "casino", name: "CASINO", unlock: 30, status: "Bientôt disponible", top: "30%", left: "32%", reward: 1200, scrap: 15 },
+  { id: "centre", name: "CENTRE COMMERCIAL", unlock: 40, status: "Bientôt disponible", top: "50%", left: "48%" },
+  { id: "ville", name: "VILLE ABANDONNÉE", unlock: 50, status: "Prochaine expansion", top: "58%", left: "84%" },
+  { id: "construction", name: "ZONE EN CONSTRUCTION", status: "Plus de bâtiments à venir !", top: "82%", left: "55%" },
+  { id: "international", name: "CASSE INTERNATIONALE", unlock: 60, status: "En développement", top: "82%", left: "82%" },
 ];
+
+// Road paths in 0-100 SVG viewBox coords, matching the citymap roads
+const ROADS = [
+  // main horizontal road across the middle
+  { d: "M 0 70 L 100 70", dur: 14 },
+  // upper horizontal road
+  { d: "M 0 40 L 100 40", dur: 18 },
+  // vertical road left-center
+  { d: "M 38 100 L 38 0", dur: 16 },
+  // vertical road right
+  { d: "M 75 0 L 75 100", dur: 20 },
+  // diagonal loop around the casse
+  { d: "M 0 88 L 50 88 L 50 70", dur: 12 },
+];
+
+// Tier system: visual + reward upgrades based on player level
+const tierFor = (niveau: number, unlock = 1) =>
+  Math.min(5, 1 + Math.floor(Math.max(0, niveau - unlock) / 5));
 
 const TOOLBAR = [
   { id: "boutique", label: "BOUTIQUE", icon: "🛒" },
