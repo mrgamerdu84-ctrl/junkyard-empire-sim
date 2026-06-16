@@ -49,43 +49,29 @@ type Taxi = {
   mode: TaxiMode;
   speed: number;
   colorId: string;
-  clientId: number | null;
+  jobId: number | null;
 };
 
-type Client = {
+type JobStatus = "offered" | "accepted";
+type Job = {
   id: number;
-  pickup: number;
+  pickup: number;       // longueur sur le path
   dropoff: number;
   fare: number;
-  assigned: number | null;
-  spawnedAt: number;
+  deadline: number;     // epoch ms — quand le client annule s'il n'est pas accepté
+  duration: number;     // ms (pour la barre)
+  status: JobStatus;
   sidePickup: 1 | -1;
   sideDrop: 1 | -1;
+  acceptedAt?: number;
 };
 
-const DEFAULT_DEPOT_POS = 0.78; // 78% le long de la route ; override possible via Admin Panel
-const SAVE_KEY = "taxi-tycoon-v1";
+const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
+const SAVE_KEY = "taxi-tycoon-v2";
 const BASE_SPEED = 60; // px (sur viewBox 1920) par seconde
 const SPEED_UPGRADE_COST_BASE = 800;
 const TAXI_COST_BASE = 600;
-const MAX_CONTRACTS = 3;
-
-type ContractKind = "clients" | "earn" | "streak";
-type Contract = {
-  id: number;
-  kind: ContractKind;
-  label: string;
-  icon: string;
-  target: number;
-  progress: number;
-  deadline: number;     // epoch ms
-  duration: number;     // ms initial
-  rewardCash: number;
-  rewardMult?: number;
-  rewardMultSec?: number;
-};
-
-type ActiveBoost = { mult: number; until: number } | null;
+const MAX_JOBS_BASE = 3;
 
 type SaveData = {
   money: number;
@@ -95,7 +81,7 @@ type SaveData = {
   taxiSpeedLvl: number;
   taxis: { colorId: string }[];
   defaultColor: string;
-  contractsCompleted: number;
+  jobsCompleted: number;
 };
 
 const DEFAULT_SAVE: SaveData = {
@@ -106,8 +92,9 @@ const DEFAULT_SAVE: SaveData = {
   taxiSpeedLvl: 0,
   taxis: [{ colorId: "yellow" }],
   defaultColor: "yellow",
-  contractsCompleted: 0,
+  jobsCompleted: 0,
 };
+
 
 function loadSave(): SaveData {
   if (typeof window === "undefined") return DEFAULT_SAVE;
