@@ -1,58 +1,41 @@
+# Plan — Trafic, taxis & station-service
 
-# Refonte missions + QG sur la map
+## 1. Débloquer les camions figés (`CityTraffic.tsx`)
+Cause : dans la boucle de freinage, dès qu'un véhicule devant ralentit à ~1 px/s, tous ceux derrière s'alignent en cascade et tombent au plancher minimum. Les camions (les plus lents par `duration` élevée) finissent collés.
 
-On garde le moteur actuel (path, sprites, sauvegarde, AdminPanel) et on change la **logique de mission** + **ancrage du QG**.
+Correctifs :
+- Relever le plancher de vitesse de `1` à `~30 % de baseSpeed` (ils ne peuvent plus se figer).
+- Empêcher la cascade : si le leader est lui-même en train de freiner sans obstacle réel devant, ignorer son ralentissement (anti-deadlock).
+- Réduire `SAFE_GAP` pour les véhicules longs (truck) pour éviter qu'ils ne se bloquent mutuellement aux courbures du path.
 
-## 1. Nouveau flow de missions
+## 2. Variété des trajets taxis (`TaxiTycoon.tsx`)
+Aujourd'hui, le pathfinding choisit toujours le même path par défaut. Modifs :
+- Quand un taxi part en mission, choisir aléatoirement parmi les chemins disponibles vers la destination (sélection pondérée, pas toujours le plus court).
+- Ajouter une petite mémoire « dernier path utilisé » pour pénaliser sa réutilisation immédiate.
+- Idem pour le retour au QG.
 
-**Avant** : clients spawn automatiquement sur le trottoir, taxi le plus proche part tout seul. Le panneau Contrats sert juste de side-quest (gagner X$, faire X courses).
+## 3. Spawn clients sur trottoir (`TaxiTycoon.tsx`)
+Les points pickup/dropoff sont posés directement sur la courbe de route. Correctif :
+- À la génération d'un job, calculer la normale du path au point choisi et décaler le client de `~22 px` perpendiculairement (côté trottoir aléatoire).
+- Le taxi reste sur la route ; le sprite client est décalé.
 
-**Après** : 
-- Le panneau Contrats devient la **file de courses** (le « répartiteur »).
-- Chaque entrée = une vraie course (icône client, pickup → dropoff, tarif, deadline avant que le client annule).
-- Le joueur clique **« Accepter »** → un taxi libre sort du QG, va au pickup, dépose, revient au QG.
-- Si tous les taxis sont occupés → bouton « Accepter » grisé (« File pleine »).
-- Si la course n'est pas acceptée dans son temps imparti → le client annule (malus léger : rien gagné).
-- Plus de spawn automatique de clients sur le trottoir ni d'auto-dispatch.
+## 4. Station-service & jauge d'essence (`TaxiTycoon.tsx` + `AdminPanel.tsx`)
+- Ajouter `fuel: number` (0–100) sur chaque taxi, sauvegardé.
+- Consommation : `−X` par seconde en mouvement (X paramétrable admin, défaut ~0.5).
+- Spawn d'une station-service fixe sur la map (sprite simple, à proximité d'une route).
+- Si `fuel < 25` ET taxi libre → mode `refueling` : il roule vers la station, attend 4 s (remplissage animé), repart avec `fuel = 100`.
+- Slider admin : vitesse de consommation + bouton « refaire le plein de toute la flotte ».
+- UI : petite jauge fuel sous chaque taxi dans le panneau de gestion.
 
-Bonus visuels conservés : pickup/dropoff toujours dessinés sur la map dès qu'une course est acceptée, popup gain à la dépose, contrats bonus (streak, earn) supprimés au profit d'un format unique « course ».
+## 5. Correction visuelle taxis
+- Auditer le composant `Taxi` : retirer halos résiduels, vérifier que la `tintOpacity` du multiply ne dénature pas le sprite, supprimer toute superposition orange/rouge incorrecte.
+- S'assurer que le transform JS n'écrase pas le scale (déjà OK via `<g scale>` interne, à confirmer).
 
-## 2. QG réintégré à la map
+## Hors-scope (à traiter plus tard)
+Feux rouges, panneaux, piétons supplémentaires, refonte du sprite QG.
 
-**Avant** : QG flottant sur le path principal (ou XY libre via admin), donc se balade sur la route.
-
-**Après** :
-- Position par défaut = un emplacement fixe pensé pour la map (à côté du rond-point en bas-gauche, où il y a déjà visuellement le bâtiment TAXI CORP).
-- Le QG **ne suit plus le path** : il est ancré en XY absolu.
-- Admin → onglet QG : on garde uniquement « Placer sur la carte » + sliders X/Y/échelle/rotation. On retire le mode « suit le circuit » (qui causait le décalage visuel).
-- Les taxis sortent et reviennent à ce point fixe. Pour aller au pickup, ils empruntent toujours le path le plus proche : on calcule la longueur sur le path la plus proche du QG (`hqPathPos`) et c'est de là qu'ils démarrent / reviennent.
-
-## 3. Détails techniques
-
-```text
-SaveData
-  + jobs: Job[]            // file de courses en attente (remplace partiellement contracts)
-Job = {
-  id, pickup, dropoff, fare, deadline, status: "offered"|"accepted"|"done"
-}
-
-Taxi
-  mode: "idle"|"to_pickup"|"to_dest"|"returning"
-  jobId: number|null       // remplace clientId
-
-AdminConfig
-  hqUseFreePos: true par défaut (ancré)
-  hqX, hqY: position par défaut sur le bâtiment TAXI CORP (≈ 220, 760 sur viewBox 1920×1080, à ajuster visuellement)
-```
-
-- Suppression de `lastSpawnRef` / `lastTaxiDispatchRef` côté auto-dispatch ; on garde un cooldown sortie QG pour éviter que tous les taxis partent en même temps.
-- Suppression de `genContract` (les bonus streak/earn) → remplacé par `genJob(tier)` qui produit une vraie course (pickup/dropoff aléatoires sur le path, tarif basé sur la distance × `fareMult` × `clientFareMult`).
-- Le panneau « CONTRATS » est renommé **« COURSES »**. Chaque carte = un job avec bouton **Accepter** vert et timer.
-- Le bouton **✕** (annuler) reste pour refuser une course.
-- File auto-remplie jusqu'à `MAX_JOBS = 3` (configurable via admin).
-
-## 4. Hors-scope de ce plan (à faire après si tu valides)
-
-- Réparer les sliders bloqués (à investiguer après la refonte, peut être un side-effect du nouveau code).
-- Piétons sur trottoirs, feux rouges, panneaux, animation de ville → étape ultérieure (gros morceau séparé).
-- Nouveau sprite QG dédié → on reste sur le sprite Depot actuel pour l'instant.
+## Détails techniques
+- `SaveData` bumpé v2 → v3 pour intégrer `fuel` (migration : si absent → 100).
+- Nouvelle constante `GAS_STATION_POS = { x, y }` ancrée sur une route existante.
+- `AdminConfig` : `fuelConsumption` (0.1–2), `gasStationX/Y`.
+- Pathfinding taxi : helper `pickRoute(from, to, excludeIdx?)` retournant un path index aléatoire pondéré.
