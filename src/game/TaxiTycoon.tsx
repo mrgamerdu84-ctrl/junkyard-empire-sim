@@ -500,6 +500,23 @@ export default function TaxiTycoon() {
     return { x: p.x, y: p.y, angle };
   };
 
+  // Position décalée sur le trottoir (perpendiculaire à la route)
+  const SIDEWALK_OFFSET = 22;
+  const getSidewalk = (len: number, side: 1 | -1) => {
+    if (!measureRef.current) return { x: 0, y: 0, angle: 0 };
+    const safe = ((len % pathLen) + pathLen) % pathLen;
+    const p = measureRef.current.getPointAtLength(safe);
+    const p2 = measureRef.current.getPointAtLength(Math.min(pathLen - 0.1, safe + 2));
+    const dx = p2.x - p.x, dy = p2.y - p.y;
+    const L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L, ny = dx / L; // normale unitaire
+    return {
+      x: p.x + nx * SIDEWALK_OFFSET * side,
+      y: p.y + ny * SIDEWALK_OFFSET * side,
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    };
+  };
+
   const depotXY = useMemo(() => getXY(pathLen * DEPOT_POS_NORM), [pathLen]);
 
   // === Actions UI ===
