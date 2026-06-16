@@ -699,7 +699,7 @@ export default function TaxiTycoon() {
         })}
 
         {/* Dépôt */}
-        {pathLen > 0 && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} />}
+        {pathLen > 0 && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} scale={admin.hqScale} rotation={admin.hqRotation} />}
 
         {/* Taxis */}
         {taxisRef.current.map((taxi) => {
