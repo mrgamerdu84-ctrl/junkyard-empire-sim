@@ -1,7 +1,15 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS } from "./CityTraffic";
-import taxiTopdown from "@/assets/taxi-topdown.png";
+import taxiYellowAsset from "@/assets/taxi-yellow.png.asset.json";
+import taxiBlackAsset from "@/assets/taxi-black.png.asset.json";
+import taxiRedAsset from "@/assets/taxi-red.png.asset.json";
+import musicAsset from "@/assets/midnight-fare.mp3.asset.json";
 import { getAdmin, useAdminConfig } from "./adminConfig";
+
+const TAXI_YELLOW_URL = taxiYellowAsset.url;
+const TAXI_BLACK_URL = taxiBlackAsset.url;
+const TAXI_RED_URL = taxiRedAsset.url;
+const MUSIC_URL = musicAsset.url;
 
 /* ============================================================
  * TAXI TYCOON — entreprise de taxis idle
@@ -76,22 +84,21 @@ const FUEL_LOW_THRESHOLD = 25;
 // === Livrées de taxi inspirées de vraies compagnies (yellow body only) ===
 export type Livery = {
   id: string;
-  name: string;        // nom de la compagnie
-  city: string;        // ville/pays
-  roofLabel: string;   // texte sur le panneau de toit
-  roofBg: string;      // couleur du panneau de toit
-  roofFg: string;      // couleur du texte du toit
+  name: string;
+  city: string;
+  roofLabel: string;
+  roofBg: string;
+  roofFg: string;
   stripe: "checker" | "band" | "dots" | "none";
   stripeColor: string;
+  image: string;
+  faceRight: boolean; // true if image's car nose points right
 };
 
 export const LIVERIES: Livery[] = [
-  { id: "classic",  name: "Classic Cab",   city: "Origine",     roofLabel: "TAXI",      roofBg: "#1a1d22", roofFg: "#fde047", stripe: "none",    stripeColor: "#1a1d22" },
-  { id: "nyc",      name: "Yellow Cab",    city: "New York",    roofLabel: "NYC TAXI",  roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "checker", stripeColor: "#1a1d22" },
-  { id: "london",   name: "Black Cab Co.", city: "London",      roofLabel: "TAXI",      roofBg: "#0a0c10", roofFg: "#ffffff", stripe: "band",    stripeColor: "#0a0c10" },
-  { id: "paris",    name: "G7 Cab",        city: "Paris",       roofLabel: "G7",        roofBg: "#0f3a8a", roofFg: "#ffffff", stripe: "band",    stripeColor: "#0f3a8a" },
-  { id: "tokyo",    name: "Nihon Kotsu",   city: "Tokyo",       roofLabel: "東京",       roofBg: "#c8102e", roofFg: "#ffffff", stripe: "dots",    stripeColor: "#c8102e" },
-  { id: "rome",     name: "Roma Taxi",     city: "Roma",        roofLabel: "ROMA",      roofBg: "#16a34a", roofFg: "#ffffff", stripe: "band",    stripeColor: "#16a34a" },
+  { id: "classic",  name: "Classic Cab",   city: "Origine",     roofLabel: "TAXI",      roofBg: "#1a1d22", roofFg: "#fde047", stripe: "none",    stripeColor: "#1a1d22", image: TAXI_YELLOW_URL, faceRight: true  },
+  { id: "executive", name: "Executive",    city: "Berline noire", roofLabel: "VIP",     roofBg: "#0a0c10", roofFg: "#fde047", stripe: "none",    stripeColor: "#0a0c10", image: TAXI_BLACK_URL,  faceRight: false },
+  { id: "sport",    name: "Sport Cab",     city: "Coupé rouge",  roofLabel: "TAXI",     roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "none",    stripeColor: "#1a1d22", image: TAXI_RED_URL,    faceRight: false },
 ];
 
 type SaveData = {
@@ -137,101 +144,43 @@ function fmt(n: number) {
 }
 
 function TaxiSprite({
-  body,
-  trim: _trim,
   withClient,
   moving,
-  livery,
+  image,
+  faceRight,
+  size = 60,
 }: {
-  body: string;
-  trim: string;
   withClient: boolean;
   moving: boolean;
-  livery?: Livery;
+  image: string;
+  faceRight: boolean;
+  size?: number;
 }) {
-  const W = 68;
-  const H = 34;
-  const uid = useId().replace(/:/g, "");
-  const clipId = `taxi-clip-${uid}`;
-  const isYellow = body.toLowerCase() === "#f5c542";
+  // Image is a side-view photo on transparent background; car occupies roughly
+  // the full width. The car nose points along +X when faceRight=true, else flip.
+  const W = size;
+  const H = size; // square source, transparent padding handles aspect
   return (
     <g>
-      {moving && (
-        <g opacity="0.55">
-          <line x1={-W / 2 - 10} y1="-6" x2={-W / 2 - 2} y2="-6" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round">
-            <animate attributeName="x1" values={`${-W / 2 - 2};${-W / 2 - 12}`} dur="0.45s" repeatCount="indefinite" />
-          </line>
-          <line x1={-W / 2 - 12} y1="0" x2={-W / 2 - 3} y2="0" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round">
-            <animate attributeName="x1" values={`${-W / 2 - 3};${-W / 2 - 14}`} dur="0.4s" begin="0.15s" repeatCount="indefinite" />
-          </line>
-          <line x1={-W / 2 - 10} y1="6" x2={-W / 2 - 2} y2="6" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round">
-            <animate attributeName="x1" values={`${-W / 2 - 4};${-W / 2 - 14}`} dur="0.45s" begin="0.3s" repeatCount="indefinite" />
-          </line>
-        </g>
-      )}
-      <ellipse cx="0" cy="3" rx={W / 2 + 2} ry={H / 2 - 1} fill="rgba(0,0,0,0.45)" />
+      <ellipse cx="0" cy={W * 0.18} rx={W * 0.42} ry={W * 0.09} fill="rgba(0,0,0,0.45)" />
       <g>
         {moving && (
           <animateTransform attributeName="transform" type="translate" values="0 -0.4; 0 0.4; 0 -0.4" dur="0.22s" repeatCount="indefinite" />
         )}
-        <defs>
-          <clipPath id={clipId}>
-            <rect x={-W / 2} y={-H / 2} width={W} height={H} rx="4" />
-          </clipPath>
-        </defs>
-        <g transform="rotate(90)" clipPath={`url(#${clipId})`}>
-          <image href={taxiTopdown} x={-H / 2 - 1} y={-W / 2 - 2} width={H + 2} height={W + 4} preserveAspectRatio="xMidYMid meet" />
-          {!isYellow && (
-            <rect x={-H / 2 - 1} y={-W / 2 - 2} width={H + 2} height={W + 4} fill={body} opacity={0.55} style={{ mixBlendMode: "multiply" }} />
-          )}
+        <g transform={faceRight ? undefined : "scale(-1,1)"}>
+          <image href={image} x={-W / 2} y={-H / 2} width={W} height={H} preserveAspectRatio="xMidYMid meet" />
         </g>
-
-        {/* === Livrée === */}
-        {livery && livery.stripe === "checker" && (
-          <g clipPath={`url(#${clipId})`}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <rect key={i} x={-W / 2 + i * (W / 12)} y={H / 2 - 4} width={W / 12} height="3"
-                fill={i % 2 === 0 ? livery.stripeColor : "#ffffff"} />
-            ))}
-            {Array.from({ length: 12 }).map((_, i) => (
-              <rect key={`t${i}`} x={-W / 2 + i * (W / 12)} y={-H / 2 + 1} width={W / 12} height="3"
-                fill={i % 2 === 0 ? livery.stripeColor : "#ffffff"} />
-            ))}
-          </g>
-        )}
-        {livery && livery.stripe === "band" && (
-          <g clipPath={`url(#${clipId})`}>
-            <rect x={-W / 2} y={H / 2 - 5} width={W} height="4" fill={livery.stripeColor} />
-            <rect x={-W / 2} y={-H / 2 + 1} width={W} height="4" fill={livery.stripeColor} />
-          </g>
-        )}
-        {livery && livery.stripe === "dots" && (
-          <g clipPath={`url(#${clipId})`}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <circle key={i} cx={-W / 2 + 5 + i * (W / 8)} cy={H / 2 - 3} r="1.4" fill={livery.stripeColor} />
-            ))}
-          </g>
-        )}
-
-        {/* Panneau de toit (taxi roof sign) */}
-        {livery && (
-          <g>
-            <rect x={-7} y={-5.5} width={14} height={5} rx="1" fill={livery.roofBg} stroke="#0a0c10" strokeWidth="0.35" />
-            <text x="0" y="-2" fontSize="3.2" fontWeight="900" textAnchor="middle" fill={livery.roofFg} letterSpacing="0.3">{livery.roofLabel}</text>
-            <rect x={-7} y={-5.8} width={14} height={0.6} fill="#ffffff" opacity="0.5" />
-          </g>
-        )}
-
         {withClient && (
           <g>
-            <circle cx="-4" cy="-3" r="2.6" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
-            <circle cx="-4" cy="3" r="2.6" fill="#c89372" stroke="#1a1d22" strokeWidth="0.4" />
+            <circle cx="0" cy="-2" r="2.4" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
           </g>
         )}
       </g>
     </g>
   );
 }
+
+
 
 function Depot({ tier, x, y, scale = 1, rotation = 0 }: { tier: DepotTier; x: number; y: number; scale?: number; rotation?: number }) {
   const idx = DEPOT_TIERS.indexOf(tier);
@@ -786,6 +735,8 @@ export default function TaxiTycoon() {
   };
 
   const [garageOpen, setGarageOpen] = useState(false);
+  const [musicOn, setMusicOn] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const currentLivery = LIVERIES.find((l) => l.id === save.liveryId) ?? LIVERIES[0];
 
 
@@ -986,7 +937,7 @@ export default function TaxiTycoon() {
           return (
             <g key={r.id}>
               <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
-                <TaxiSprite body="#dc1a2a" trim="#5a0810" withClient={r.mode === "to_dest"} moving={r.mode !== "idle"} />
+                <TaxiSprite image={TAXI_RED_URL} faceRight={false} withClient={r.mode === "to_dest"} moving={r.mode !== "idle"} />
               </g>
               <text x={p.x} y={p.y - 22} fontSize="9" textAnchor="middle" fill="#ff4d5c" fontWeight="900" stroke="#0a0608" strokeWidth="2" paintOrder="stroke">R</text>
             </g>
@@ -996,7 +947,8 @@ export default function TaxiTycoon() {
         {/* Taxis */}
         {taxisRef.current.map((taxi) => {
           const p = getXYOn(taxi.pathIdx, taxi.pos);
-          const color = TAXI_COLORS.find((c) => c.id === taxi.colorId) ?? TAXI_COLORS[0];
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const _ = taxi.colorId;
           const movingForward = taxi.target >= taxi.pos;
           const angle = movingForward ? p.angle : p.angle + 180;
           const fuelPct = Math.max(0, Math.min(1, taxi.fuel / 100));
@@ -1004,7 +956,7 @@ export default function TaxiTycoon() {
           return (
             <g key={taxi.id}>
               <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
-                <TaxiSprite body={color.body} trim={color.trim} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling"} livery={currentLivery} />
+                <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling"} />
               </g>
               {/* Mini jauge essence sous le taxi */}
               <g transform={`translate(${p.x - 12},${p.y + 22})`}>
@@ -1140,6 +1092,21 @@ export default function TaxiTycoon() {
           🏁
         </button>
 
+        {/* Musique de fond */}
+        <audio ref={audioRef} src={MUSIC_URL} loop preload="auto" />
+        <button
+          className="tt-music-fab"
+          onClick={() => {
+            const a = audioRef.current;
+            if (!a) return;
+            if (musicOn) { a.pause(); setMusicOn(false); }
+            else { a.volume = 0.45; a.play().catch(() => {}); setMusicOn(true); }
+          }}
+          title={musicOn ? "Couper la musique" : "Activer la musique"}
+        >
+          {musicOn ? "🎵" : "🔇"}
+        </button>
+
         {garageOpen && (
           <div className="tt-modal-overlay" onClick={() => setGarageOpen(false)}>
             <div className="tt-modal" onClick={(e) => e.stopPropagation()}>
@@ -1147,7 +1114,7 @@ export default function TaxiTycoon() {
                 <h3>🏁 Garage — Livrées de taxi</h3>
                 <button className="tt-modal-x" onClick={() => setGarageOpen(false)}>×</button>
               </div>
-              <p className="tt-modal-sub">Carrosserie jaune officielle. Choisis ta compagnie :</p>
+              <p className="tt-modal-sub">Choisis le modèle de ta flotte :</p>
               <div className="tt-livery-grid">
                 {LIVERIES.map((l) => (
                   <button
@@ -1155,24 +1122,7 @@ export default function TaxiTycoon() {
                     className={`tt-livery-card ${save.liveryId === l.id ? "selected" : ""}`}
                     onClick={() => setSave((s) => ({ ...s, liveryId: l.id }))}
                   >
-                    <svg viewBox="-50 -25 100 50" className="tt-livery-preview">
-                      <rect x="-40" y="-18" width="80" height="36" rx="5" fill="#f5c542" stroke="#9c7a1c" strokeWidth="1.2" />
-                      {l.stripe === "checker" && Array.from({ length: 14 }).map((_, i) => (
-                        <rect key={i} x={-40 + i * (80 / 14)} y={12} width={80 / 14} height="4"
-                          fill={i % 2 === 0 ? l.stripeColor : "#fff"} />
-                      ))}
-                      {l.stripe === "band" && (
-                        <>
-                          <rect x="-40" y="12" width="80" height="5" fill={l.stripeColor} />
-                          <rect x="-40" y="-17" width="80" height="5" fill={l.stripeColor} />
-                        </>
-                      )}
-                      {l.stripe === "dots" && Array.from({ length: 9 }).map((_, i) => (
-                        <circle key={i} cx={-36 + i * 9} cy={14} r="1.8" fill={l.stripeColor} />
-                      ))}
-                      <rect x="-12" y="-6" width="24" height="9" rx="1.5" fill={l.roofBg} stroke="#0a0c10" strokeWidth="0.5" />
-                      <text x="0" y="0.8" fontSize="6" fontWeight="900" textAnchor="middle" fill={l.roofFg}>{l.roofLabel}</text>
-                    </svg>
+                    <img src={l.image} alt={l.name} className="tt-livery-img" style={{ transform: l.faceRight ? undefined : "scaleX(-1)" }} />
                     <div className="tt-livery-name">{l.name}</div>
                     <div className="tt-livery-city">{l.city}</div>
                   </button>
@@ -1257,6 +1207,21 @@ export default function TaxiTycoon() {
           display: flex; align-items: center; justify-content: center;
         }
         .tt-garage-fab:hover { transform: translateX(-50%) scale(1.08); }
+
+        .tt-music-fab {
+          position: absolute; bottom: 14px; right: 12px;
+          width: 38px; height: 38px; border-radius: 50%;
+          background: linear-gradient(180deg, #2a2d34, #14161b);
+          border: 2px solid #000; color: #fde68a;
+          font-size: 16px; cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+          pointer-events: auto;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .tt-livery-img {
+          width: 100%; height: 70px; object-fit: contain; display: block;
+          background: radial-gradient(ellipse at center, rgba(255,255,255,0.05), transparent 70%);
+        }
 
         .tt-modal-overlay {
           position: absolute; inset: 0; z-index: 60;
