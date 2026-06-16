@@ -20,17 +20,19 @@ function loop(points: [number, number][], tension = 0.0) {
   );
 }
 
-/* Splines tracées entre les bâtiments pour éviter les enseignes */
+/* Splines calées sur les routes visibles de citymap.jpg.
+ * La grande route horizontale visible passe à ~ top 72% (z ≈ +22)
+ * Une route secondaire passe entre le centre commercial et les buildings (z ≈ -2)
+ */
 const ROAD_LOOPS = [
-  // Boulevard extérieur
-  loop([[-45, -38], [45, -38], [45, 42], [-45, 42]]),
-  // Boucle médiane (autour du centre commercial)
-  loop([[-25, -10], [25, -10], [25, 22], [-25, 22]]),
-  // Boucle inférieure (passe entre carwash/construction/international)
-  loop([[-40, 24], [-12, 24], [12, 38], [40, 38], [40, 28], [-40, 28]], 0.2),
-  // Diagonale haute (casino <-> concession)
-  loop([[-30, -28], [-10, -14], [10, -14], [30, -28], [30, -36], [-30, -36]], 0.15),
+  // Boulevard principal en bas (route grise très visible)
+  loop([[-44, 22], [-25, 22], [0, 24], [25, 22], [44, 22], [44, 36], [25, 38], [0, 36], [-25, 38], [-44, 36]], 0.2),
+  // Route médiane horizontale (entre buildings et centre)
+  loop([[-44, 0], [-25, -2], [0, 0], [25, -2], [44, 0], [44, 10], [25, 12], [0, 10], [-25, 12], [-44, 10]], 0.2),
+  // Petite boucle autour du carwash / construction (bas gauche)
+  loop([[-40, 28], [-20, 30], [-20, 44], [-40, 44]], 0.2),
 ];
+
 
 /* ===== Day / Night ===== */
 function DayNight({ onPhase }: { onPhase: (day: number) => void }) {
