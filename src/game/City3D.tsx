@@ -398,19 +398,19 @@ export default function City3D({ drawRoadStrips = false }: City3DProps) {
 
   if (!mounted) return null;
 
-  /* Lampadaires alignés le long des routes principales */
+  /* Lampadaires alignés le long des routes principales visibles */
   const lamps: [number, number][] = [
-    // ring extérieur
-    [-40, -36], [-20, -36], [0, -36], [20, -36], [40, -36],
-    [-40, 40], [-20, 40], [0, 40], [20, 40], [40, 40],
-    [-44, -10], [-44, 14], [44, -10], [44, 14],
-    // mid loop
-    [-22, -8], [22, -8], [-22, 20], [22, 20],
+    // boulevard du bas
+    [-44, 18], [-25, 18], [0, 19], [25, 18], [44, 18],
+    [-44, 41], [-25, 41], [0, 41], [25, 41], [44, 41],
+    // route médiane
+    [-44, -5], [-22, -5], [22, -5], [44, -5],
   ];
   const trees: [number, number][] = [
-    [-44, -20], [-44, 2], [-44, 24], [44, -20], [44, 2], [44, 24],
-    [-12, -42], [12, -42], [-12, 44], [12, 44],
-    [-8, 6], [8, 6], [-8, 18], [8, 18],
+    // côtés (loin des bâtiments et de la skyline)
+    [-46, 8], [-46, 26], [-46, 38],
+    [46, 8], [46, 26], [46, 38],
+    [-10, 44], [10, 44],
   ];
 
   return (
@@ -427,31 +427,26 @@ export default function City3D({ drawRoadStrips = false }: City3DProps) {
 
       {drawRoadStrips && <RoadStrips />}
 
-      {/* Ombres douces des véhicules sur la map */}
-      <ContactShadows position={[0, 0.05, 0]} opacity={0.4} scale={120} blur={2.4} far={20} />
+      <ContactShadows position={[0, 0.05, 0]} opacity={0.45} scale={120} blur={2.4} far={20} />
 
-      <Traffic count={14} />
+      <Traffic count={12} />
       <TowTruck phase={0} color="#e85d3a" />
       <TowTruck phase={0.55} color="#f5d666" />
 
-      {/* Grue dans la casse */}
-      <CraneStatic pos={[-38, 16]} />
+      {/* Fumée près du bord (zone industrielle visible sur la map) */}
+      <Smoke pos={[-40, 0, 30]} />
+      <Smoke pos={[40, 0, 30]} />
 
-      {/* Fumée près de la casse et du garage */}
-      <Smoke pos={[-38, 0, 8]} />
-      <Smoke pos={[36, 0, 8]} />
+      {/* Ouvriers le long des routes */}
+      <Worker center={[-30, 22]} radius={4} speed={0.5} color="#3a8ad0" />
+      <Worker center={[30, 22]} radius={4} speed={0.45} color="#86c46a" />
 
-      {/* Ouvriers */}
-      <Worker center={[-34, 12]} radius={4} speed={0.5} color="#3a8ad0" />
-      <Worker center={[34, 12]} radius={4} speed={0.45} color="#86c46a" />
-      <Worker center={[-2, 0]} radius={5} speed={0.4} color="#e85d3a" />
-      <Worker center={[-30, 32]} radius={3} speed={0.55} color="#f5d666" />
-
-      {trees.map((p, i) => <Tree key={i} pos={p} scale={1 + (i % 3) * 0.2} />)}
+      {trees.map((p, i) => <Tree key={i} pos={p} scale={2.2 + (i % 3) * 0.3} />)}
       {lamps.map((p, i) => <StreetLamp key={i} pos={p} night={night} />)}
     </Canvas>
   );
 }
+
 
 /* Petite grue statique animée */
 function CraneStatic({ pos }: { pos: [number, number] }) {
