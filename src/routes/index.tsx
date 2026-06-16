@@ -503,99 +503,63 @@ function JunkyCityEmpire() {
       `}</style>
 
       <div className="jce-map">
-        <img src={citymap} alt="Vue aérienne de Junky City" className="jce-map-img" />
-
-
-        <header className="jce-topbar">
-          <div className="jce-profile-block">
-            <div className="jce-profile">
-              <div className="jce-avatar"><img src={sharky} alt="Sharky" /></div>
-              <div className="jce-profile-info">
-                <div className="jce-name">SHARKY</div>
-                <div className="jce-level">Niveau {niveau}</div>
-                <div className="jce-xpbar">
-                  <div className="jce-xpbar-fill" style={{ width: `${xp}%` }} />
+        <City3D
+          zones={ZONES_3D}
+          states={states}
+          niveau={niveau}
+          unlocks={Object.fromEntries(ZONES.map((z) => [z.id, z.unlock]))}
+          onZoneClick={(id) => {
+            const z = ZONES.find((x) => x.id === id);
+            if (z) gestionClicBatiment(z);
+          }}
+          renderLabel={(z3: Zone3D) => {
+            const z = ZONES.find((x) => x.id === z3.id);
+            if (!z) return null;
+            const st = states[z.id];
+            const locked = z.unlock > niveau;
+            const tier = st.estFini ? tierFor(niveau, z.unlock) : 0;
+            const fillPct = !st.estAchete ? 0 : st.estFini ? 100 : (st.clicsEnregistres / z.clicsTotalRequis) * 100;
+            let stateClass = "";
+            if (locked) stateClass = "locked";
+            else if (st.estFini) stateClass = "fini";
+            else if (st.estAchete) stateClass = "chantier";
+            else stateClass = "buyable";
+            return (
+              <div
+                className={`jce-zone ${stateClass} ${tier ? `tier-${tier}` : ""} ${flash === z.id ? "flash" : ""}`}
+                style={{ position: "relative", transform: "translate(-50%, -50%)" }}
+              >
+                {st.estFini && tier > 0 && (
+                  <div className="jce-tier-badge">{"★".repeat(tier)} N{tier}</div>
+                )}
+                {locked && <div className="jce-lock-tag">🔒 Verrouillé</div>}
+                <div className="jce-zone-title">
+                  {st.estFini && <span className="jce-fini-star">★</span>}
+                  {z.name}
                 </div>
+                {locked && <div className="jce-zone-status">Niveau requis : {z.unlock}</div>}
+                {!locked && !st.estAchete && (
+                  <div className="jce-cost-pill">Débloquer : {formatNum(z.coutAchat)} $</div>
+                )}
+                {!locked && st.estAchete && !st.estFini && (
+                  <>
+                    <div className="jce-progress-wrap">
+                      <div className="jce-progress-fill" style={{ width: `${fillPct}%` }} />
+                    </div>
+                    <div className="jce-zone-status">Construction... {st.clicsEnregistres} / {z.clicsTotalRequis}</div>
+                  </>
+                )}
+                {!locked && st.estFini && (
+                  <div className="jce-zone-status">Opérationnel · +{formatNum(z.gainParSeconde * tier)} $/s</div>
+                )}
+                {popups.filter((p) => p.zoneId === z.id).map((p) => (
+                  <div key={p.id} className="jce-coin-pop">{p.text}</div>
+                ))}
               </div>
-            </div>
-            <div className="jce-resources">
-              <div className="jce-resource">
-                <div className="jce-res-icon money">💵</div>
-                <div className="jce-res-value">{formatNum(argent)} $</div>
-              </div>
-              <div className="jce-resource">
-                <div className="jce-res-icon scrap">📦</div>
-                <div className="jce-res-value">{formatNum(ferraille)}</div>
-              </div>
-            </div>
-          </div>
+            );
+          }}
+        />
 
-          <div className="jce-topright">
-            <div className="jce-stats-row">
-              <div className="jce-stat"><span className="jce-stat-icon">🔧</span><span>32/32</span></div>
-              <div className="jce-stat"><span className="jce-stat-icon">🚛</span><span>8/12</span></div>
-              <div className="jce-stat rating"><span className="jce-stars">★★★★</span><span>4.2</span></div>
-              <div className="jce-settings" role="button" aria-label="Paramètres">⚙</div>
-            </div>
-          </div>
-        </header>
-
-        {ZONES.map((z) => {
-          const st = states[z.id];
-          const locked = z.unlock > niveau;
-          const tier = st.estFini ? tierFor(niveau, z.unlock) : 0;
-          const fillPct = !st.estAchete ? 0 : st.estFini ? 100 : (st.clicsEnregistres / z.clicsTotalRequis) * 100;
-
-          let stateClass = "";
-          if (locked) stateClass = "locked";
-          else if (st.estFini) stateClass = "fini";
-          else if (st.estAchete) stateClass = "chantier";
-          else stateClass = "buyable";
-
-          return (
-            <button
-              key={z.id}
-              className={`jce-zone ${stateClass} ${tier ? `tier-${tier}` : ""} ${flash === z.id ? "flash" : ""}`}
-              style={{ top: z.top, left: z.left }}
-              onClick={() => gestionClicBatiment(z)}
-            >
-              {st.estFini && tier > 0 && (
-                <div className="jce-tier-badge">{"★".repeat(tier)} N{tier}</div>
-              )}
-
-              {locked && (
-                <div className="jce-lock-tag">🔒 Verrouillé</div>
-              )}
-
-              <div className="jce-zone-title">
-                {st.estFini && <span className="jce-fini-star">★</span>}
-                {z.name}
-              </div>
-
-              {locked && (
-                <div className="jce-zone-status">Niveau requis : {z.unlock}</div>
-              )}
-              {!locked && !st.estAchete && (
-                <div className="jce-cost-pill">Débloquer : {formatNum(z.coutAchat)} $</div>
-              )}
-              {!locked && st.estAchete && !st.estFini && (
-                <>
-                  <div className="jce-progress-wrap">
-                    <div className="jce-progress-fill" style={{ width: `${fillPct}%` }} />
-                  </div>
-                  <div className="jce-zone-status">Construction... {st.clicsEnregistres} / {z.clicsTotalRequis}</div>
-                </>
-              )}
-              {!locked && st.estFini && (
-                <div className="jce-zone-status">Opérationnel · +{formatNum(z.gainParSeconde * tier)} $/s</div>
-              )}
-
-              {popups.filter((p) => p.zoneId === z.id).map((p) => (
-                <div key={p.id} className="jce-coin-pop">{p.text}</div>
-              ))}
-            </button>
-          );
-        })}
 
         {toast && <div className="jce-toast">{toast}</div>}
 
