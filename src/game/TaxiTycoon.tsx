@@ -339,6 +339,8 @@ export default function TaxiTycoon() {
   }, [admin.circuitPoints]);
 
   const circuitTaxisRef = useRef<{ id: number; pos: number }[]>([]);
+  const circuitInfoRef = useRef(circuitInfo);
+  circuitInfoRef.current = circuitInfo;
   // Sync le nombre de taxis sur le circuit
   useEffect(() => {
     const target = circuitInfo.pts.length >= 2 ? Math.max(0, Math.min(8, admin.circuitTaxiCount)) : 0;
