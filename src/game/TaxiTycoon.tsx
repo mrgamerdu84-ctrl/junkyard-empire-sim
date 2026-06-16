@@ -1208,6 +1208,21 @@ export default function TaxiTycoon() {
         }
         .tt-garage-fab:hover { transform: translateX(-50%) scale(1.08); }
 
+        .tt-music-fab {
+          position: absolute; bottom: 14px; right: 12px;
+          width: 38px; height: 38px; border-radius: 50%;
+          background: linear-gradient(180deg, #2a2d34, #14161b);
+          border: 2px solid #000; color: #fde68a;
+          font-size: 16px; cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.6);
+          pointer-events: auto;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .tt-livery-img {
+          width: 100%; height: 70px; object-fit: contain; display: block;
+          background: radial-gradient(ellipse at center, rgba(255,255,255,0.05), transparent 70%);
+        }
+
         .tt-modal-overlay {
           position: absolute; inset: 0; z-index: 60;
           background: rgba(0,0,0,0.7);
