@@ -144,101 +144,43 @@ function fmt(n: number) {
 }
 
 function TaxiSprite({
-  body,
-  trim: _trim,
   withClient,
   moving,
-  livery,
+  image,
+  faceRight,
+  size = 60,
 }: {
-  body: string;
-  trim: string;
   withClient: boolean;
   moving: boolean;
-  livery?: Livery;
+  image: string;
+  faceRight: boolean;
+  size?: number;
 }) {
-  const W = 68;
-  const H = 34;
-  const uid = useId().replace(/:/g, "");
-  const clipId = `taxi-clip-${uid}`;
-  const isYellow = body.toLowerCase() === "#f5c542";
+  // Image is a side-view photo on transparent background; car occupies roughly
+  // the full width. The car nose points along +X when faceRight=true, else flip.
+  const W = size;
+  const H = size; // square source, transparent padding handles aspect
   return (
     <g>
-      {moving && (
-        <g opacity="0.55">
-          <line x1={-W / 2 - 10} y1="-6" x2={-W / 2 - 2} y2="-6" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round">
-            <animate attributeName="x1" values={`${-W / 2 - 2};${-W / 2 - 12}`} dur="0.45s" repeatCount="indefinite" />
-          </line>
-          <line x1={-W / 2 - 12} y1="0" x2={-W / 2 - 3} y2="0" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round">
-            <animate attributeName="x1" values={`${-W / 2 - 3};${-W / 2 - 14}`} dur="0.4s" begin="0.15s" repeatCount="indefinite" />
-          </line>
-          <line x1={-W / 2 - 10} y1="6" x2={-W / 2 - 2} y2="6" stroke="#ffffff" strokeWidth="1.2" strokeLinecap="round">
-            <animate attributeName="x1" values={`${-W / 2 - 4};${-W / 2 - 14}`} dur="0.45s" begin="0.3s" repeatCount="indefinite" />
-          </line>
-        </g>
-      )}
-      <ellipse cx="0" cy="3" rx={W / 2 + 2} ry={H / 2 - 1} fill="rgba(0,0,0,0.45)" />
+      <ellipse cx="0" cy={W * 0.18} rx={W * 0.42} ry={W * 0.09} fill="rgba(0,0,0,0.45)" />
       <g>
         {moving && (
           <animateTransform attributeName="transform" type="translate" values="0 -0.4; 0 0.4; 0 -0.4" dur="0.22s" repeatCount="indefinite" />
         )}
-        <defs>
-          <clipPath id={clipId}>
-            <rect x={-W / 2} y={-H / 2} width={W} height={H} rx="4" />
-          </clipPath>
-        </defs>
-        <g transform="rotate(90)" clipPath={`url(#${clipId})`}>
-          <image href={taxiTopdown} x={-H / 2 - 1} y={-W / 2 - 2} width={H + 2} height={W + 4} preserveAspectRatio="xMidYMid meet" />
-          {!isYellow && (
-            <rect x={-H / 2 - 1} y={-W / 2 - 2} width={H + 2} height={W + 4} fill={body} opacity={0.55} style={{ mixBlendMode: "multiply" }} />
-          )}
+        <g transform={faceRight ? undefined : "scale(-1,1)"}>
+          <image href={image} x={-W / 2} y={-H / 2} width={W} height={H} preserveAspectRatio="xMidYMid meet" />
         </g>
-
-        {/* === Livrée === */}
-        {livery && livery.stripe === "checker" && (
-          <g clipPath={`url(#${clipId})`}>
-            {Array.from({ length: 12 }).map((_, i) => (
-              <rect key={i} x={-W / 2 + i * (W / 12)} y={H / 2 - 4} width={W / 12} height="3"
-                fill={i % 2 === 0 ? livery.stripeColor : "#ffffff"} />
-            ))}
-            {Array.from({ length: 12 }).map((_, i) => (
-              <rect key={`t${i}`} x={-W / 2 + i * (W / 12)} y={-H / 2 + 1} width={W / 12} height="3"
-                fill={i % 2 === 0 ? livery.stripeColor : "#ffffff"} />
-            ))}
-          </g>
-        )}
-        {livery && livery.stripe === "band" && (
-          <g clipPath={`url(#${clipId})`}>
-            <rect x={-W / 2} y={H / 2 - 5} width={W} height="4" fill={livery.stripeColor} />
-            <rect x={-W / 2} y={-H / 2 + 1} width={W} height="4" fill={livery.stripeColor} />
-          </g>
-        )}
-        {livery && livery.stripe === "dots" && (
-          <g clipPath={`url(#${clipId})`}>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <circle key={i} cx={-W / 2 + 5 + i * (W / 8)} cy={H / 2 - 3} r="1.4" fill={livery.stripeColor} />
-            ))}
-          </g>
-        )}
-
-        {/* Panneau de toit (taxi roof sign) */}
-        {livery && (
-          <g>
-            <rect x={-7} y={-5.5} width={14} height={5} rx="1" fill={livery.roofBg} stroke="#0a0c10" strokeWidth="0.35" />
-            <text x="0" y="-2" fontSize="3.2" fontWeight="900" textAnchor="middle" fill={livery.roofFg} letterSpacing="0.3">{livery.roofLabel}</text>
-            <rect x={-7} y={-5.8} width={14} height={0.6} fill="#ffffff" opacity="0.5" />
-          </g>
-        )}
-
         {withClient && (
           <g>
-            <circle cx="-4" cy="-3" r="2.6" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
-            <circle cx="-4" cy="3" r="2.6" fill="#c89372" stroke="#1a1d22" strokeWidth="0.4" />
+            <circle cx="0" cy="-2" r="2.4" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
           </g>
         )}
       </g>
     </g>
   );
 }
+
+
 
 function Depot({ tier, x, y, scale = 1, rotation = 0 }: { tier: DepotTier; x: number; y: number; scale?: number; rotation?: number }) {
   const idx = DEPOT_TIERS.indexOf(tier);
