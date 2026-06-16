@@ -21,7 +21,7 @@ const ROADS = [
 ];
 
 /* Voiture vectorielle détaillée (vue de dessus) */
-type CarSpec = { color: string; duration: number; delay: number; pathIdx: number; flip?: boolean; accent?: string };
+type CarSpec = { color: string; accent: string; duration: number; delay: number; pathIdx: number; flip?: boolean };
 
 const CARS: CarSpec[] = [
   { color: "#d83a2a", accent: "#7c1c10", duration: 18, delay: 0,   pathIdx: 0 },
