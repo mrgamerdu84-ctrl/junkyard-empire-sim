@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS } from "./CityTraffic";
-import taxiYellowAsset from "@/assets/taxi-yellow.png.asset.json";
-import taxiBlackAsset from "@/assets/taxi-black.png.asset.json";
-import taxiRedAsset from "@/assets/taxi-red.png.asset.json";
+import taxiYellowAsset from "@/assets/taxi-yellow-top.png";
+import taxiBlackAsset from "@/assets/taxi-black-top.png";
+import taxiRedAsset from "@/assets/taxi-red-top.png";
 import musicAsset from "@/assets/midnight-fare.mp3.asset.json";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 
