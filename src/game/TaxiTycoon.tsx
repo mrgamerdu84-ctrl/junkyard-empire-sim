@@ -1159,7 +1159,58 @@ export default function TaxiTycoon() {
             <span className="tt-btn-lbl">{nextTier ? `Améliorer dépôt` : `Dépôt max`}</span>
             <span className="tt-btn-cost">{nextTier ? `${fmt(nextTier.cost)}$` : "—"}</span>
           </button>
+          <button className="tt-btn shop" onClick={() => setShopOpen(true)} title="Boutique d'améliorations QG">
+            <span className="tt-btn-ico">🏪</span>
+            <span className="tt-btn-lbl">Boutique QG</span>
+            <span className="tt-btn-cost">Améliorations</span>
+          </button>
         </div>
+
+        {/* === Modal Boutique QG === */}
+        {shopOpen && (
+          <div className="tt-shop-overlay" onClick={() => setShopOpen(false)}>
+            <div className="tt-shop" onClick={(e) => e.stopPropagation()}>
+              <div className="tt-shop-head">
+                <h2>🏪 Boutique du QG</h2>
+                <button className="tt-shop-close" onClick={() => setShopOpen(false)}>×</button>
+              </div>
+              <div className="tt-shop-money">💵 {fmt(save.money)} $</div>
+
+              {([
+                { k: "capacity" as const, ico: "🚕", title: "Capacité de taxis", desc: "+1 taxi de capacité par niveau" },
+                { k: "production" as const, ico: "⚙️", title: "Vitesse de production", desc: "−15% sur le cooldown de sortie du QG" },
+                { k: "revenue" as const, ico: "💰", title: "Niveau du QG", desc: "+10% de revenu par course" },
+              ]).map(({ k, ico, title, desc }) => {
+                const lvl = hqLevel(k);
+                const maxed = lvl >= HQ_UPGRADE_MAX;
+                const cost = hqCost(k);
+                const cantPay = save.money < cost;
+                return (
+                  <div key={k} className="tt-shop-row">
+                    <div className="tt-shop-row-ico">{ico}</div>
+                    <div className="tt-shop-row-body">
+                      <div className="tt-shop-row-title">{title}</div>
+                      <div className="tt-shop-row-desc">{desc}</div>
+                      <div className="tt-shop-bar">
+                        {Array.from({ length: HQ_UPGRADE_MAX }).map((_, i) => (
+                          <span key={i} className={`tt-shop-pip ${i < lvl ? "on" : ""}`} />
+                        ))}
+                        <span className="tt-shop-lvl">Niv. {lvl}/{HQ_UPGRADE_MAX}</span>
+                      </div>
+                    </div>
+                    <button
+                      className="tt-shop-buy"
+                      onClick={() => hqUpgrade(k)}
+                      disabled={maxed || cantPay}
+                    >
+                      {maxed ? "MAX" : `${fmt(cost)} $`}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Bouton garage : ouvre le modal de personnalisation */}
         <button className="tt-garage-fab" onClick={() => setGarageOpen(true)} title="Garage — personnaliser le taxi">
