@@ -362,11 +362,12 @@ export default function TaxiTycoon() {
 
   // Save persistence (debounced)
   useEffect(() => {
+    if (!hydrated) return;
     const id = setTimeout(() => {
       try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch {}
     }, 400);
     return () => clearTimeout(id);
-  }, [save]);
+  }, [save, hydrated]);
 
   const tier = DEPOT_TIERS[save.depotTier];
   const nextTier = DEPOT_TIERS[save.depotTier + 1];
