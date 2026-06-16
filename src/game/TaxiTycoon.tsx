@@ -1208,7 +1208,7 @@ export default function TaxiTycoon() {
                     <button
                       className="tt-shop-buy"
                       onClick={() => hqUpgrade(k)}
-                      disabled={maxed || cantPay}
+                      disabled={maxed}
                     >
                       {maxed ? "MAX" : `${fmt(cost)} $`}
                     </button>
