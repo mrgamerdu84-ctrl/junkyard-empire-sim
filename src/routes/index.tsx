@@ -257,85 +257,170 @@ function JunkyCityEmpire() {
         .jce-map { position: relative; width: 100%; height: 100vh; background: #0c0d10; }
         .jce-map-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
+        /* === ENSEIGNES (Premium Glass Tycoon) === */
         .jce-zone {
           position: absolute;
           transform: translate(-50%, -50%);
-          background: linear-gradient(180deg, #1a1d22 0%, #0a0c10 100%);
-          border: 1px solid rgba(255,255,255,0.15);
-          border-radius: 8px;
-          padding: 8px 12px;
+          background: rgba(15, 17, 22, 0.72);
+          backdrop-filter: blur(10px) saturate(140%);
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 12px;
+          padding: 9px 14px;
           min-width: 160px;
           text-align: center;
-          box-shadow: 0 4px 0 rgba(0,0,0,0.6), 0 6px 20px rgba(0,0,0,0.5);
+          box-shadow: 0 12px 28px -10px rgba(0,0,0,0.7), 0 2px 0 rgba(0,0,0,0.5);
           cursor: pointer; z-index: 5;
-          transition: transform 0.1s ease;
+          transition: transform 0.12s ease, box-shadow 0.2s ease;
           user-select: none;
+          color: #fff;
+        }
+        .jce-zone::before {
+          content: "";
+          position: absolute; inset: -2px;
+          border-radius: 14px;
+          background: rgba(255,255,255,0.04);
+          filter: blur(6px);
+          z-index: -1;
+          transition: background 0.25s ease;
         }
         .jce-zone:active, .jce-zone.flash {
           transform: translate(-50%, -50%) scale(0.95);
         }
         .jce-zone-title {
           font-size: 12px; font-weight: 900;
-          letter-spacing: 0.5px; color: #fff; line-height: 1.1;
+          letter-spacing: -0.2px; color: #fff; line-height: 1.1;
+          text-transform: uppercase;
           display: flex; align-items: center; justify-content: center; gap: 5px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.6);
         }
         .jce-zone-status {
-          font-size: 10px; color: #ffd633;
-          margin-top: 3px; line-height: 1.2;
+          font-size: 10px; color: #cbd0d8;
+          margin-top: 4px; line-height: 1.2;
+          font-weight: 600;
         }
-        .jce-zone-status.muted { color: #9aa0a8; }
-        .jce-zone-status.cost { color: #66ff99; font-weight: 800; }
 
+        /* — Verrouillé — */
+        .jce-zone.locked { background: rgba(0,0,0,0.55); }
+        .jce-zone.locked .jce-zone-title { color: rgba(255,255,255,0.40); }
+        .jce-zone.locked .jce-zone-status { color: rgba(255,255,255,0.45); }
+        .jce-lock-tag {
+          display: inline-flex; align-items: center; justify-content: center; gap: 4px;
+          font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+          color: rgba(255,255,255,0.55); text-transform: uppercase;
+          margin-bottom: 3px; opacity: 0.75;
+        }
+
+        /* — Achetable (pill verte) — */
+        .jce-zone.buyable { border-color: rgba(16,185,129,0.35); }
+        .jce-zone.buyable::before { background: rgba(16,185,129,0.20); }
+        .jce-cost-pill {
+          display: inline-block;
+          margin-top: 6px;
+          padding: 3px 10px;
+          background: rgba(16,185,129,0.12);
+          border: 1px solid rgba(16,185,129,0.32);
+          border-radius: 999px;
+          font-size: 10px; font-weight: 900;
+          color: #34d399; letter-spacing: 0.5px;
+          text-transform: uppercase;
+        }
+
+        /* — Chantier — */
+        .jce-zone.chantier { border-color: rgba(245,158,11,0.35); }
+        .jce-zone.chantier::before {
+          background: rgba(245,158,11,0.22);
+          animation: jceChantierHalo 1.6s ease-in-out infinite;
+        }
+        .jce-zone.chantier .jce-zone-status {
+          color: #fbbf24; font-style: italic; font-weight: 800;
+          letter-spacing: 0.4px; text-transform: uppercase; font-size: 9px;
+        }
+        @keyframes jceChantierHalo {
+          0%,100% { filter: blur(6px); opacity: 0.7; }
+          50% { filter: blur(10px); opacity: 1; }
+        }
+
+        /* Barre de progression — fine, intégrée */
         .jce-progress-wrap {
-          margin-top: 5px; height: 6px; background: rgba(0,0,0,0.6);
-          border-radius: 3px; overflow: hidden;
-          border: 1px solid rgba(255,255,255,0.1);
+          margin-top: 7px; height: 5px;
+          background: rgba(255,255,255,0.10);
+          border-radius: 999px; overflow: hidden;
+          border: none;
         }
         .jce-progress-fill {
           height: 100%;
-          background: linear-gradient(90deg, #ffd633, #ff9d00);
+          background: linear-gradient(90deg, #d97706, #fbbf24);
+          box-shadow: 0 0 8px rgba(251,191,36,0.55);
           transition: width 0.2s ease;
         }
 
+        /* — Fini : socle premium noir + liseré or — */
         .jce-zone.fini {
-          background: linear-gradient(180deg, #2a7a3a 0%, #1b4a25 100%);
-          border-color: #4ade80;
-          box-shadow: 0 4px 0 #0a3818, 0 6px 24px rgba(74,222,128,0.4);
-          animation: jcePulseGlow 2.4s ease-in-out infinite;
+          background: linear-gradient(180deg, #27272a 0%, #000 100%);
+          border: 1px solid rgba(180,130,40,0.35);
+          border-top-color: rgba(253,224,150,0.55);
+          border-bottom-color: rgba(80,50,10,0.9);
+          box-shadow: 0 14px 34px -10px rgba(0,0,0,0.85), 0 2px 0 rgba(0,0,0,0.6);
+          padding: 10px 18px;
         }
-        .jce-zone.fini .jce-zone-status { color: #c8ffd0; }
-        .jce-zone.tier-2.fini { border-color: #60d8ff; box-shadow: 0 4px 0 #08384d, 0 6px 28px rgba(96,216,255,0.55); }
-        .jce-zone.tier-3.fini { border-color: #c084fc; box-shadow: 0 4px 0 #3b1a5e, 0 6px 32px rgba(192,132,252,0.6); background: linear-gradient(180deg, #5b2a8a 0%, #2a1242 100%); }
-        .jce-zone.tier-4.fini { border-color: #ffb84d; box-shadow: 0 4px 0 #5c3000, 0 6px 36px rgba(255,184,77,0.7); background: linear-gradient(180deg, #8a5a1a 0%, #4a2d05 100%); }
-        .jce-zone.tier-5.fini {
-          border-color: #ffd633;
-          box-shadow: 0 4px 0 #5c3000, 0 0 40px rgba(255,214,51,0.95), 0 0 60px rgba(255,100,200,0.4);
-          background: linear-gradient(180deg, #ffd633 0%, #c79100 100%);
-          color: #1a1d22;
+        .jce-zone.fini::before {
+          background: linear-gradient(180deg, rgba(253,224,150,0.40) 0%, rgba(180,130,40,0.18) 50%, transparent 100%);
+          filter: blur(10px);
+          inset: -4px;
         }
-        .jce-zone.tier-5.fini .jce-zone-title,
-        .jce-zone.tier-5.fini .jce-zone-status { color: #1a1d22; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+        .jce-zone.fini::after {
+          content: "";
+          position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+          width: 50px; height: 1px;
+          background: linear-gradient(90deg, transparent, #fde68a, transparent);
+        }
+        .jce-zone.fini .jce-zone-title {
+          font-size: 13px; letter-spacing: -0.3px;
+          gap: 6px;
+        }
+        .jce-zone.fini .jce-zone-status {
+          color: rgba(251,191,36,0.85);
+          font-size: 9px; font-weight: 800;
+          letter-spacing: 1.5px; text-transform: uppercase;
+          display: inline-flex; align-items: center; gap: 5px;
+        }
+        .jce-zone.fini .jce-zone-status::before {
+          content: ""; width: 5px; height: 5px; border-radius: 50%;
+          background: #34d399; box-shadow: 0 0 6px #34d399;
+          animation: jceDotPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes jceDotPulse {
+          0%,100% { opacity: 1; }
+          50% { opacity: 0.35; }
+        }
+        .jce-fini-star {
+          color: #fbbf24; font-size: 12px;
+          filter: drop-shadow(0 0 4px rgba(251,191,36,0.6));
+        }
+
+        /* Tier supérieurs : intensifient le halo */
+        .jce-zone.tier-2.fini::before { background: linear-gradient(180deg, rgba(96,216,255,0.45), rgba(96,216,255,0.10) 60%, transparent); }
+        .jce-zone.tier-2.fini { border-top-color: rgba(186,230,253,0.6); }
+        .jce-zone.tier-3.fini::before { background: linear-gradient(180deg, rgba(192,132,252,0.5), rgba(192,132,252,0.15) 60%, transparent); }
+        .jce-zone.tier-3.fini { border-top-color: rgba(216,180,254,0.6); }
+        .jce-zone.tier-4.fini::before { background: linear-gradient(180deg, rgba(255,184,77,0.55), rgba(255,184,77,0.18) 60%, transparent); }
+        .jce-zone.tier-5.fini::before {
+          background: radial-gradient(ellipse at top, rgba(253,224,150,0.7), rgba(180,130,40,0.25) 50%, transparent 80%);
+          animation: jceGoldGlow 2.6s ease-in-out infinite;
+        }
+        @keyframes jceGoldGlow {
+          0%,100% { filter: blur(10px); opacity: 0.85; }
+          50% { filter: blur(16px); opacity: 1; }
+        }
+
         .jce-tier-badge {
           position: absolute; top: -10px; right: -10px;
-          background: linear-gradient(135deg, #ffd633, #ff9500);
-          color: #1a1d22; font-size: 10px; font-weight: 900;
-          border-radius: 10px; padding: 2px 7px;
-          border: 2px solid #1a1d22;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.6);
+          background: linear-gradient(135deg, #fde68a, #d97706);
+          color: #1a1d22; font-size: 9px; font-weight: 900;
+          border-radius: 999px; padding: 2px 8px;
+          border: 2px solid #0a0c10;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.7), 0 0 12px rgba(251,191,36,0.5);
           letter-spacing: 0.5px;
-        }
-        .jce-zone.chantier {
-          background: linear-gradient(180deg, #8a5a1a 0%, #4a2d05 100%);
-          border-color: #ffb84d;
-          animation: jceChantier 1.2s ease-in-out infinite;
-        }
-        @keyframes jceChantier {
-          0%, 100% { box-shadow: 0 4px 0 #5c3000, 0 0 12px rgba(255,184,77,0.4); }
-          50% { box-shadow: 0 4px 0 #5c3000, 0 0 24px rgba(255,184,77,0.9); }
-        }
-        @keyframes jcePulseGlow {
-          0%, 100% { filter: brightness(1); }
-          50% { filter: brightness(1.15); }
         }
 
 
@@ -461,20 +546,10 @@ function JunkyCityEmpire() {
           const fillPct = !st.estAchete ? 0 : st.estFini ? 100 : (st.clicsEnregistres / z.clicsTotalRequis) * 100;
 
           let stateClass = "";
-          if (st.estFini) stateClass = "fini";
+          if (locked) stateClass = "locked";
+          else if (st.estFini) stateClass = "fini";
           else if (st.estAchete) stateClass = "chantier";
-
-          let statusContent;
-          if (locked) {
-            statusContent = <div className="jce-zone-status muted">🔒 Niveau {z.unlock}</div>;
-          } else if (!st.estAchete) {
-            statusContent = <div className="jce-zone-status cost">Débloquer : {formatNum(z.coutAchat)} $</div>;
-          } else if (!st.estFini) {
-            statusContent = <div className="jce-zone-status">Construction... {st.clicsEnregistres} / {z.clicsTotalRequis}</div>;
-          } else {
-            const tg = z.gainParSeconde * tier;
-            statusContent = <div className="jce-zone-status">+ {formatNum(tg)} $/s</div>;
-          }
+          else stateClass = "buyable";
 
           return (
             <button
@@ -486,13 +561,34 @@ function JunkyCityEmpire() {
               {st.estFini && tier > 0 && (
                 <div className="jce-tier-badge">{"★".repeat(tier)} N{tier}</div>
               )}
-              <div className="jce-zone-title">{locked && <span>🔒</span>}{z.name}</div>
-              {statusContent}
-              {(st.estAchete && !st.estFini) && (
-                <div className="jce-progress-wrap">
-                  <div className="jce-progress-fill" style={{ width: `${fillPct}%` }} />
-                </div>
+
+              {locked && (
+                <div className="jce-lock-tag">🔒 Verrouillé</div>
               )}
+
+              <div className="jce-zone-title">
+                {st.estFini && <span className="jce-fini-star">★</span>}
+                {z.name}
+              </div>
+
+              {locked && (
+                <div className="jce-zone-status">Niveau requis : {z.unlock}</div>
+              )}
+              {!locked && !st.estAchete && (
+                <div className="jce-cost-pill">Débloquer : {formatNum(z.coutAchat)} $</div>
+              )}
+              {!locked && st.estAchete && !st.estFini && (
+                <>
+                  <div className="jce-progress-wrap">
+                    <div className="jce-progress-fill" style={{ width: `${fillPct}%` }} />
+                  </div>
+                  <div className="jce-zone-status">Construction... {st.clicsEnregistres} / {z.clicsTotalRequis}</div>
+                </>
+              )}
+              {!locked && st.estFini && (
+                <div className="jce-zone-status">Opérationnel · +{formatNum(z.gainParSeconde * tier)} $/s</div>
+              )}
+
               {popups.filter((p) => p.zoneId === z.id).map((p) => (
                 <div key={p.id} className="jce-coin-pop">{p.text}</div>
               ))}
