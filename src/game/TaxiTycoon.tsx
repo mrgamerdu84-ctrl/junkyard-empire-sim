@@ -352,26 +352,52 @@ export default function TaxiTycoon() {
     if (pathLen === 0) return;
     const depotPos = pathLen * (admin.depotPosNorm || DEFAULT_DEPOT_POS);
     const newSpeed = (BASE_SPEED + save.taxiSpeedLvl * 18) * admin.taxiSpeedMult;
-    // Ajoute les taxis manquants
+  // === Helpers de rendu position (déclarés tôt pour usage dans les effets) ===
+  const SIDEWALK_OFFSET = 22;
+
+  // Position du point d'entrée du QG sur le réseau routier : on échantillonne le
+  // path et on prend la longueur la plus proche du QG. Les taxis partent et
+  // reviennent toujours à cette longueur.
+  const hqPathPos = useMemo(() => {
+    if (!measureRef.current || pathLen === 0) return 0;
+    const hx = admin.hqX, hy = admin.hqY;
+    let best = pathLen * DEFAULT_DEPOT_POS;
+    let bestD = Infinity;
+    const N = 240;
+    for (let i = 0; i <= N; i++) {
+      const l = (i / N) * pathLen;
+      const p = measureRef.current.getPointAtLength(l);
+      const dx = p.x - hx, dy = p.y - hy;
+      const d = dx * dx + dy * dy;
+      if (d < bestD) { bestD = d; best = l; }
+    }
+    return best;
+  }, [pathLen, admin.hqX, admin.hqY]);
+  const hqPathPosRef = useRef(hqPathPos);
+  hqPathPosRef.current = hqPathPos;
+
+    // Ajoute les taxis manquants — ils apparaissent au point d'entrée du QG sur la route.
     while (taxisRef.current.length < save.taxis.length) {
       const idx = taxisRef.current.length;
       taxisRef.current.push({
         id: nextIdRef.current++,
-        pos: depotPos,
-        target: depotPos,
+        pos: hqPathPos,
+        target: hqPathPos,
         mode: "idle",
         speed: newSpeed,
         colorId: save.taxis[idx].colorId,
-        clientId: null,
+        jobId: null,
       });
     }
     // Sync couleurs + vitesse
     taxisRef.current.forEach((t, i) => {
       t.speed = newSpeed;
       if (save.taxis[i]) t.colorId = save.taxis[i].colorId;
+      // Si le taxi est idle, on le recale au QG (au cas où le QG a bougé).
+      if (t.mode === "idle") { t.pos = hqPathPos; t.target = hqPathPos; }
     });
     forceRender((n) => n + 1);
-  }, [pathLen, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.depotPosNorm]);
+  }, [pathLen, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, hqPathPos]);
 
   // Save persistence (debounced)
   useEffect(() => {
@@ -396,7 +422,7 @@ export default function TaxiTycoon() {
     window.setTimeout(() => setPopups((p) => p.filter((x) => x.id !== id)), 1100);
   };
 
-  // === Boucle de jeu ===
+  // === Boucle de jeu : mouvement des taxis + génération des courses proposées ===
   useEffect(() => {
     if (pathLen === 0) return;
     let raf = 0;
@@ -407,61 +433,22 @@ export default function TaxiTycoon() {
       last = now;
 
       const adm = getAdmin();
-      const depotPos = pathLen * (adm.depotPosNorm || DEFAULT_DEPOT_POS);
+      const hqPos = hqPathPosRef.current;
       const cur = saveRef.current;
       const curTier = DEPOT_TIERS[cur.depotTier];
 
-      // Spawn client
-      const maxClients = curTier.maxTaxis + 1 + adm.maxClientsBonus;
-      if (now - lastSpawnRef.current > curTier.spawnEvery * 1000 * adm.spawnRateMult && clientsRef.current.length < maxClients) {
-        lastSpawnRef.current = now;
-        const pickup = Math.random() * pathLen;
-        const dropoff = Math.random() * pathLen;
-        const dist = Math.abs(dropoff - pickup);
-        const fare = Math.round((20 + (dist / pathLen) * 180) * curTier.fareMult * adm.clientFareMult);
-        clientsRef.current.push({
-          id: nextIdRef.current++,
-          pickup, dropoff, fare,
-          assigned: null,
-          spawnedAt: now,
-          sidePickup: Math.random() < 0.5 ? 1 : -1,
-          sideDrop: Math.random() < 0.5 ? 1 : -1,
-        });
+      // === Génération de courses proposées dans la file ===
+      const maxJobs = MAX_JOBS_BASE + adm.maxClientsBonus;
+      if (
+        jobsRef.current.length < maxJobs &&
+        now - lastJobSpawnRef.current > curTier.spawnEvery * 1000 * adm.spawnRateMult
+      ) {
+        lastJobSpawnRef.current = now;
+        const job = genJob(cur.depotTier, pathLen);
+        setJobs((js) => [...js, job]);
       }
 
-      // Despawn old waiting clients (impatience: 35s)
-      clientsRef.current = clientsRef.current.filter(
-        (c) => c.assigned !== null || now - c.spawnedAt < 35000
-      );
-
-      // Assigner clients aux taxis idle — avec régulation
-      const activeTaxiCount = taxisRef.current.filter((t) => t.mode !== "idle").length;
-      const maxActive = Math.max(1, adm.maxActiveTaxis | 0);
-      const cooldownMs = Math.max(0, adm.taxiSpawnCooldown) * 1000;
-      const canDispatch = activeTaxiCount < maxActive && (now - lastTaxiDispatchRef.current) >= cooldownMs;
-
-      if (canDispatch) {
-        for (const taxi of taxisRef.current) {
-          if (taxi.mode !== "idle") continue;
-          let best: Client | null = null;
-          let bestDist = Infinity;
-          for (const c of clientsRef.current) {
-            if (c.assigned !== null) continue;
-            const d = Math.abs(c.pickup - taxi.pos);
-            if (d < bestDist) { bestDist = d; best = c; }
-          }
-          if (best) {
-            best.assigned = taxi.id;
-            taxi.clientId = best.id;
-            taxi.mode = "to_pickup";
-            taxi.target = best.pickup;
-            lastTaxiDispatchRef.current = now;
-            break; // un seul dispatch par tick → respecte le cooldown
-          }
-        }
-      }
-
-      // Mouvement des taxis
+      // === Mouvement des taxis ===
       for (const taxi of taxisRef.current) {
         if (taxi.mode === "idle") continue;
         const diff = taxi.target - taxi.pos;
@@ -469,42 +456,37 @@ export default function TaxiTycoon() {
         if (Math.abs(diff) <= step) {
           taxi.pos = taxi.target;
           if (taxi.mode === "to_pickup") {
-            const c = clientsRef.current.find((x) => x.id === taxi.clientId);
-            if (c) {
+            const j = jobsRef.current.find((x) => x.id === taxi.jobId);
+            if (j) {
               taxi.mode = "to_dest";
-              taxi.target = c.dropoff;
+              taxi.target = j.dropoff;
             } else {
+              // Course disparue entre-temps : on rentre.
               taxi.mode = "returning";
-              taxi.target = depotPos;
-              taxi.clientId = null;
+              taxi.target = hqPos;
+              taxi.jobId = null;
             }
           } else if (taxi.mode === "to_dest") {
-            const c = clientsRef.current.find((x) => x.id === taxi.clientId);
-            if (c && measureRef.current) {
-              const activeBoost = boostRef.current && boostRef.current.until > now ? boostRef.current.mult : 1;
-              const finalFare = Math.round(c.fare * activeBoost);
-              const p = measureRef.current.getPointAtLength(c.dropoff);
-              popFloat(`+${fmt(finalFare)}$${activeBoost > 1 ? " ×" + activeBoost : ""}`, p.x, p.y);
+            const j = jobsRef.current.find((x) => x.id === taxi.jobId);
+            if (j && measureRef.current) {
+              const p = measureRef.current.getPointAtLength(j.dropoff);
+              popFloat(`+${fmt(j.fare)}$`, p.x, p.y);
               setSave((s) => ({
                 ...s,
-                money: s.money + finalFare,
-                totalEarned: s.totalEarned + finalFare,
+                money: s.money + j.fare,
+                totalEarned: s.totalEarned + j.fare,
                 customersServed: s.customersServed + 1,
+                jobsCompleted: s.jobsCompleted + 1,
               }));
-              // Update contracts progress
-              setContracts((cs) => cs.map((ct) => {
-                if (ct.deadline < now) return ct;
-                if (ct.kind === "clients" || ct.kind === "streak") return { ...ct, progress: ct.progress + 1 };
-                if (ct.kind === "earn") return { ...ct, progress: ct.progress + finalFare };
-                return ct;
-              }));
-              clientsRef.current = clientsRef.current.filter((x) => x.id !== c.id);
+              // Retire le job de la file
+              setJobs((js) => js.filter((x) => x.id !== j.id));
             }
-            taxi.clientId = null;
+            taxi.jobId = null;
             taxi.mode = "returning";
-            taxi.target = depotPos;
+            taxi.target = hqPos;
           } else if (taxi.mode === "returning") {
             taxi.mode = "idle";
+            taxi.jobId = null;
           }
         } else {
           taxi.pos += Math.sign(diff) * step;
@@ -517,6 +499,32 @@ export default function TaxiTycoon() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [pathLen]);
+
+  // === Helpers de rendu position ===
+  const getXY = (len: number): { x: number; y: number; angle: number } => {
+    if (!measureRef.current) return { x: 0, y: 0, angle: 0 };
+    const safe = ((len % pathLen) + pathLen) % pathLen;
+    const p = measureRef.current.getPointAtLength(safe);
+    const p2 = measureRef.current.getPointAtLength(Math.min(pathLen - 0.1, safe + 2));
+    const angle = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
+    return { x: p.x, y: p.y, angle };
+  };
+
+  // Position décalée sur le trottoir (perpendiculaire à la route)
+  const getSidewalk = (len: number, side: 1 | -1) => {
+    if (!measureRef.current) return { x: 0, y: 0, angle: 0 };
+    const safe = ((len % pathLen) + pathLen) % pathLen;
+    const p = measureRef.current.getPointAtLength(safe);
+    const p2 = measureRef.current.getPointAtLength(Math.min(pathLen - 0.1, safe + 2));
+    const dx = p2.x - p.x, dy = p2.y - p.y;
+    const L = Math.hypot(dx, dy) || 1;
+    const nx = -dy / L, ny = dx / L; // normale unitaire
+    return {
+      x: p.x + nx * SIDEWALK_OFFSET * side,
+      y: p.y + ny * SIDEWALK_OFFSET * side,
+      angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    };
+
 
   // === Helpers de rendu position ===
   const getXY = (len: number): { x: number; y: number; angle: number } => {
