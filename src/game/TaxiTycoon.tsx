@@ -148,7 +148,7 @@ function TaxiSprite({
   moving,
   image,
   faceRight,
-  size = 60,
+  size = 110,
 }: {
   withClient: boolean;
   moving: boolean;
@@ -156,29 +156,31 @@ function TaxiSprite({
   faceRight: boolean;
   size?: number;
 }) {
-  // Image is a side-view photo on transparent background; car occupies roughly
-  // the full width. The car nose points along +X when faceRight=true, else flip.
-  const W = size;
-  const H = size; // square source, transparent padding handles aspect
+  // Side-view PNG on transparent square. Car body fills ~70% of width and
+  // sits horizontally centered in the source — so we draw it large and let
+  // the transparent padding overflow the road; SVG image origin is the car center.
+  const S = size;
   return (
     <g>
-      <ellipse cx="0" cy={W * 0.18} rx={W * 0.42} ry={W * 0.09} fill="rgba(0,0,0,0.45)" />
+      {/* Shadow under the car body (visible car ~60% of sprite width) */}
+      <ellipse cx="0" cy={S * 0.04} rx={S * 0.34} ry={S * 0.07} fill="rgba(0,0,0,0.5)" />
       <g>
         {moving && (
-          <animateTransform attributeName="transform" type="translate" values="0 -0.4; 0 0.4; 0 -0.4" dur="0.22s" repeatCount="indefinite" />
+          <animateTransform attributeName="transform" type="translate" values="0 -0.3; 0 0.3; 0 -0.3" dur="0.22s" repeatCount="indefinite" />
         )}
         <g transform={faceRight ? undefined : "scale(-1,1)"}>
-          <image href={image} x={-W / 2} y={-H / 2} width={W} height={H} preserveAspectRatio="xMidYMid meet" />
+          <image href={image} x={-S / 2} y={-S / 2} width={S} height={S} preserveAspectRatio="xMidYMid meet" />
         </g>
         {withClient && (
-          <g>
-            <circle cx="0" cy="-2" r="2.4" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
+          <g transform="translate(0,-4)">
+            <circle r="3" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.5" />
           </g>
         )}
       </g>
     </g>
   );
 }
+
 
 
 
