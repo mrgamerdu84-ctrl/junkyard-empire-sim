@@ -200,6 +200,12 @@ export default function AdminPanel() {
         </>
       )}
 
+      {drawMode && (
+        <div className="adm-place-banner" style={{ background: "#22c55e", color: "#0a1f10" }}>
+          ✏️ Dessine le circuit avec ton doigt (relâche pour valider)
+        </div>
+      )}
+
       {!open && (
         <button className="adm-btn" onClick={() => setOpen(true)} aria-label="Panneau admin" title="Panneau admin">⚙</button>
       )}
@@ -216,8 +222,9 @@ export default function AdminPanel() {
             <div className="adm-tabs">
               <button className={`adm-tab ${tab === "trafic" ? "active" : ""}`} onClick={() => setTab("trafic")}>Trafic</button>
               <button className={`adm-tab ${tab === "hq" ? "active" : ""}`} onClick={() => setTab("hq")}>QG</button>
-              <button className={`adm-tab ${tab === "missions" ? "active" : ""}`} onClick={() => setTab("missions")}>Missions</button>
+              <button className={`adm-tab ${tab === "missions" ? "active" : ""}`} onClick={() => setTab("missions")}>Miss.</button>
               <button className={`adm-tab ${tab === "rival" ? "active" : ""}`} onClick={() => setTab("rival")}>Rival</button>
+              <button className={`adm-tab ${tab === "circuit" ? "active" : ""}`} onClick={() => setTab("circuit")}>Circuit</button>
             </div>
 
             {tab === "trafic" && (
