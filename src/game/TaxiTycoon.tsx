@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS } from "./CityTraffic";
+import { getAdmin, useAdminConfig } from "./adminConfig";
 
 /* ============================================================
  * TAXI TYCOON — entreprise de taxis idle
