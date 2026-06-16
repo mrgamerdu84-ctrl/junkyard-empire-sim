@@ -347,11 +347,6 @@ export default function TaxiTycoon() {
     }
   }, []);
 
-  // Sync taxis runtime list with save
-  useEffect(() => {
-    if (pathLen === 0) return;
-    const depotPos = pathLen * (admin.depotPosNorm || DEFAULT_DEPOT_POS);
-    const newSpeed = (BASE_SPEED + save.taxiSpeedLvl * 18) * admin.taxiSpeedMult;
   // === Helpers de rendu position (déclarés tôt pour usage dans les effets) ===
   const SIDEWALK_OFFSET = 22;
 
@@ -376,6 +371,10 @@ export default function TaxiTycoon() {
   const hqPathPosRef = useRef(hqPathPos);
   hqPathPosRef.current = hqPathPos;
 
+  // Sync taxis runtime list with save
+  useEffect(() => {
+    if (pathLen === 0) return;
+    const newSpeed = (BASE_SPEED + save.taxiSpeedLvl * 18) * admin.taxiSpeedMult;
     // Ajoute les taxis manquants — ils apparaissent au point d'entrée du QG sur la route.
     while (taxisRef.current.length < save.taxis.length) {
       const idx = taxisRef.current.length;
@@ -398,6 +397,7 @@ export default function TaxiTycoon() {
     });
     forceRender((n) => n + 1);
   }, [pathLen, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, hqPathPos]);
+
 
   // Save persistence (debounced)
   useEffect(() => {
