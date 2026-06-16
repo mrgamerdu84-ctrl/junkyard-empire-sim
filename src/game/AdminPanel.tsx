@@ -168,6 +168,13 @@ export default function AdminPanel() {
                 <Slider label="Multiplicateur de tarif"
                   value={cfg.clientFareMult} min={0.5} max={5} step={0.1}
                   format={(v) => "×" + v.toFixed(1)} onChange={(v) => setAdmin({ clientFareMult: v })} />
+                <Slider label="Conso carburant" hint="Points de jauge perdus par seconde de roulage"
+                  value={cfg.fuelConsumption} min={0.1} max={3} step={0.1}
+                  format={(v) => v.toFixed(1) + "/s"} onChange={(v) => setAdmin({ fuelConsumption: v })} />
+                <Slider label="Station — X" value={cfg.gasStationX} min={0} max={1920} step={1}
+                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ gasStationX: v })} />
+                <Slider label="Station — Y" value={cfg.gasStationY} min={0} max={1080} step={1}
+                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ gasStationY: v })} />
               </>
             )}
 
