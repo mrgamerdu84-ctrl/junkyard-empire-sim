@@ -280,7 +280,7 @@ export default function CityTraffic() {
 
       {CARS.map((car, i) => (
         <g key={i} filter="url(#jce-soft-shadow)">
-          <CarSVG color={car.color} accent={car.accent} scale={car.scale} />
+          <Vehicle kind={car.kind} color={car.color} accent={car.accent} scale={car.scale} />
           <animateMotion
             dur={`${car.duration}s`}
             begin={`${car.delay}s`}
