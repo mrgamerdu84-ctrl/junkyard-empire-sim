@@ -41,29 +41,73 @@ function JunkyCityEmpire() {
       const AC = (window.AudioContext || (window as any).webkitAudioContext);
       if (!AC) return;
       const ctx = new AC();
-      const duration = 1.1;
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i++) {
-        const t = i / data.length;
-        // white noise enveloped to feel like splashing water
-        data[i] = (Math.random() * 2 - 1) * (1 - t) * 0.6;
+      const now = ctx.currentTime;
+      const duration = 2.2;
+
+      // 1) Pressurized spray: bright filtered white noise
+      const sprayBuf = ctx.createBuffer(2, ctx.sampleRate * duration, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const d = sprayBuf.getChannelData(ch);
+        for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
       }
-      const src = ctx.createBufferSource();
-      src.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.value = 1800;
-      filter.Q.value = 0.8;
-      const gain = ctx.createGain();
-      gain.gain.value = 0.35;
-      src.connect(filter).connect(gain).connect(ctx.destination);
-      src.start();
-      src.onended = () => ctx.close();
+      const spray = ctx.createBufferSource();
+      spray.buffer = sprayBuf;
+      const hp = ctx.createBiquadFilter();
+      hp.type = "highpass"; hp.frequency.value = 1200;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass"; bp.frequency.value = 3500; bp.Q.value = 0.6;
+      const sprayGain = ctx.createGain();
+      sprayGain.gain.setValueAtTime(0.0001, now);
+      sprayGain.gain.exponentialRampToValueAtTime(0.35, now + 0.08);
+      sprayGain.gain.exponentialRampToValueAtTime(0.18, now + 1.2);
+      sprayGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      spray.connect(hp).connect(bp).connect(sprayGain).connect(ctx.destination);
+
+      // 2) Low rumble of running water
+      const rumbleBuf = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+      const r = rumbleBuf.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < r.length; i++) {
+        const w = Math.random() * 2 - 1;
+        last = (last + 0.02 * w) * 0.96; // brownian-ish
+        r[i] = last * 3;
+      }
+      const rumble = ctx.createBufferSource();
+      rumble.buffer = rumbleBuf;
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass"; lp.frequency.value = 400;
+      const rumbleGain = ctx.createGain();
+      rumbleGain.gain.setValueAtTime(0.0001, now);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.25, now + 0.1);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+      rumble.connect(lp).connect(rumbleGain).connect(ctx.destination);
+
+      // 3) Bubble pops: short pitched blips
+      for (let i = 0; i < 8; i++) {
+        const t = now + 0.15 + Math.random() * 1.4;
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        const f0 = 600 + Math.random() * 1200;
+        osc.frequency.setValueAtTime(f0, t);
+        osc.frequency.exponentialRampToValueAtTime(f0 * 2.4, t + 0.06);
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.12, t + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+        osc.connect(g).connect(ctx.destination);
+        osc.start(t); osc.stop(t + 0.1);
+      }
+
+      spray.start(now);
+      rumble.start(now);
+      spray.stop(now + duration);
+      rumble.stop(now + duration);
+      spray.onended = () => ctx.close();
     } catch {
       /* silent fail — perf safe */
     }
   };
+
 
   const collect = (b: Building) => {
     setMoney((m) => m + b.reward);
@@ -80,7 +124,7 @@ function JunkyCityEmpire() {
     if (b.alt === "Car Wash") {
       playWaterSound();
       setWashing(true);
-      setTimeout(() => setWashing(false), 1400);
+      setTimeout(() => setWashing(false), 2200);
     }
   };
 
@@ -246,7 +290,7 @@ function JunkyCityEmpire() {
           transform: translateY(3px);
           box-shadow: 0 3px 0 #8a6f1f, 0 6px 12px rgba(0,0,0,0.35);
         }
-        /* ===== Car Wash FX ===== */
+        /* ===== Car Wash FX (realistic) ===== */
         .jce-wash-fx {
           position: absolute;
           inset: 0;
@@ -256,41 +300,145 @@ function JunkyCityEmpire() {
           transition: opacity 0.2s ease;
         }
         .jce-wash-fx.is-on { opacity: 1; }
+
+        /* Wet, soapy color wash on the building */
+        .jce-wash-tint {
+          position: absolute; inset: 0;
+          background:
+            radial-gradient(ellipse at 30% 20%, rgba(180,230,255,0.45), transparent 55%),
+            radial-gradient(ellipse at 70% 60%, rgba(255,200,235,0.35), transparent 60%),
+            linear-gradient(to bottom, rgba(120,200,255,0.15), rgba(60,140,200,0.25));
+          mix-blend-mode: screen;
+          animation: jceFadeInOut 2.2s ease-out forwards;
+        }
+        /* Glossy wet shine sweeping across */
+        .jce-wash-shine {
+          position: absolute; inset: 0;
+          background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,0.55) 50%, transparent 65%);
+          mix-blend-mode: overlay;
+          transform: translateX(-100%);
+          animation: jceShine 1.6s ease-in-out 0.2s forwards;
+        }
+        /* Pressurized water jets falling from the top */
+        .jce-jet {
+          position: absolute;
+          top: -10%;
+          width: 2px;
+          height: 30%;
+          background: linear-gradient(to bottom, rgba(220,240,255,0) 0%, rgba(220,240,255,0.85) 40%, rgba(255,255,255,0.95));
+          filter: blur(0.6px);
+          transform-origin: top;
+          animation: jceJet 0.9s linear infinite;
+        }
+        /* Misty spray cloud */
+        .jce-mist {
+          position: absolute; inset: -5% -5% 30% -5%;
+          background:
+            radial-gradient(circle at 25% 40%, rgba(255,255,255,0.55), transparent 35%),
+            radial-gradient(circle at 65% 30%, rgba(255,255,255,0.45), transparent 40%),
+            radial-gradient(circle at 50% 60%, rgba(255,255,255,0.35), transparent 45%);
+          filter: blur(6px);
+          animation: jceMist 2.2s ease-out forwards;
+        }
+        /* Colored foam pool at the bottom with rainbow soap sheen */
         .jce-wash-foam {
           position: absolute;
           left: 0; right: 0; bottom: 0;
-          height: 38%;
+          height: 42%;
           background:
-            radial-gradient(circle at 20% 30%, #fff 0 6px, transparent 7px),
-            radial-gradient(circle at 60% 20%, #ffd6f0 0 5px, transparent 6px),
-            radial-gradient(circle at 80% 50%, #fff 0 7px, transparent 8px),
-            linear-gradient(to top, rgba(255,255,255,0.95), rgba(180,230,255,0.6) 50%, transparent);
-          filter: blur(0.5px);
+            radial-gradient(circle at 15% 35%, rgba(255,255,255,0.95) 0 7px, transparent 8px),
+            radial-gradient(circle at 32% 55%, rgba(255,220,245,0.9) 0 5px, transparent 6px),
+            radial-gradient(circle at 50% 25%, rgba(220,255,250,0.95) 0 8px, transparent 9px),
+            radial-gradient(circle at 70% 50%, rgba(255,255,255,0.95) 0 6px, transparent 7px),
+            radial-gradient(circle at 88% 30%, rgba(220,240,255,0.9) 0 7px, transparent 8px),
+            linear-gradient(120deg,
+              rgba(255,180,220,0.35),
+              rgba(180,230,255,0.45),
+              rgba(200,255,220,0.35),
+              rgba(255,230,180,0.35)),
+            linear-gradient(to top, rgba(255,255,255,0.98), rgba(200,235,255,0.7) 50%, transparent);
+          filter: blur(0.6px) saturate(1.2);
           will-change: transform;
-          animation: jceFoam 1.4s ease-out forwards;
+          animation: jceFoam 2.2s ease-out forwards;
         }
+        /* Iridescent bubbles */
         .jce-bubble {
           position: absolute;
-          bottom: 10%;
+          bottom: 12%;
           border-radius: 50%;
-          background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.95), rgba(180,230,255,0.7) 60%, rgba(120,200,255,0.3));
-          box-shadow: inset 0 -2px 4px rgba(255,255,255,0.6);
+          background:
+            radial-gradient(circle at 30% 28%,
+              rgba(255,255,255,0.95) 0%,
+              rgba(255,210,240,0.55) 28%,
+              rgba(180,230,255,0.55) 55%,
+              rgba(200,255,220,0.35) 75%,
+              rgba(120,180,220,0.15) 100%);
+          box-shadow:
+            inset 0 -2px 4px rgba(255,255,255,0.6),
+            inset 1px 2px 3px rgba(255,255,255,0.9),
+            0 0 6px rgba(255,255,255,0.4);
           will-change: transform, opacity;
-          animation: jceBubble 1.4s ease-out forwards;
+          animation: jceBubble 2s ease-out forwards;
+        }
+        .jce-bubble::after {
+          content: "";
+          position: absolute;
+          top: 18%; left: 22%;
+          width: 28%; height: 28%;
+          background: rgba(255,255,255,0.85);
+          border-radius: 50%;
+          filter: blur(0.5px);
+        }
+        /* Falling water droplets */
+        .jce-drop {
+          position: absolute;
+          width: 3px;
+          height: 8px;
+          background: linear-gradient(to bottom, rgba(220,240,255,0.2), rgba(255,255,255,0.9));
+          border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+          filter: blur(0.3px);
+          will-change: transform, opacity;
+          animation: jceDrop 1.1s ease-in forwards;
         }
         @keyframes jceFoam {
           0% { transform: translateY(40%); opacity: 0; }
-          25% { opacity: 1; }
-          100% { transform: translateY(-10%); opacity: 0; }
+          15% { opacity: 1; }
+          80% { opacity: 1; }
+          100% { transform: translateY(-5%); opacity: 0; }
         }
         @keyframes jceBubble {
-          0% { transform: translate(0, 0) scale(0.4); opacity: 0; }
+          0% { transform: translate(0, 0) scale(0.3); opacity: 0; }
+          15% { opacity: 1; }
+          100% { transform: translate(var(--dx, 0px), -220px) scale(1.1); opacity: 0; }
+        }
+        @keyframes jceJet {
+          0% { transform: translateY(-20%) scaleY(0.7); opacity: 0.8; }
+          100% { transform: translateY(120%) scaleY(1); opacity: 0; }
+        }
+        @keyframes jceMist {
+          0% { opacity: 0; transform: scale(0.9); }
+          30% { opacity: 0.9; }
+          100% { opacity: 0; transform: scale(1.1); }
+        }
+        @keyframes jceShine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(120%); }
+        }
+        @keyframes jceFadeInOut {
+          0%, 100% { opacity: 0; }
+          15%, 80% { opacity: 1; }
+        }
+        @keyframes jceDrop {
+          0% { transform: translateY(0) scaleY(0.6); opacity: 0; }
           20% { opacity: 1; }
-          100% { transform: translate(var(--dx, 0px), -180px) scale(1); opacity: 0; }
+          100% { transform: translateY(180px) scaleY(1.4); opacity: 0; }
         }
         @media (prefers-reduced-motion: reduce) {
-          .jce-wash-fx, .jce-bubble, .jce-wash-foam { animation: none !important; }
+          .jce-wash-fx *, .jce-bubble, .jce-wash-foam, .jce-jet, .jce-mist, .jce-wash-shine, .jce-wash-tint, .jce-drop {
+            animation: none !important;
+          }
         }
+
 
         @media (min-width: 640px) {
           .jce-root { max-width: 480px; margin: 0 auto; box-shadow: 0 0 60px rgba(0,0,0,0.4); }
@@ -322,15 +470,28 @@ function JunkyCityEmpire() {
           <div className={`jce-wash-fx ${washing ? "is-on" : ""}`} aria-hidden="true">
             {washing && (
               <>
+                <div className="jce-wash-tint" />
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <span
+                    key={`jet-${i}`}
+                    className="jce-jet"
+                    style={{
+                      left: `${5 + i * 6.5}%`,
+                      animationDelay: `${(i % 5) * 0.07}s`,
+                      opacity: 0.5 + (i % 3) * 0.15,
+                    }}
+                  />
+                ))}
+                <div className="jce-mist" />
                 <div className="jce-wash-foam" />
-                {Array.from({ length: 12 }).map((_, i) => {
-                  const left = 8 + i * 7.5;
-                  const size = 10 + ((i * 13) % 18);
-                  const delay = (i % 6) * 0.08;
-                  const dx = (i % 2 === 0 ? -1 : 1) * (10 + (i % 4) * 8);
+                {Array.from({ length: 18 }).map((_, i) => {
+                  const left = 4 + i * 5.3;
+                  const size = 8 + ((i * 17) % 22);
+                  const delay = (i % 8) * 0.09;
+                  const dx = (i % 2 === 0 ? -1 : 1) * (8 + (i % 5) * 10);
                   return (
                     <span
-                      key={i}
+                      key={`b-${i}`}
                       className="jce-bubble"
                       style={{
                         left: `${left}%`,
@@ -342,9 +503,22 @@ function JunkyCityEmpire() {
                     />
                   );
                 })}
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <span
+                    key={`d-${i}`}
+                    className="jce-drop"
+                    style={{
+                      left: `${10 + i * 8.5}%`,
+                      top: `${20 + (i % 3) * 15}%`,
+                      animationDelay: `${0.3 + (i % 4) * 0.18}s`,
+                    }}
+                  />
+                ))}
+                <div className="jce-wash-shine" />
               </>
             )}
           </div>
+
         </button>
 
 
