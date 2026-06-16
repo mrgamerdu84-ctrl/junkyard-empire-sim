@@ -32,13 +32,6 @@ const DEPOT_TIERS: DepotTier[] = [
 
 export const TAXI_COLORS = [
   { id: "yellow", name: "Jaune", body: "#f5c542", trim: "#9c7a1c" },
-  { id: "red",    name: "Rouge", body: "#d83a2a", trim: "#7c1c10" },
-  { id: "blue",   name: "Bleu",  body: "#2b6ed8", trim: "#143f7c" },
-  { id: "green",  name: "Vert",  body: "#3a8a48", trim: "#1c4a22" },
-  { id: "white",  name: "Blanc", body: "#e8edf2", trim: "#8a8e94" },
-  { id: "black",  name: "Noir",  body: "#1a1d22", trim: "#050607" },
-  { id: "orange", name: "Orange",body: "#ff6b35", trim: "#8f2d10" },
-  { id: "purple", name: "Violet",body: "#a855f7", trim: "#5b1aa0" },
 ];
 
 type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling";
