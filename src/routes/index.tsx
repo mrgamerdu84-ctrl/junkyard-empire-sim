@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import sharky from "@/assets/sharky.png";
 import citymap from "@/assets/citymap.jpg";
-import City3D from "@/game/City3D";
+import CityTraffic from "@/game/CityTraffic";
 
 
 
