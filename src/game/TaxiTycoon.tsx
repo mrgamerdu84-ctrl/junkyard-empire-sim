@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS } from "./CityTraffic";
+import taxiTopdown from "@/assets/taxi-topdown.png";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 
 /* ============================================================
@@ -126,58 +127,45 @@ function fmt(n: number) {
 }
 
 function TaxiSprite({ body, trim, withClient }: { body: string; trim: string; withClient: boolean }) {
-  // Vraie silhouette de yellow cab vue de dessus
+  // Image top-down réelle du taxi. L'image native pointe le capot vers le haut ;
+  // on la tourne de 90° pour que "forward" du sprite (angle 0 = vers la droite)
+  // corresponde au sens de déplacement le long du path.
+  // Une teinte `body` est superposée en multiply pour conserver les couleurs personnalisées.
+  const W = 64; // longueur du taxi (sens de la marche)
+  const H = 38; // largeur du taxi
   return (
-    <g transform="scale(0.6)">
-      <ellipse cx="0" cy="11" rx="36" ry="13" fill="rgba(0,0,0,0.5)" />
-      {/* contour foncé */}
-      <path d="M -34 -12 C -28 -17 -18 -18 -8 -18 L 14 -18 C 22 -17.5 30 -15 35 -9 L 38 0 L 35 9 C 30 15 22 17.5 14 18 L -8 18 C -18 18 -28 17 -34 12 L -38 0 Z" fill={trim} />
-      {/* carrosserie */}
-      <path d="M -32 -10 C -26 -15 -18 -16 -8 -16 L 12 -16 C 21 -15.5 28 -13 33 -7 L 36 0 L 33 7 C 28 13 21 15.5 12 16 L -8 16 C -18 16 -26 15 -32 10 L -36 0 Z" fill={body} />
-      {/* reflet brillant */}
-      <path d="M -28 -8 C -20 -12 18 -12 28 -6 L 28 -3.5 C 18 -10 -20 -10 -28 -6 Z" fill="#fff" opacity="0.28" />
-      {/* damier latéral */}
-      {[-26, -20, -14, -8, -2, 4, 10, 16, 22].map((x, i) => (
-        <rect key={`t${i}`} x={x} y={-15.5} width="6" height="3" fill={i % 2 ? "#111" : "#fff"} />
-      ))}
-      {[-26, -20, -14, -8, -2, 4, 10, 16, 22].map((x, i) => (
-        <rect key={`b${i}`} x={x} y={12.5} width="6" height="3" fill={i % 2 ? "#fff" : "#111"} />
-      ))}
-      {/* pare-brise avant */}
-      <path d="M 14 -10 C 22 -8 26 -4 27 0 C 26 4 22 8 14 10 L 12 8 L 12 -8 Z" fill="#1a2a44" opacity="0.95" />
-      <path d="M 17 -7 L 25 -2 L 24 0 L 16 -5 Z" fill="#a8d8ff" opacity="0.5" />
-      {/* lunette arrière */}
-      <path d="M -14 -10 C -22 -8 -26 -4 -27 0 C -26 4 -22 8 -14 10 L -12 8 L -12 -8 Z" fill="#1a2a44" opacity="0.95" />
-      <path d="M -17 -7 L -25 -2 L -24 0 L -16 -5 Z" fill="#a8d8ff" opacity="0.4" />
-      {/* toit cabine */}
-      <rect x="-12" y="-8" width="24" height="16" rx="2" fill={body} stroke={trim} strokeWidth="0.8" />
-      <line x1="0" y1="-8" x2="0" y2="8" stroke={trim} strokeWidth="0.6" opacity="0.7" />
-      {/* passagers visibles */}
+    <g>
+      <ellipse cx="0" cy="2" rx={W / 2 + 2} ry={H / 2 - 2} fill="rgba(0,0,0,0.45)" />
+      <g transform="rotate(90)">
+        {/* image originale (capot vers le haut) -> après rotate(90) capot vers la droite */}
+        <image
+          href={taxiTopdown}
+          x={-H / 2}
+          y={-W / 2}
+          width={H}
+          height={W}
+          preserveAspectRatio="xMidYMid meet"
+        />
+        {/* teinte couleur (multiply) pour respecter le choix du joueur */}
+        <rect
+          x={-H / 2}
+          y={-W / 2}
+          width={H}
+          height={W}
+          fill={body}
+          opacity={body.toLowerCase() === "#f5c542" ? 0 : 0.55}
+          style={{ mixBlendMode: "multiply" }}
+        />
+      </g>
+      {/* passagers visibles quand un client est à bord */}
       {withClient && (
         <g>
-          <circle cx="-4" cy="0" r="3" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
-          <circle cx="4" cy="0" r="3" fill="#c89372" stroke="#1a1d22" strokeWidth="0.4" />
+          <circle cx="-4" cy="-3" r="2.6" fill="#ffd9b0" stroke="#1a1d22" strokeWidth="0.4" />
+          <circle cx="-4" cy="3" r="2.6" fill="#c89372" stroke="#1a1d22" strokeWidth="0.4" />
         </g>
       )}
-      {/* lanterne TAXI sur le toit */}
-      <rect x="-7" y="-3" width="14" height="4.5" rx="0.8" fill="#ffd633" stroke="#1a1d22" strokeWidth="0.6" />
-      <rect x="-7" y="-3" width="14" height="1.4" fill="#fff7a8" opacity="0.8" />
-      <text x="0" y="0.4" fontSize="3.6" fontWeight="900" textAnchor="middle" fill="#1a1d22" letterSpacing="0.3">TAXI</text>
-      {/* roues + enjoliveurs */}
-      <rect x="12" y="-19" width="14" height="5" rx="2" fill="#0a0b0d" />
-      <rect x="12" y="14" width="14" height="5" rx="2" fill="#0a0b0d" />
-      <rect x="-26" y="-19" width="14" height="5" rx="2" fill="#0a0b0d" />
-      <rect x="-26" y="14" width="14" height="5" rx="2" fill="#0a0b0d" />
-      <circle cx="19" cy="-16.5" r="1.2" fill="#c0c4ca" />
-      <circle cx="19" cy="16.5" r="1.2" fill="#c0c4ca" />
-      <circle cx="-19" cy="-16.5" r="1.2" fill="#c0c4ca" />
-      <circle cx="-19" cy="16.5" r="1.2" fill="#c0c4ca" />
-      {/* phares + feux */}
-      <ellipse cx="35" cy="-6" rx="2" ry="1.8" fill="#fff7c0" />
-      <ellipse cx="35" cy="6" rx="2" ry="1.8" fill="#fff7c0" />
-      <ellipse cx="-34" cy="-6" rx="1.6" ry="1.4" fill="#ff3028" />
-      <ellipse cx="-34" cy="6" rx="1.6" ry="1.4" fill="#ff3028" />
-      <rect x="33" y="-2" width="3" height="4" rx="0.5" fill="#1a1d22" />
+      {/* liseré bas pour ancrer visuellement sur la route */}
+      <ellipse cx="0" cy={H / 2 - 1} rx={W / 2 - 4} ry="1.2" fill={trim} opacity="0.35" />
     </g>
   );
 }
