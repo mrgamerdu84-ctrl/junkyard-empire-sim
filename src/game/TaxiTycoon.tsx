@@ -616,6 +616,42 @@ export default function TaxiTycoon() {
           </div>
         </div>
 
+        {/* === Contrats === */}
+        <div className="tt-contracts">
+          <div className="tt-contracts-head">
+            <span>📋 CONTRATS</span>
+            {boost && boost.until > nowTick && (
+              <span className="tt-boost">x{boost.mult} {Math.max(0, Math.ceil((boost.until - nowTick) / 1000))}s</span>
+            )}
+          </div>
+          {contracts.map((c) => {
+            const remain = Math.max(0, c.deadline - nowTick);
+            const remainSec = Math.ceil(remain / 1000);
+            const timePct = Math.max(0, Math.min(1, remain / c.duration));
+            const progPct = Math.max(0, Math.min(1, c.progress / c.target));
+            const urgent = remainSec <= 10;
+            const progressLabel = c.kind === "earn"
+              ? `${fmt(c.progress)} / ${fmt(c.target)}$`
+              : `${c.progress} / ${c.target}`;
+            return (
+              <div key={c.id} className={`tt-contract ${urgent ? "urgent" : ""}`}>
+                <div className="tt-c-row">
+                  <span className="tt-c-icon">{c.icon}</span>
+                  <span className="tt-c-label">{c.label}</span>
+                  <button className="tt-c-x" onClick={() => cancelContract(c.id)} title="Abandonner">✕</button>
+                </div>
+                <div className="tt-c-bar"><div className="tt-c-bar-fill" style={{ width: `${progPct * 100}%` }} /></div>
+                <div className="tt-c-meta">
+                  <span>{progressLabel}</span>
+                  <span className="tt-c-reward">+{fmt(c.rewardCash)}${c.rewardMult ? ` • x${c.rewardMult}` : ""}</span>
+                </div>
+                <div className="tt-c-time"><div className="tt-c-time-fill" style={{ width: `${timePct * 100}%` }} /></div>
+                <div className="tt-c-time-lbl">{remainSec}s</div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="tt-actions">
           <button className="tt-btn primary" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= tier.maxTaxis}>
             <span className="tt-btn-ico">🚕</span>
