@@ -39,13 +39,6 @@ const ZONES: Zone[] = [
   { id: "international", name: "CASSE INTERNATIONALE", unlock: 60, top: "82%", left: "82%", coutAchat: 500000, clicsTotalRequis: 40, gainParSeconde: 7500, scrapParSeconde: 20 },
 ];
 
-const ROADS = [
-  { d: "M 0 70 L 100 70", dur: 14 },
-  { d: "M 0 40 L 100 40", dur: 18 },
-  { d: "M 38 100 L 38 0", dur: 16 },
-  { d: "M 75 0 L 75 100", dur: 20 },
-  { d: "M 0 88 L 50 88 L 50 70", dur: 12 },
-];
 
 const tierFor = (niveau: number, unlock = 1) =>
   Math.min(5, 1 + Math.floor(Math.max(0, niveau - unlock) / 5));
