@@ -41,22 +41,27 @@ export const TAXI_COLORS = [
   { id: "purple", name: "Violet",body: "#a855f7", trim: "#5b1aa0" },
 ];
 
-type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning";
+type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling";
 type Taxi = {
   id: number;
-  pos: number;        // longueur le long du path
+  pathIdx: number;    // path actuel emprunté (0..ROADS.length-1)
+  pos: number;        // longueur le long du path actuel
   target: number;
   mode: TaxiMode;
   speed: number;
   colorId: string;
   jobId: number | null;
+  fuel: number;       // 0..100
+  refuelUntil?: number; // timestamp ms : fin du remplissage
 };
 
 type JobStatus = "offered" | "accepted";
 type Job = {
   id: number;
-  pickup: number;       // longueur sur le path
-  dropoff: number;
+  pickupPath: number;
+  pickup: number;       // longueur sur pickupPath
+  dropoffPath: number;
+  dropoff: number;      // longueur sur dropoffPath
   fare: number;
   deadline: number;     // epoch ms — quand le client annule s'il n'est pas accepté
   duration: number;     // ms (pour la barre)
@@ -67,11 +72,13 @@ type Job = {
 };
 
 const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
-const SAVE_KEY = "taxi-tycoon-v2";
+const SAVE_KEY = "taxi-tycoon-v3";
 const BASE_SPEED = 60; // px (sur viewBox 1920) par seconde
 const SPEED_UPGRADE_COST_BASE = 800;
 const TAXI_COST_BASE = 600;
 const MAX_JOBS_BASE = 3;
+const FUEL_REFILL_MS = 4000;
+const FUEL_LOW_THRESHOLD = 25;
 
 type SaveData = {
   money: number;
@@ -190,7 +197,7 @@ function TaxiSprite({
               width={H}
               height={W}
               fill={body}
-              opacity={0.55}
+              opacity={0.4}
               style={{ mixBlendMode: "multiply" }}
               mask={`url(#${maskId})`}
             />
@@ -287,9 +294,11 @@ function Depot({ tier, x, y, scale = 1, rotation = 0 }: { tier: DepotTier; x: nu
 }
 
 export default function TaxiTycoon() {
-  const measureRef = useRef<SVGPathElement | null>(null);
+  // Une ref par chemin disponible — permet de varier les trajets des taxis.
+  const pathRefs = useRef<(SVGPathElement | null)[]>([]);
+  const pathLensRef = useRef<number[]>([]);
   const containerRef = useRef<SVGSVGElement | null>(null);
-  const [pathLen, setPathLen] = useState(0);
+  const [pathsReady, setPathsReady] = useState(false);
   const admin = useAdminConfig(); // re-render quand l'admin change
 
   // === Persistent state ===
@@ -316,19 +325,26 @@ export default function TaxiTycoon() {
   const [nowTick, setNowTick] = useState(Date.now());
   const jobIdRef = useRef(1);
 
-  const genJob = (tierIdx: number, plen: number): Job => {
+  const genJob = (tierIdx: number): Job => {
     const now = Date.now();
     const t = DEPOT_TIERS[tierIdx];
     const id = jobIdRef.current++;
-    const pickup = Math.random() * plen;
-    const dropoff = Math.random() * plen;
-    const dist = Math.abs(dropoff - pickup);
+    const lens = pathLensRef.current;
+    const pickupPath = Math.floor(Math.random() * lens.length);
+    let dropoffPath = Math.floor(Math.random() * lens.length);
+    // Encourage la variété : si possible, on tente un autre path pour la dépose.
+    if (lens.length > 1 && dropoffPath === pickupPath && Math.random() < 0.65) {
+      dropoffPath = (dropoffPath + 1 + Math.floor(Math.random() * (lens.length - 1))) % lens.length;
+    }
+    const pickup = Math.random() * lens[pickupPath];
+    const dropoff = Math.random() * lens[dropoffPath];
+    // tarif basé sur la distance approximative + tier + admin
+    const distNorm = 0.4 + Math.random() * 0.6;
     const adm = getAdmin();
-    const fare = Math.round((25 + (dist / plen) * 220) * t.fareMult * adm.clientFareMult);
-    // Deadline avant que le client annule : 25s + bonus selon tarif (gros tarif = client plus patient)
+    const fare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult);
     const duration = (22 + Math.min(20, fare / 30)) * 1000;
     return {
-      id, pickup, dropoff, fare,
+      id, pickupPath, pickup, dropoffPath, dropoff, fare,
       deadline: now + duration, duration,
       status: "offered",
       sidePickup: Math.random() < 0.5 ? 1 : -1,
@@ -336,67 +352,85 @@ export default function TaxiTycoon() {
     };
   };
 
-
-
-
-  // Mesure de la longueur du path principal au montage
+  // Mesure des longueurs réelles de chaque path au montage.
   useEffect(() => {
-    if (measureRef.current) {
-      const l = measureRef.current.getTotalLength();
-      setPathLen(l);
-    }
+    const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
+    pathLensRef.current = lens;
+    if (lens.every((l) => l > 0)) setPathsReady(true);
   }, []);
+
+  const pathLen = pathLensRef.current[0] ?? 0;
 
   // === Helpers de rendu position (déclarés tôt pour usage dans les effets) ===
   const SIDEWALK_OFFSET = 22;
 
-  // Position du point d'entrée du QG sur le réseau routier : on échantillonne le
-  // path et on prend la longueur la plus proche du QG. Les taxis partent et
-  // reviennent toujours à cette longueur.
-  const hqPathPos = useMemo(() => {
-    if (!measureRef.current || pathLen === 0) return 0;
-    const hx = admin.hqX, hy = admin.hqY;
-    let best = pathLen * DEFAULT_DEPOT_POS;
-    let bestD = Infinity;
-    const N = 240;
+  // Trouve la longueur sur `pathIdx` la plus proche d'un point (x,y) du SVG.
+  const closestOnPath = (pathIdx: number, x: number, y: number): number => {
+    const p = pathRefs.current[pathIdx];
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (!p || plen === 0) return 0;
+    let bestL = 0, bestD = Infinity;
+    const N = 160;
     for (let i = 0; i <= N; i++) {
-      const l = (i / N) * pathLen;
-      const p = measureRef.current.getPointAtLength(l);
-      const dx = p.x - hx, dy = p.y - hy;
+      const l = (i / N) * plen;
+      const pt = p.getPointAtLength(l);
+      const dx = pt.x - x, dy = pt.y - y;
       const d = dx * dx + dy * dy;
-      if (d < bestD) { bestD = d; best = l; }
+      if (d < bestD) { bestD = d; bestL = l; }
     }
-    return best;
-  }, [pathLen, admin.hqX, admin.hqY]);
-  const hqPathPosRef = useRef(hqPathPos);
-  hqPathPosRef.current = hqPathPos;
+    return bestL;
+  };
+
+  // Récupère les coordonnées XY courantes d'un taxi.
+  const taxiXY = (taxi: Taxi): { x: number; y: number } => {
+    const p = pathRefs.current[taxi.pathIdx];
+    const plen = pathLensRef.current[taxi.pathIdx] ?? 0;
+    if (!p || plen === 0) return { x: 0, y: 0 };
+    const safe = ((taxi.pos % plen) + plen) % plen;
+    const pt = p.getPointAtLength(safe);
+    return { x: pt.x, y: pt.y };
+  };
+
+  // Choisit aléatoirement un path différent du dernier (variété de trajet).
+  const pickPath = (avoid?: number): number => {
+    const n = pathLensRef.current.length;
+    if (n <= 1) return 0;
+    let idx = Math.floor(Math.random() * n);
+    if (idx === avoid) idx = (idx + 1 + Math.floor(Math.random() * (n - 1))) % n;
+    return idx;
+  };
 
   // Sync taxis runtime list with save
   useEffect(() => {
-    if (pathLen === 0) return;
+    if (!pathsReady) return;
     const newSpeed = (BASE_SPEED + save.taxiSpeedLvl * 18) * admin.taxiSpeedMult;
-    // Ajoute les taxis manquants — ils apparaissent au point d'entrée du QG sur la route.
     while (taxisRef.current.length < save.taxis.length) {
       const idx = taxisRef.current.length;
+      // taxi neuf : path 0, posé près du QG
+      const pIdx = 0;
+      const pos = closestOnPath(pIdx, admin.hqX, admin.hqY);
       taxisRef.current.push({
         id: nextIdRef.current++,
-        pos: hqPathPos,
-        target: hqPathPos,
+        pathIdx: pIdx,
+        pos,
+        target: pos,
         mode: "idle",
         speed: newSpeed,
         colorId: save.taxis[idx].colorId,
         jobId: null,
+        fuel: 100,
       });
     }
-    // Sync couleurs + vitesse
     taxisRef.current.forEach((t, i) => {
       t.speed = newSpeed;
       if (save.taxis[i]) t.colorId = save.taxis[i].colorId;
-      // Si le taxi est idle, on le recale au QG (au cas où le QG a bougé).
-      if (t.mode === "idle") { t.pos = hqPathPos; t.target = hqPathPos; }
+      if (t.mode === "idle") {
+        const pos = closestOnPath(t.pathIdx, admin.hqX, admin.hqY);
+        t.pos = pos; t.target = pos;
+      }
     });
     forceRender((n) => n + 1);
-  }, [pathLen, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, hqPathPos]);
+  }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
 
 
   // Save persistence (debounced)
@@ -424,7 +458,7 @@ export default function TaxiTycoon() {
 
   // === Boucle de jeu : mouvement des taxis + génération des courses proposées ===
   useEffect(() => {
-    if (pathLen === 0) return;
+    if (!pathsReady) return;
     let raf = 0;
     let last = performance.now();
     const tick = () => {
@@ -433,7 +467,6 @@ export default function TaxiTycoon() {
       last = now;
 
       const adm = getAdmin();
-      const hqPos = hqPathPosRef.current;
       const cur = saveRef.current;
       const curTier = DEPOT_TIERS[cur.depotTier];
 
@@ -444,13 +477,46 @@ export default function TaxiTycoon() {
         now - lastJobSpawnRef.current > curTier.spawnEvery * 1000 * adm.spawnRateMult
       ) {
         lastJobSpawnRef.current = now;
-        const job = genJob(cur.depotTier, pathLen);
+        const job = genJob(cur.depotTier);
         setJobs((js) => [...js, job]);
       }
 
       // === Mouvement des taxis ===
       for (const taxi of taxisRef.current) {
-        if (taxi.mode === "idle") continue;
+        // Consommation carburant si en mouvement
+        if (taxi.mode !== "idle" && taxi.mode !== "refueling") {
+          taxi.fuel = Math.max(0, taxi.fuel - adm.fuelConsumption * dt);
+        }
+
+        // Idle : check si carburant bas → aller à la station
+        if (taxi.mode === "idle") {
+          if (taxi.fuel < FUEL_LOW_THRESHOLD) {
+            const pIdx = pickPath(taxi.pathIdx);
+            const here = taxiXY(taxi);
+            taxi.pathIdx = pIdx;
+            taxi.pos = closestOnPath(pIdx, here.x, here.y);
+            taxi.target = closestOnPath(pIdx, adm.gasStationX, adm.gasStationY);
+            taxi.mode = "to_gas";
+          }
+          continue;
+        }
+
+        // Refueling : attendre que le timer se termine
+        if (taxi.mode === "refueling") {
+          if (taxi.refuelUntil && Date.now() >= taxi.refuelUntil) {
+            taxi.fuel = 100;
+            taxi.refuelUntil = undefined;
+            // retour QG
+            const pIdx = pickPath(taxi.pathIdx);
+            const here = taxiXY(taxi);
+            taxi.pathIdx = pIdx;
+            taxi.pos = closestOnPath(pIdx, here.x, here.y);
+            taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
+            taxi.mode = "returning";
+          }
+          continue;
+        }
+
         const diff = taxi.target - taxi.pos;
         const step = taxi.speed * dt;
         if (Math.abs(diff) <= step) {
@@ -458,19 +524,29 @@ export default function TaxiTycoon() {
           if (taxi.mode === "to_pickup") {
             const j = jobsRef.current.find((x) => x.id === taxi.jobId);
             if (j) {
-              taxi.mode = "to_dest";
+              // Bascule vers le path de la destination
+              const here = taxiXY(taxi);
+              taxi.pathIdx = j.dropoffPath;
+              taxi.pos = closestOnPath(j.dropoffPath, here.x, here.y);
               taxi.target = j.dropoff;
+              taxi.mode = "to_dest";
             } else {
-              // Course disparue entre-temps : on rentre.
+              const pIdx = pickPath(taxi.pathIdx);
+              const here = taxiXY(taxi);
+              taxi.pathIdx = pIdx;
+              taxi.pos = closestOnPath(pIdx, here.x, here.y);
+              taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
               taxi.mode = "returning";
-              taxi.target = hqPos;
               taxi.jobId = null;
             }
           } else if (taxi.mode === "to_dest") {
             const j = jobsRef.current.find((x) => x.id === taxi.jobId);
-            if (j && measureRef.current) {
-              const p = measureRef.current.getPointAtLength(j.dropoff);
-              popFloat(`+${fmt(j.fare)}$`, p.x, p.y);
+            if (j) {
+              const p = pathRefs.current[j.dropoffPath];
+              if (p) {
+                const pt = p.getPointAtLength(j.dropoff);
+                popFloat(`+${fmt(j.fare)}$`, pt.x, pt.y);
+              }
               setSave((s) => ({
                 ...s,
                 money: s.money + j.fare,
@@ -478,15 +554,21 @@ export default function TaxiTycoon() {
                 customersServed: s.customersServed + 1,
                 jobsCompleted: s.jobsCompleted + 1,
               }));
-              // Retire le job de la file
               setJobs((js) => js.filter((x) => x.id !== j.id));
             }
             taxi.jobId = null;
+            const pIdx = pickPath(taxi.pathIdx);
+            const here = taxiXY(taxi);
+            taxi.pathIdx = pIdx;
+            taxi.pos = closestOnPath(pIdx, here.x, here.y);
+            taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
             taxi.mode = "returning";
-            taxi.target = hqPos;
           } else if (taxi.mode === "returning") {
             taxi.mode = "idle";
             taxi.jobId = null;
+          } else if (taxi.mode === "to_gas") {
+            taxi.mode = "refueling";
+            taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
           }
         } else {
           taxi.pos += Math.sign(diff) * step;
@@ -498,30 +580,34 @@ export default function TaxiTycoon() {
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [pathLen]);
+  }, [pathsReady]);
 
   // === Helpers de rendu position ===
-  const getXY = (len: number): { x: number; y: number; angle: number } => {
-    if (!measureRef.current) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % pathLen) + pathLen) % pathLen;
-    const p = measureRef.current.getPointAtLength(safe);
-    const p2 = measureRef.current.getPointAtLength(Math.min(pathLen - 0.1, safe + 2));
-    const angle = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
-    return { x: p.x, y: p.y, angle };
+  const getXYOn = (pathIdx: number, len: number): { x: number; y: number; angle: number } => {
+    const p = pathRefs.current[pathIdx];
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
+    const safe = ((len % plen) + plen) % plen;
+    const pt = p.getPointAtLength(safe);
+    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
+    const angle = (Math.atan2(pt2.y - pt.y, pt2.x - pt.x) * 180) / Math.PI;
+    return { x: pt.x, y: pt.y, angle };
   };
 
   // Position décalée sur le trottoir (perpendiculaire à la route)
-  const getSidewalk = (len: number, side: 1 | -1) => {
-    if (!measureRef.current) return { x: 0, y: 0, angle: 0 };
-    const safe = ((len % pathLen) + pathLen) % pathLen;
-    const p = measureRef.current.getPointAtLength(safe);
-    const p2 = measureRef.current.getPointAtLength(Math.min(pathLen - 0.1, safe + 2));
-    const dx = p2.x - p.x, dy = p2.y - p.y;
+  const getSidewalk = (pathIdx: number, len: number, side: 1 | -1) => {
+    const p = pathRefs.current[pathIdx];
+    const plen = pathLensRef.current[pathIdx] ?? 0;
+    if (!p || plen === 0) return { x: 0, y: 0, angle: 0 };
+    const safe = ((len % plen) + plen) % plen;
+    const pt = p.getPointAtLength(safe);
+    const pt2 = p.getPointAtLength(Math.min(plen - 0.1, safe + 2));
+    const dx = pt2.x - pt.x, dy = pt2.y - pt.y;
     const L = Math.hypot(dx, dy) || 1;
     const nx = -dy / L, ny = dx / L; // normale unitaire
     return {
-      x: p.x + nx * SIDEWALK_OFFSET * side,
-      y: p.y + ny * SIDEWALK_OFFSET * side,
+      x: pt.x + nx * SIDEWALK_OFFSET * side,
+      y: pt.y + ny * SIDEWALK_OFFSET * side,
       angle: (Math.atan2(dy, dx) * 180) / Math.PI,
     };
   };
@@ -621,9 +707,18 @@ export default function TaxiTycoon() {
       return;
     }
     lastTaxiDispatchRef.current = now;
+    // Si carburant trop bas, refuser et envoyer à la station d'abord.
+    if (free.fuel < FUEL_LOW_THRESHOLD) {
+      showToast("⛽ Taxi en panne — il file à la station");
+      return;
+    }
     free.jobId = job.id;
-    free.mode = "to_pickup";
+    // Bascule vers le path du pickup, partant de sa position actuelle.
+    const here = taxiXY(free);
+    free.pathIdx = job.pickupPath;
+    free.pos = closestOnPath(job.pickupPath, here.x, here.y);
     free.target = job.pickup;
+    free.mode = "to_pickup";
     setJobs((js) => js.map((j) => j.id === id ? { ...j, status: "accepted", acceptedAt: Date.now() } : j));
   };
 
@@ -640,7 +735,14 @@ export default function TaxiTycoon() {
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
       >
         <defs>
-          <path ref={measureRef} id="taxi-road" d={ROADS[0]} />
+          {ROADS.map((d, i) => (
+            <path
+              key={i}
+              ref={(el) => { pathRefs.current[i] = el; }}
+              id={`taxi-road-${i}`}
+              d={d}
+            />
+          ))}
           <filter id="taxi-shadow" x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#000" floodOpacity="0.4" />
           </filter>
@@ -653,9 +755,25 @@ export default function TaxiTycoon() {
           ))}
         </g>
 
+        {/* Station-service */}
+        {pathsReady && (
+          <g transform={`translate(${admin.gasStationX},${admin.gasStationY})`} filter="url(#taxi-shadow)">
+            <ellipse cx="0" cy="18" rx="34" ry="8" fill="rgba(0,0,0,0.5)" />
+            <rect x="-28" y="-10" width="56" height="28" rx="2" fill="#1f242b" stroke="#0a0c10" strokeWidth="1.4" />
+            <rect x="-28" y="-26" width="56" height="8" rx="1.5" fill="#dc2626" stroke="#0a0c10" strokeWidth="1.2" />
+            <text y="-20" fontSize="6.5" fontWeight="900" textAnchor="middle" fill="#fff">STATION</text>
+            <rect x="-22" y="-4" width="14" height="18" fill="#dc2626" />
+            <rect x="8" y="-4" width="14" height="18" fill="#dc2626" />
+            <text y="9" fontSize="11" textAnchor="middle">⛽</text>
+            <circle cx="0" cy="-30" r="2.5" fill="#fde68a">
+              <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" />
+            </circle>
+          </g>
+        )}
+
         {/* Clients en attente (course offerte ou acceptée) — sur le trottoir */}
         {jobs.map((j) => {
-          const p = getSidewalk(j.pickup, j.sidePickup);
+          const p = getSidewalk(j.pickupPath, j.pickup, j.sidePickup);
           const age = (Date.now() - (j.deadline - j.duration)) / 1000;
           const bob = Math.sin(age * 3) * 0.8;
           const pulse = 1 + Math.sin(age * 4) * 0.18;
@@ -686,7 +804,7 @@ export default function TaxiTycoon() {
         {/* Dropoffs — sur le trottoir, uniquement pour les courses acceptées */}
         {jobs.map((j) => {
           if (j.status !== "accepted") return null;
-          const p = getSidewalk(j.dropoff, j.sideDrop);
+          const p = getSidewalk(j.dropoffPath, j.dropoff, j.sideDrop);
           return (
             <g key={"d" + j.id} transform={`translate(${p.x},${p.y})`}>
               <circle r="11" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="4 3" opacity="0.85">
@@ -700,18 +818,29 @@ export default function TaxiTycoon() {
 
 
         {/* Dépôt */}
-        {pathLen > 0 && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} scale={admin.hqScale} rotation={admin.hqRotation} />}
+        {pathsReady && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} scale={admin.hqScale} rotation={admin.hqRotation} />}
 
         {/* Taxis */}
         {taxisRef.current.map((taxi) => {
-          const p = getXY(taxi.pos);
+          const p = getXYOn(taxi.pathIdx, taxi.pos);
           const color = TAXI_COLORS.find((c) => c.id === taxi.colorId) ?? TAXI_COLORS[0];
-          // Sens du déplacement
           const movingForward = taxi.target >= taxi.pos;
           const angle = movingForward ? p.angle : p.angle + 180;
+          const fuelPct = Math.max(0, Math.min(1, taxi.fuel / 100));
+          const fuelLow = taxi.fuel < FUEL_LOW_THRESHOLD;
           return (
-            <g key={taxi.id} transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
-              <TaxiSprite body={color.body} trim={color.trim} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle"} />
+            <g key={taxi.id}>
+              <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
+                <TaxiSprite body={color.body} trim={color.trim} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling"} />
+              </g>
+              {/* Mini jauge essence sous le taxi */}
+              <g transform={`translate(${p.x - 12},${p.y + 22})`}>
+                <rect x="0" y="0" width="24" height="3" rx="1" fill="#0a0c10" opacity="0.7" />
+                <rect x="0" y="0" width={24 * fuelPct} height="3" rx="1" fill={fuelLow ? "#ef4444" : "#34d399"} />
+              </g>
+              {taxi.mode === "refueling" && (
+                <text x={p.x} y={p.y - 30} fontSize="11" textAnchor="middle" fill="#fde68a" fontWeight="900">⛽</text>
+              )}
             </g>
           );
         })}
