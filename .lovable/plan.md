@@ -1,65 +1,31 @@
 ## Objectif
 
-Éviter que les taxis envahissent les routes, et rendre le QG entièrement personnalisable depuis le Panel Admin (position libre sur la map + taille ajustable + options visuelles).
+Ajouter une page "Règles du jeu" accessible en jeu, qui explique clairement le fonctionnement à Niki (et à tout nouveau joueur) — gameplay uniquement, sans jargon technique.
 
-## 1. Régulation du trafic taxi
+## 1. Bouton d'accès
 
-Ajout d'un "Traffic Controller" pour les taxis dans `src/game/CityTraffic.tsx` (ou module dédié `TaxiManager.ts`) :
+Ajout d'un bouton 📖 dans le HUD, à côté du bouton ⚙ Admin (en haut à droite). Au clic, ouverture d'un panneau plein écran (overlay sombre + carte centrale) avec les règles. Bouton de fermeture × en haut.
 
-- **Nombre max de taxis actifs simultanément** sur la map (slider Admin, ex. 1–20, défaut 6).
-- **Délai minimum entre deux spawns** (cooldown, ex. 2–15 s).
-- **Densité par route** : maximum N taxis par circuit pour éviter les files.
-- **Despawn automatique** des taxis inactifs (sans client depuis X secondes) pour libérer la place.
-- **File d'attente de spawn** : si la limite est atteinte, le prochain taxi attend au QG au lieu d'être ajouté.
+## 2. Contenu du panneau Règles
 
-Ces règles s'appliquent en plus des sliders déjà présents (vitesse taxi, fréquence clients, etc.).
+Sections, en français, ton clair et concis :
 
-## 2. QG personnalisable
+- **🎯 But du jeu** — Faire prospérer ta compagnie de taxis : achète des voitures, prends des clients, gagne de l'argent, améliore ton QG.
+- **🚖 Les taxis** — Tu en achètes au QG. Ils sortent automatiquement chercher les clients. Tu peux limiter combien sortent en même temps (Panel Admin → Trafic).
+- **👥 Les clients** — Ils apparaissent au bord des routes (📍 point bleu). Le taxi le plus proche est envoyé. Le client a 35 secondes de patience avant de partir.
+- **💰 Les courses** — Le tarif dépend de la distance et du niveau de ton QG. Tu encaisses à l'arrivée du client.
+- **🏛️ Le QG** — 5 niveaux (Garage abandonné → QG Taxicorp). Plus haut = plus de taxis autorisés, meilleurs tarifs, clients plus fréquents.
+- **📜 Les contrats** — Missions optionnelles (X clients servis, Y $ gagnés, série sans rater). Récompense en cash + bonus temporaire ×2 sur les tarifs.
+- **⚙ Panel Admin** — Permet d'ajuster en direct : nombre de taxis actifs max, cooldown de sortie, position et taille du QG, fréquence des clients, etc.
+- **💡 Astuces** — Réguler le trafic pour éviter les embouteillages ; placer le QG près d'une zone dense ; améliorer le QG dès que possible.
 
-Refonte du QG (actuellement position fixe via slider X/Y) :
+## 3. Style visuel
 
-- **Position libre** : drag & drop du QG directement sur la map en mode Admin (poignée visible quand le panel est ouvert), + champs X/Y numériques précis.
-- **Taille ajustable** : slider d'échelle (0.5× à 3×) avec aperçu en direct.
-- **Rotation** (optionnel, slider 0–360°) pour aligner avec une route.
-- **Style** : choix entre 2–3 presets visuels (garage, tour, dépôt) + couleur principale.
-- **Snap aux routes** : option pour aligner automatiquement la sortie du QG sur la route la plus proche (les taxis sortent proprement).
+Même esprit que le Panel Admin (fond `#14171c`, accent jaune `#f5c542`, bord arrondi, typo system-ui). Lisible sur mobile et desktop (largeur max ~520px, scroll vertical).
 
-## 3. Panel Admin — nouvelle section "QG & Taxis"
+## 4. Fichiers touchés
 
-Ajout d'un onglet dans le panel ⚙ existant :
+- `src/game/RulesPanel.tsx` *(nouveau)* — composant overlay + contenu des règles.
+- `src/game/TaxiTycoon.tsx` — ajout du bouton 📖 dans le HUD et montage du `<RulesPanel />`.
 
-```
-[ Général ] [ Trafic ] [ QG & Taxis ] [ Missions ]
-```
-
-Contrôles ajoutés :
-- Max taxis simultanés (slider)
-- Cooldown spawn (slider)
-- Densité max par route (slider)
-- Despawn auto inactifs (toggle + durée)
-- QG : X, Y, échelle, rotation, style, couleur
-- Bouton "Placer le QG sur la carte" (active le mode drag)
-- Bouton "Réinitialiser"
-
-Tous les réglages sont persistés (localStorage, comme l'existant) et appliqués en live.
-
-## 4. Détails techniques
-
-- Nouveau hook `useTaxiManager()` qui gère pool, cooldowns, et file d'attente.
-- Le composant `HQ` devient `<HQ x y scale rotation style color />` contrôlé par le store admin.
-- Mode "édition QG" : overlay sur le SVG avec une poignée draggable (pointer events) qui met à jour x/y du store.
-- Mise à jour du ZIP export Unity/Android avec les nouveaux paramètres dans `data/trajectories.json` (section `hq` + `taxiLimits`).
-
-## Fichiers touchés
-
-- `src/game/CityTraffic.tsx` — intégration du TaxiManager + HQ paramétrable
-- `src/game/TaxiManager.ts` *(nouveau)* — logique de régulation
-- `src/game/HQ.tsx` *(nouveau ou extrait)* — composant QG paramétrable + drag
-- `src/components/AdminPanel.tsx` — nouvel onglet "QG & Taxis"
-- `src/state/adminStore.ts` *(ou équivalent)* — nouveaux champs
-- Script d'export ZIP — inclure les nouveaux paramètres
-
-## À confirmer
-
-1. Le drag & drop direct du QG sur la map te convient, ou tu préfères uniquement des sliders X/Y ?
-2. Pour les presets visuels de QG (garage / tour / dépôt), je pars sur des formes SVG stylisées simples, ou tu veux que je génère de vraies illustrations ?
+Pas de changement de logique de jeu, pas de modification de l'export ZIP.

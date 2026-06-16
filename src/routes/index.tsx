@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import citymap from "@/assets/citymap2.jpg";
 import TaxiTycoon from "@/game/TaxiTycoon";
 import AdminPanel from "@/game/AdminPanel";
+import RulesPanel from "@/game/RulesPanel";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -40,6 +41,7 @@ function TaxiTycoonPage() {
       <div className="tt-vignette" />
       <TaxiTycoon />
       <AdminPanel />
+      <RulesPanel />
     </div>
   );
 }
