@@ -462,6 +462,51 @@ export default function TaxiTycoon() {
     setSave((s) => ({ ...s, defaultColor: id, taxis: s.taxis.map((t) => ({ colorId: id })) }));
   };
 
+  // === Boucle contrats : refresh slots + expiration + complétion ===
+  useEffect(() => {
+    const iv = window.setInterval(() => {
+      const now = Date.now();
+      setNowTick(now);
+      // Boost expiration
+      setBoost((b) => (b && b.until <= now ? null : b));
+      // Évalue complétion + expiration + refill
+      setContracts((cs) => {
+        let changed = false;
+        const kept: Contract[] = [];
+        for (const c of cs) {
+          if (c.progress >= c.target) {
+            // Récompense
+            setSave((s) => ({ ...s, money: s.money + c.rewardCash, contractsCompleted: s.contractsCompleted + 1 }));
+            if (c.rewardMult && c.rewardMultSec) {
+              setBoost({ mult: c.rewardMult, until: now + c.rewardMultSec * 1000 });
+            }
+            showToast(`✅ Contrat réussi : +${fmt(c.rewardCash)}$${c.rewardMult ? ` • x${c.rewardMult} ${c.rewardMultSec}s` : ""}`);
+            changed = true;
+            continue;
+          }
+          if (c.deadline <= now) {
+            showToast(`⏱️ Contrat expiré`);
+            changed = true;
+            continue;
+          }
+          kept.push(c);
+        }
+        // Refill jusqu'à MAX
+        while (kept.length < MAX_CONTRACTS) {
+          kept.push(genContract(saveRef.current.depotTier));
+          changed = true;
+        }
+        return changed ? kept : cs;
+      });
+    }, 500);
+    return () => clearInterval(iv);
+  }, []);
+
+  const cancelContract = (id: number) => {
+    setContracts((cs) => cs.filter((c) => c.id !== id));
+  };
+
+
   return (
     <>
       {/* === Calque SVG du jeu === */}
