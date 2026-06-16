@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+/* eslint-disable prettier/prettier */
+
 /* ============================================================
  * JUNKY CITY EMPIRE — overlay aligné sur citymap.jpg
  * IMPORTANT : le SVG utilise le même ratio que l'image 1920x1080.
