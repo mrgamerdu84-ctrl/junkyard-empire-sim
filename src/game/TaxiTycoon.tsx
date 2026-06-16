@@ -919,6 +919,24 @@ export default function TaxiTycoon() {
         {/* Dépôt */}
         {pathsReady && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} scale={admin.hqScale} rotation={admin.hqRotation} />}
 
+        {/* QG concurrent */}
+        {pathsReady && admin.rivalEnabled && <RivalDepot x={admin.rivalHQX} y={admin.rivalHQY - 18} />}
+
+        {/* Taxis rivaux (couleur sombre + bandeau rouge) */}
+        {admin.rivalEnabled && rivalTaxisRef.current.map((r) => {
+          const p = getXYOn(r.pathIdx, r.pos);
+          const movingForward = r.target >= r.pos;
+          const angle = movingForward ? p.angle : p.angle + 180;
+          return (
+            <g key={r.id}>
+              <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
+                <TaxiSprite body="#dc1a2a" trim="#5a0810" withClient={r.mode === "to_dest"} moving={r.mode !== "idle"} />
+              </g>
+              <text x={p.x} y={p.y - 22} fontSize="9" textAnchor="middle" fill="#ff4d5c" fontWeight="900" stroke="#0a0608" strokeWidth="2" paintOrder="stroke">R</text>
+            </g>
+          );
+        })}
+
         {/* Taxis */}
         {taxisRef.current.map((taxi) => {
           const p = getXYOn(taxi.pathIdx, taxi.pos);
