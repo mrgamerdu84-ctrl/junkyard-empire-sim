@@ -84,13 +84,15 @@ const FUEL_LOW_THRESHOLD = 25;
 // === Livrées de taxi inspirées de vraies compagnies (yellow body only) ===
 export type Livery = {
   id: string;
-  name: string;        // nom de la compagnie
-  city: string;        // ville/pays
-  roofLabel: string;   // texte sur le panneau de toit
-  roofBg: string;      // couleur du panneau de toit
-  roofFg: string;      // couleur du texte du toit
+  name: string;
+  city: string;
+  roofLabel: string;
+  roofBg: string;
+  roofFg: string;
   stripe: "checker" | "band" | "dots" | "none";
   stripeColor: string;
+  image: string;
+  faceRight: boolean; // true if image's car nose points right
 };
 
 export const LIVERIES: Livery[] = [
