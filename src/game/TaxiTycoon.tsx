@@ -197,7 +197,7 @@ function TaxiSprite({
               width={H}
               height={W}
               fill={body}
-              opacity={0.55}
+              opacity={0.4}
               style={{ mixBlendMode: "multiply" }}
               mask={`url(#${maskId})`}
             />
