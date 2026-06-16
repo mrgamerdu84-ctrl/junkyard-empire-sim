@@ -338,6 +338,15 @@ export default function TaxiTycoon() {
   const [nowTick, setNowTick] = useState(Date.now());
   const jobIdRef = useRef(1);
 
+  // === Concurrent IA ===
+  type RivalTaxi = { id: number; pathIdx: number; pos: number; target: number; mode: TaxiMode; jobId: number | null };
+  const rivalTaxisRef = useRef<RivalTaxi[]>([]);
+  const rivalJobsRef = useRef<Job[]>([]); // courses prises en charge par l'IA
+  const [rivalStolen, setRivalStolen] = useState(0);
+  const jobAgeRef = useRef<Map<number, number>>(new Map()); // jobId -> performance.now() de spawn
+
+
+
   const genJob = (tierIdx: number): Job => {
     const now = Date.now();
     const t = DEPOT_TIERS[tierIdx];
