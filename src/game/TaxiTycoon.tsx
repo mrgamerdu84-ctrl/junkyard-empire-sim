@@ -800,7 +800,8 @@ export default function TaxiTycoon() {
       return;
     }
     const adm = getAdmin();
-    const cooldownMs = Math.max(0, adm.taxiSpawnCooldown) * 1000;
+    const prodReduction = Math.max(0.2, 1 - 0.15 * (saveRef.current.hqProductionLvl ?? 0));
+    const cooldownMs = Math.max(0, adm.taxiSpawnCooldown) * 1000 * prodReduction;
     const now = performance.now();
     if (now - lastTaxiDispatchRef.current < cooldownMs) {
       showToast(`⏱️ Cooldown sortie QG`);
