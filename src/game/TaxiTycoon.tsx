@@ -994,6 +994,32 @@ export default function TaxiTycoon() {
         {/* QG concurrent */}
         {pathsReady && admin.rivalEnabled && <RivalDepot x={admin.rivalHQX} y={admin.rivalHQY - 18} />}
 
+        {/* Circuit dessiné par le joueur */}
+        {circuitInfo.pts.length >= 2 && (
+          <g>
+            <polyline
+              points={[...circuitInfo.pts, circuitInfo.pts[0]].map(p => `${p.x},${p.y}`).join(" ")}
+              fill="none" stroke="#22c55e" strokeWidth="6" strokeOpacity="0.35"
+              strokeLinecap="round" strokeLinejoin="round" strokeDasharray="10 8"
+            />
+            <polyline
+              points={[...circuitInfo.pts, circuitInfo.pts[0]].map(p => `${p.x},${p.y}`).join(" ")}
+              fill="none" stroke="#22c55e" strokeWidth="2.5" strokeOpacity="0.9"
+              strokeLinecap="round" strokeLinejoin="round"
+            />
+          </g>
+        )}
+
+        {/* Taxis qui tournent sur le circuit personnalisé */}
+        {circuitInfo.pts.length >= 2 && circuitTaxisRef.current.map((ct) => {
+          const p = circuitAt(ct.pos);
+          return (
+            <g key={ct.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
+              <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={false} moving={true} />
+            </g>
+          );
+        })}
+
         {/* Taxis rivaux (couleur sombre + bandeau rouge) */}
         {admin.rivalEnabled && rivalTaxisRef.current.map((r) => {
           const p = getXYOn(r.pathIdx, r.pos);
