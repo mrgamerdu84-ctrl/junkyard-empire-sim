@@ -648,19 +648,18 @@ export default function TaxiTycoon() {
           if (Math.abs(diff) <= step) {
             r.pos = r.target;
             if (r.mode === "to_pickup") {
-              // bascule vers dropoff (on retrouve la course capturée)
-              // on l'a déjà retirée du state ; on stocke localement via jobId
-              // ici on relance simplement vers un point aléatoire du QG rival
-              // Pour faire propre on garde la dest dans la course rivalJobsRef.
               const job = rivalJobsRef.current.find((x) => x.id === r.jobId);
               if (job) {
-                r.pathIdx = job.dropoffPath;
-                r.pos = closestOnPath(job.dropoffPath, 0, 0) || 0;
                 const here = pathRefs.current[r.pathIdx]?.getPointAtLength(r.pos);
-                if (here) r.pos = closestOnPath(job.dropoffPath, here.x, here.y);
+                r.pathIdx = job.dropoffPath;
+                r.pos = here ? closestOnPath(job.dropoffPath, here.x, here.y) : 0;
                 r.target = job.dropoff;
                 r.mode = "to_dest";
               } else {
+                r.mode = "returning";
+                r.target = closestOnPath(r.pathIdx, admin.rivalHQX, admin.rivalHQY);
+              }
+            } else if (r.mode === "to_dest") {
                 r.mode = "returning";
                 r.target = closestOnPath(r.pathIdx, admin.rivalHQX, admin.rivalHQY);
               }
