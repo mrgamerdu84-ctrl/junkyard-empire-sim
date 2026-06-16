@@ -43,8 +43,8 @@ export type AdminConfig = {
 };
 
 export const DEFAULT_ADMIN: AdminConfig = {
-  depotPosNorm: 0.78,
-  civilVehicleCount: 24,
+  depotPosNorm: 0.78, // conservé pour compat ; non utilisé en mode XY libre
+  civilVehicleCount: 22,
   taxiSpeedMult: 1,
   spawnRateMult: 1,
   maxClientsBonus: 0,
@@ -53,7 +53,7 @@ export const DEFAULT_ADMIN: AdminConfig = {
   maxActiveTaxis: 6,
   taxiSpawnCooldown: 1.5,
 
-  // QG position legacy (image-based map)
+  // QG ancré par défaut sur le bâtiment TAXI CORP en bas-gauche de la map.
   hqUseFreePos: true,
   hqX: 230,
   hqY: 780,
@@ -61,13 +61,11 @@ export const DEFAULT_ADMIN: AdminConfig = {
   hqRotation: 0,
 
   fuelConsumption: 0.6,
-  // Station-service position legacy
-  gasStationX: 1620,
+  gasStationX: 1450,
   gasStationY: 540,
 
   rivalEnabled: true,
-  // QG rival position legacy
-  rivalHQX: 1620,
+  rivalHQX: 1650,
   rivalHQY: 220,
   rivalTaxiCount: 2,
   rivalReactionTime: 5,
@@ -78,8 +76,7 @@ export const DEFAULT_ADMIN: AdminConfig = {
   circuitSpeedMult: 1,
 };
 
-const KEY = "taxi-tycoon-admin-v4";
-
+const KEY = "taxi-tycoon-admin-v2";
 
 
 function load(): AdminConfig {
