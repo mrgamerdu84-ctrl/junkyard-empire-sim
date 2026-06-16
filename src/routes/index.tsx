@@ -41,6 +41,7 @@ function TaxiTycoonPage() {
       <div className="tt-vignette" />
       <TaxiTycoon />
       <AdminPanel />
+      <RulesPanel />
     </div>
   );
 }
