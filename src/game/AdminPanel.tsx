@@ -97,9 +97,47 @@ export default function AdminPanel() {
           font-size: 13px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,0,0,0.4);
           pointer-events: none;
         }
+        .adm-place-controls {
+          position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 60;
+          background: rgba(20,22,28,0.95); color: #e8edf2; padding: 10px 12px; border-radius: 14px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.6); backdrop-filter: blur(8px);
+          display: flex; flex-direction: column; gap: 8px; align-items: stretch;
+          font-family: system-ui, sans-serif; min-width: 240px;
+        }
+        .adm-place-row { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+        .adm-place-row .lbl { font-size: 11px; color: #c8ccd2; flex: 1; }
+        .adm-place-row .val { font-size: 12px; color: #f5c542; font-weight: 700; min-width: 44px; text-align: center; font-variant-numeric: tabular-nums; }
+        .adm-place-row button {
+          width: 34px; height: 34px; border-radius: 8px; border: 1px solid #3a3f48;
+          background: #1f242b; color: #f5c542; font-size: 18px; font-weight: 700; cursor: pointer;
+        }
+        .adm-place-row button:active { background: #2a2f38; }
+        .adm-place-done {
+          padding: 8px; border-radius: 8px; border: none; background: #f5c542; color: #14171c;
+          font-weight: 700; cursor: pointer; font-size: 13px;
+        }
       `}</style>
 
-      {placeMode && <div className="adm-place-banner">📍 Cliquez sur la carte pour placer le QG</div>}
+      {placeMode && (
+        <>
+          <div className="adm-place-banner">📍 Cliquez sur la carte pour placer le QG</div>
+          <div className="adm-place-controls">
+            <div className="adm-place-row">
+              <button onClick={() => bumpScale(-0.1)} aria-label="Réduire">−</button>
+              <span className="lbl">Taille</span>
+              <span className="val">×{cfg.hqScale.toFixed(2)}</span>
+              <button onClick={() => bumpScale(0.1)} aria-label="Agrandir">+</button>
+            </div>
+            <div className="adm-place-row">
+              <button onClick={() => bumpRot(-15)} aria-label="Rotation gauche">↺</button>
+              <span className="lbl">Rotation</span>
+              <span className="val">{cfg.hqRotation.toFixed(0)}°</span>
+              <button onClick={() => bumpRot(15)} aria-label="Rotation droite">↻</button>
+            </div>
+            <button className="adm-place-done" onClick={() => setPlaceMode(false)}>✓ Terminé</button>
+          </div>
+        </>
+      )}
 
       {!open && (
         <button className="adm-btn" onClick={() => setOpen(true)} aria-label="Panneau admin" title="Panneau admin">⚙</button>
