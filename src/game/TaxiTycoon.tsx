@@ -405,6 +405,8 @@ export default function TaxiTycoon() {
           pickup, dropoff, fare,
           assigned: null,
           spawnedAt: now,
+          sidePickup: Math.random() < 0.5 ? 1 : -1,
+          sideDrop: Math.random() < 0.5 ? 1 : -1,
         });
       }
 
