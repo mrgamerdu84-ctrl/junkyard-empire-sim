@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useAdminConfig } from "./adminConfig";
 
 /* eslint-disable prettier/prettier */
 
@@ -272,6 +273,8 @@ type CarState = {
 
 export default function CityTraffic() {
   const [night, setNight] = useState(0.25);
+  const admin = useAdminConfig();
+  const activeCars = CARS.slice(0, Math.max(0, Math.min(CARS.length, admin.civilVehicleCount)));
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carNodes = useRef<(SVGGElement | null)[]>([]);
 
