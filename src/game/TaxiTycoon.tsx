@@ -4,12 +4,14 @@ import taxiYellowAsset from "@/assets/taxi-yellow-top.png";
 import taxiBlackAsset from "@/assets/taxi-black-top.png";
 import taxiRedAsset from "@/assets/taxi-red-top.png";
 import musicAsset from "@/assets/midnight-fare.mp3.asset.json";
+import hqDepotAsset from "@/assets/hq-taxi-depot.png.asset.json";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 
 const TAXI_YELLOW_URL = taxiYellowAsset;
 const TAXI_BLACK_URL = taxiBlackAsset;
 const TAXI_RED_URL = taxiRedAsset;
 const MUSIC_URL = musicAsset.url;
+const HQ_DEPOT_URL = hqDepotAsset.url;
 
 /* ============================================================
  * TAXI TYCOON — entreprise de taxis idle
