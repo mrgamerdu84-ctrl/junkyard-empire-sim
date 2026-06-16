@@ -1246,20 +1246,64 @@ export default function TaxiTycoon() {
         .tt-btn-cost { font-size: 11px; font-weight: 900; color: #fde68a; }
         .tt-btn.upgrade .tt-btn-cost { color: #d1fae5; }
 
-        .tt-colors {
+        .tt-garage-fab {
           position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%);
-          display: flex; gap: 6px; padding: 6px 8px;
-          background: rgba(10,12,16,0.75); border-radius: 999px;
-          border: 1px solid rgba(255,255,255,0.08);
+          width: 44px; height: 44px; border-radius: 50%;
+          background: linear-gradient(180deg, #f5c542, #b88a16);
+          border: 2px solid #1a1d22; color: #1a1d22;
+          font-size: 20px; cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.25);
           pointer-events: auto;
+          display: flex; align-items: center; justify-content: center;
         }
-        .tt-color {
-          width: 28px; height: 28px; border-radius: 50%;
-          border: 2px solid; cursor: pointer; padding: 0;
-          transition: transform 0.12s ease;
+        .tt-garage-fab:hover { transform: translateX(-50%) scale(1.08); }
+
+        .tt-modal-overlay {
+          position: absolute; inset: 0; z-index: 60;
+          background: rgba(0,0,0,0.7);
+          display: flex; align-items: center; justify-content: center;
+          padding: 16px; pointer-events: auto;
+          backdrop-filter: blur(4px);
         }
-        .tt-color:hover { transform: scale(1.15); }
-        .tt-color.selected { outline: 2px solid #fde68a; outline-offset: 2px; transform: scale(1.18); }
+        .tt-modal {
+          background: linear-gradient(180deg, #1a1d22 0%, #0d0e12 100%);
+          border: 1px solid #f5c542; border-radius: 14px;
+          padding: 16px; width: 100%; max-width: 520px;
+          max-height: 90vh; overflow-y: auto;
+          box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+        }
+        .tt-modal-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .tt-modal-h h3 { margin: 0; color: #fde68a; font-size: 15px; letter-spacing: 0.5px; }
+        .tt-modal-x { background: transparent; border: none; color: #8a8e94; font-size: 26px; line-height: 1; cursor: pointer; padding: 0 4px; }
+        .tt-modal-sub { color: #9ca3af; font-size: 11px; margin: 0 0 12px; }
+        .tt-livery-grid {
+          display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+          gap: 8px;
+        }
+        .tt-livery-card {
+          background: #14171c; border: 2px solid #2a2f38; border-radius: 8px;
+          padding: 8px 6px; cursor: pointer; color: #e8edf2;
+          font-family: inherit; text-align: center;
+          transition: border-color 0.15s, transform 0.08s;
+        }
+        .tt-livery-card:hover { border-color: #5a606a; }
+        .tt-livery-card.selected { border-color: #f5c542; background: #20231a; }
+        .tt-livery-preview { width: 100%; height: 50px; display: block; }
+        .tt-livery-name { font-size: 12px; font-weight: 800; margin-top: 4px; }
+        .tt-livery-city { font-size: 10px; color: #8a8e94; }
+
+        /* Mobile paysage : compresse le HUD verticalement */
+        @media (max-height: 500px) and (orientation: landscape) {
+          .tt-actions { bottom: 8px; gap: 6px; }
+          .tt-btn { padding: 5px 10px; min-width: 80px; }
+          .tt-btn-ico { font-size: 16px; }
+          .tt-btn-lbl { font-size: 10px; }
+          .tt-btn-cost { font-size: 10px; }
+          .tt-garage-fab { bottom: 6px; width: 36px; height: 36px; font-size: 16px; }
+          .tt-depot-card { top: 48px; padding: 4px 10px; }
+          .tt-contracts { top: 48px; width: 180px; max-height: calc(100% - 110px); }
+        }
+
 
         .tt-toast {
           position: absolute; top: 50%; left: 50%;
