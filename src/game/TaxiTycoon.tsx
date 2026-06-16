@@ -64,6 +64,24 @@ const SAVE_KEY = "taxi-tycoon-v1";
 const BASE_SPEED = 60; // px (sur viewBox 1920) par seconde
 const SPEED_UPGRADE_COST_BASE = 800;
 const TAXI_COST_BASE = 600;
+const MAX_CONTRACTS = 3;
+
+type ContractKind = "clients" | "earn" | "streak";
+type Contract = {
+  id: number;
+  kind: ContractKind;
+  label: string;
+  icon: string;
+  target: number;
+  progress: number;
+  deadline: number;     // epoch ms
+  duration: number;     // ms initial
+  rewardCash: number;
+  rewardMult?: number;
+  rewardMultSec?: number;
+};
+
+type ActiveBoost = { mult: number; until: number } | null;
 
 type SaveData = {
   money: number;
@@ -73,6 +91,7 @@ type SaveData = {
   taxiSpeedLvl: number;
   taxis: { colorId: string }[];
   defaultColor: string;
+  contractsCompleted: number;
 };
 
 const DEFAULT_SAVE: SaveData = {
@@ -83,6 +102,7 @@ const DEFAULT_SAVE: SaveData = {
   taxiSpeedLvl: 0,
   taxis: [{ colorId: "yellow" }],
   defaultColor: "yellow",
+  contractsCompleted: 0,
 };
 
 function loadSave(): SaveData {
