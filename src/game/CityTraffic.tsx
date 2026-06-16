@@ -148,7 +148,7 @@ export default function CityTraffic() {
         </filter>
       </defs>
 
-      <g opacity="0.26">
+      <g opacity="0.12">
         {ROADS.map((d, i) => (
           <path key={i} d={d} stroke="#0b0d10" strokeWidth={i >= 4 ? 34 : 46} fill="none" strokeLinecap="round" />
         ))}
@@ -182,13 +182,13 @@ export default function CityTraffic() {
       <g filter="url(#jce-soft-shadow)">
         <TowTruckSVG color="#ff8800" accent="#7a3a00" />
         <animateMotion dur="34s" begin="-4s" repeatCount="indefinite" rotate="auto">
-          <mpath href="#jce-road-1" />
+        <mpath href="#jce-road-2" />
         </animateMotion>
       </g>
       <g filter="url(#jce-soft-shadow)">
         <TowTruckSVG color="#f5c542" accent="#7a5a10" />
         <animateMotion dur="38s" begin="-19s" repeatCount="indefinite" rotate="auto" keyPoints="1;0" keyTimes="0;1">
-          <mpath href="#jce-road-3" />
+          <mpath href="#jce-road-1" />
         </animateMotion>
       </g>
 
