@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAdminConfig, setAdmin, resetAdmin, type AdminConfig } from "./adminConfig";
 
 /* Floating gear button + slide-in admin panel. */
