@@ -1,98 +1,84 @@
+## Le problème
 
-# Junky City Empire — Ville 3D Vivante
+La V1 3D a remplacé la carte `citymap.jpg` (que tu aimais) par un sol noir vide et des cubes. Je rétablis ta map et j'ajoute par-dessus une vraie couche 3D haute qualité — sans toucher au gameplay.
 
-## Objectif
+## Approche : hybride 2D + 3D superposé
 
-Passer de la map 2D actuelle à une vraie ville 3D semi-isométrique premium où **tout bouge** : voitures qui suivent les routes, dépanneuses, grues, employés animés, fumée, cycle jour/nuit. Conserver la logique de gameplay déjà en place (économie, bâtiments cliquables, construction par clics, revenus passifs).
-
-## Stack technique
-
-- **Three.js + @react-three/fiber + @react-three/drei** (rendu 3D performant dans React, compatible mobile).
-- Géométries primitives stylisées (boxes, cylinders) + matériaux PBR légers — pas de modèles GLB lourds, pour garder le build rapide et l'aspect "semi-réaliste stylisé" type Retown.
-- Animations via `useFrame` (boucle render) — pas de lib externe.
-- Palette tokenisée dans `src/styles.css` : noir, gris métal, orange, doré (déjà présente).
-
-## Architecture fichiers
-
-```
-src/
-  routes/index.tsx           → HUD 2D (argent, niveau, file véhicules) + <Canvas> 3D
-  game/
-    City3D.tsx               → Scene principale <Canvas>, lumières, cycle jour/nuit
-    roads.ts                 → Définition des routes (waypoints, splines)
-    Ground.tsx               → Sol, trottoirs, marquages routiers
-    Roads.tsx                → Rendu des routes
-    TrafficCar.tsx           → 1 voiture qui suit une spline en boucle
-    Traffic.tsx              → Spawn de N voitures sur les routes
-    TowTruck.tsx             → Dépanneuse qui va chercher un véhicule et le ramène
-    Crane.tsx                → Grue animée (rotation bras, câble)
-    Worker.tsx               → Employé qui marche en boucle autour d'un bâtiment
-    Smoke.tsx                → Particules de fumée (cheminées, casse)
-    buildings/
-      Casse.tsx
-      StationLavage.tsx
-      Garage.tsx
-      Casino.tsx
-      CentreCommercial.tsx
-      Logistique.tsx
-    BuildingZone.tsx         → Wrapper 3D cliquable + label HTML (Html de drei) qui réutilise le style "Premium Glass Tycoon" actuel
-    gameStore.ts             → État centralisé (argent, niveau, zones, file véhicules) — extrait de index.tsx
+```text
+┌──────────────────────────────────────┐
+│  HUD topbar (niveau / argent / XP)   │
+├──────────────────────────────────────┤
+│  ░░ citymap.jpg (background image) ░░│  ← couche 1 : ta carte
+│  ░░  + tint jour/nuit                │
+│  ─── Canvas Three.js transparent ────│  ← couche 2 : 3D animée
+│      • voitures détaillées           │
+│      • dépanneuses                   │
+│      • lampadaires qui éclairent     │
+│      • arbres, fumée                 │
+│  ─── Enseignes Premium Glass ────────│  ← couche 3 : labels HTML
+├──────────────────────────────────────┤
+│  Toolbar (boutique / construction…)  │
+└──────────────────────────────────────┘
 ```
 
-## Monde vivant (ce qui bouge)
+Pourquoi : ta carte reste intacte et nette, et la 3D vit dessus. Plus jamais d'écran noir.
 
-1. **Trafic urbain** — 8 à 12 voitures suivent des splines `CatmullRomCurve3` qui dessinent les routes. Vitesse variable, orientation tangente à la courbe, feux stop rouges à l'arrière qui s'allument au ralentissement.
-2. **Dépanneuses** — 2 dépanneuses font des allers-retours entre la zone Logistique et la Casse, avec une voiture accidentée chargée à l'arrière au retour.
-3. **Grue de la casse** — bras qui tourne, câble qui descend/remonte, voiture soulevée puis déposée dans la pile.
-4. **Station de lavage** — voiture entre, jets d'eau (plans semi-transparents animés), mousse, sort propre de l'autre côté.
-5. **Employés** — petits personnages capsule qui patrouillent autour du Garage et du Centre Commercial.
-6. **Fumée** — particules instanced sur les cheminées de la casse et du garage.
-7. **Cycle jour/nuit** — lumière directionnelle qui tourne (3 min réelles = 1 cycle), couleur ambient qui passe orange → bleu nuit, lampadaires et néons des bâtiments qui s'allument la nuit (emissive maps).
+## Ce que je fais
 
-## Routes & circulation
+### 1. Restaurer la carte
+- Remettre `citymap.jpg` en `background-image` de `.jce-map` (cover, centrée).
+- Garder les enseignes Premium Glass en `position: absolute` aux mêmes coordonnées `top%/left%` qu'avant.
 
-- Définir un graphe de routes en grille avec quelques courbes, sous forme de splines fermées.
-- Chaque voiture reçoit : `curve`, `offset` (0→1), `speed`. À chaque frame : `offset += speed * dt`, position = `curve.getPoint(offset)`, rotation = tangente.
-- Voies doubles : deux splines parallèles, sens opposés.
-- Intersections gérées simplement par décalages temporels (pas de vraie IA de feux pour V1, mais voitures qui ralentissent si une autre est devant sur la même spline → check distance).
+### 2. Calibrer les routes sur la map
+- Charger l'image une fois pour repérer les axes principaux (ronds-points, boulevards visibles).
+- Définir manuellement des splines `CatmullRomCurve3` qui suivent exactement les routes visibles (4 boucles principales + connecteurs).
+- Repère du plan 3D = repère pourcentage de la map, pour que tout reste aligné en redimensionnement.
 
-## Bâtiments cliquables (logique conservée)
+### 3. Overlay 3D transparent
+- `<Canvas>` en `position: absolute; inset: 0; pointer-events: none` avec `gl={{ alpha: true }}` et `scene.background = null`.
+- Caméra orthographique top-down très légèrement inclinée (≈ 15°) pour donner du volume sans casser la perspective de la map.
+- `pointer-events: auto` uniquement sur les enseignes (clic bâtiments).
 
-- Chaque bâtiment 3D est wrappé dans `<BuildingZone>` qui :
-  - Affiche un mesh 3D (groupe de boxes stylisées + détails).
-  - Superpose un label HTML via `<Html>` de drei, reprenant le style **Premium Glass Tycoon** déjà conçu (verrouillé / achetable / chantier / fini).
-  - Gère le clic → `ClicSurBatiment(id)` du store (achat → clics de construction → opérationnel → revenus passifs).
-- Les 6 bâtiments du brief sont placés sur la map. Les zones V2/V3 restent verrouillées tant que le niveau / argent requis n'est pas atteint.
+### 4. Vraies voitures 3D (≈ 12-16)
+- Carrosserie + capot bas + pare-brise inclinés + 4 roues cylindriques + jantes chromées + phares blancs émissifs + feux arrière rouges.
+- 8 palettes de peinture (rouge, jaune taxi, bleu, blanc, noir, vert, gris, orange).
+- Vitesse variable, rotation tangente à la spline, ombre projetée via `ContactShadows`.
 
-## HUD & UX
+### 5. Dépanneuses (2)
+- Cabine + plateau + bras de levage + épave transportée + gyrophare orange clignotant (emissive pulsé).
+- Navette entre la Casse et la Logistique sur une spline dédiée.
 
-- Barre supérieure premium : Argent, Niveau, Ferraille, bouton mute, indicateur jour/nuit.
-- File de véhicules entrants (déjà existante) en bas à droite avec Accepter / Rejeter.
-- Notifications toast (sonner) pour gains, déblocages, niveau up.
-- Responsive : `<Canvas>` plein écran, HUD en overlay absolute.
+### 6. Lampadaires (vrais, qui éclairent)
+- Mât + bras + abat-jour, alignés le long des routes (≈ 18 lampadaires).
+- Halo `emissive` + `pointLight` réel qui s'allume la nuit (intensité pilotée par le cycle jour/nuit).
 
-## Progression V1 → V3
+### 7. Décor
+- Arbres bas-poly (tronc cylindrique + 2 cônes verts) placés en bordure.
+- Cheminée de fumée animée près de la Casse (particules sphériques montantes, fading).
+- Ouvriers (gilet jaune + casque) qui patrouillent autour des bâtiments actifs.
 
-- **V1 (cette itération)** : Casse + Station de lavage + Garage opérationnels, monde vivant complet (trafic, dépanneuses, grue, employés, jour/nuit).
-- **V2** : Casino + Centre commercial débloquables, plus d'employés, plus de trafic.
-- **V3** : Seconde zone de ville (déplacement caméra), seconde casse, skyline étendue.
+### 8. Cycle jour/nuit
+- Sur la map : overlay CSS de teinte (bleu nuit ↔ transparent) qui suit la phase.
+- Sur la 3D : lumière directionnelle (soleil), ambient, et `pointLight` des lampadaires qui s'allument.
+- Cycle 3 min.
 
-Le code de V1 prévoit déjà les hooks (zones verrouillées, conditions de déblocage) pour V2/V3 sans refactor.
+### 9. Performances
+- `dpr={[1, 1.5]}`, ombres uniquement sur la directionnelle (shadow map 1024).
+- `Environment preset="city"` pour les reflets métalliques sans coût HDR lourd.
+- Pas d'effet de post-process.
 
-## Performance mobile
+## Ce que je NE change pas
+- Le gameplay (`gestionClicBatiment`, états, XP, niveau, argent).
+- Les enseignes Premium Glass Tycoon (mêmes styles, mêmes positions).
+- Le HUD topbar et la toolbar du bas.
 
-- Instancing (`<Instances>` de drei) pour les voitures de trafic et les arbres/lampadaires.
-- `dpr={[1, 1.5]}` sur le Canvas, ombres uniquement sur la lumière principale, shadow map 1024.
-- Pas de post-processing lourd ; éventuellement un léger tone mapping ACES.
+## Fichiers touchés
+- `src/game/City3D.tsx` — réécrit en overlay transparent + splines calées sur la map + détails 3D améliorés.
+- `src/routes/index.tsx` — remet `citymap.jpg` en background, repositionne le Canvas en overlay, garde la grille `top%/left%` pour les enseignes.
 
-## Dépendances à ajouter
+## Hors scope
+- Pas de modèles GLB lourds (perf mobile).
+- Pas de son.
+- Pas de modification de la carte elle-même.
 
-`three`, `@react-three/fiber`, `@react-three/drei`. Pas d'assets binaires externes — tout est géométrique.
-
-## Hors scope (à confirmer si tu veux les inclure plus tard)
-
-- Sons / musique d'ambiance.
-- Sauvegarde en base (Lovable Cloud) — pour l'instant état en mémoire.
-- Modèles GLB réalistes de voitures (alternative aux formes stylisées).
-
-Dis-moi si je lance la V1 telle quelle, ou si tu veux ajuster (ex. inclure sons, ou démarrer avec modèles GLB de voitures).
+Validation après build : capture d'écran preview + vérif que les voitures suivent visiblement les routes de la map.
