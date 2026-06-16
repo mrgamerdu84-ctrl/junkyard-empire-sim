@@ -1068,7 +1068,7 @@ export default function TaxiTycoon() {
           </div>
           <div className="tt-stat">
             <span className="tt-stat-icon">🚕</span>
-            <span className="tt-stat-val">{taxiCount}/{tier.maxTaxis}</span>
+            <span className="tt-stat-val">{taxiCount}/{effectiveMaxTaxis}</span>
           </div>
           {admin.rivalEnabled && (
             <div className="tt-stat" style={{ color: "#ff6b7a" }} title="Courses volées par Rival Cabs">
@@ -1081,7 +1081,7 @@ export default function TaxiTycoon() {
         <div className="tt-depot-card">
           <div className="tt-depot-name">{tier.badge} {tier.name}</div>
           <div className="tt-depot-stats">
-            Tarifs ×{tier.fareMult.toFixed(1)} • Capa {tier.maxTaxis} taxis
+            Tarifs ×{tier.fareMult.toFixed(1)} • Capa {effectiveMaxTaxis} taxis
           </div>
         </div>
 
