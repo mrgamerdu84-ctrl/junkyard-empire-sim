@@ -22,6 +22,11 @@ export type AdminConfig = {
   hqY: number;                   // 0..1080 — position absolue Y (SVG)
   hqScale: number;               // 0.5..3 — échelle visuelle
   hqRotation: number;            // -180..180 — rotation (deg)
+
+  // ====== Carburant ======
+  fuelConsumption: number;       // 0.1..3 — points de carburant consommés / seconde de roulage
+  gasStationX: number;           // 0..1920 — position X de la station-service
+  gasStationY: number;           // 0..1080 — position Y de la station-service
 };
 
 export const DEFAULT_ADMIN: AdminConfig = {
@@ -41,6 +46,10 @@ export const DEFAULT_ADMIN: AdminConfig = {
   hqY: 780,
   hqScale: 1,
   hqRotation: 0,
+
+  fuelConsumption: 0.6,
+  gasStationX: 1450,
+  gasStationY: 540,
 };
 
 const KEY = "taxi-tycoon-admin-v2";
