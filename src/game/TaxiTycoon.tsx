@@ -1008,7 +1008,24 @@ export default function TaxiTycoon() {
 
 
         {/* Dépôt */}
-        {pathsReady && <Depot tier={tier} x={depotXY.x} y={depotXY.y - 18} scale={admin.hqScale} rotation={admin.hqRotation} />}
+        {pathsReady && (() => {
+          const t = (performance.now() % 300000) / 300000;
+          const daylight = Math.max(0, Math.sin(t * Math.PI * 2));
+          const night = 0.12 + (1 - daylight) * 0.78;
+          return (
+            <Depot
+              tier={tier}
+              x={depotXY.x}
+              y={depotXY.y - 18}
+              scale={admin.hqScale}
+              rotation={admin.hqRotation}
+              capLvl={save.hqCapacityLvl ?? 0}
+              revLvl={save.hqRevenueLvl ?? 0}
+              prodLvl={save.hqProductionLvl ?? 0}
+              night={night}
+            />
+          );
+        })()}
 
         {/* Petit garage de personnalisation à côté du QG */}
         {pathsReady && (
