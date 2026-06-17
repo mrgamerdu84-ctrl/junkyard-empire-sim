@@ -655,10 +655,12 @@ export default function TaxiTycoon() {
     const target = admin.rivalEnabled ? Math.max(0, Math.min(6, admin.rivalTaxiCount)) : 0;
     while (rivalTaxisRef.current.length < target) {
       const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
-      rivalTaxisRef.current.push({
+      const spawnedRival: RivalTaxi = {
         id: 10000 + rivalTaxisRef.current.length,
         pathIdx: 0, pos, target: pos, mode: "idle", jobId: null,
-      });
+      };
+      syncVehicleLane(spawnedRival);
+      rivalTaxisRef.current.push(spawnedRival);
     }
     while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
     forceRender((n) => n + 1);
@@ -676,7 +678,7 @@ export default function TaxiTycoon() {
     while (policeCarsRef.current.length < target) {
       const pIdx = allowed[policeCarsRef.current.length % allowed.length];
       const plen = pathLensRef.current[pIdx] ?? 0;
-      policeCarsRef.current.push({
+      const spawnedPolice: PoliceCar = {
         id: 30000 + policeCarsRef.current.length,
         pathIdx: pIdx,
         pos: (policeCarsRef.current.length / target) * plen,
@@ -684,7 +686,9 @@ export default function TaxiTycoon() {
         mode: "patrol",
         chaseRivalId: null,
         chasePlayerTaxiId: null,
-      });
+      };
+      syncVehicleLane(spawnedPolice);
+      policeCarsRef.current.push(spawnedPolice);
     }
     while (policeCarsRef.current.length > target) policeCarsRef.current.pop();
     forceRender((n) => n + 1);
