@@ -371,11 +371,7 @@ export default function CityTraffic() {
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, []);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+
 
   // Boucle de trafic : positions JS pilotées avec freinage progressif.
   useEffect(() => {
