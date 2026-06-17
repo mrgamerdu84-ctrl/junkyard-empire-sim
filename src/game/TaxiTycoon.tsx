@@ -1669,20 +1669,30 @@ export default function TaxiTycoon() {
           return (
             <g key={pc.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
               {chasing && (
-                <circle r="22" fill={t === 0 ? "#3b82f6" : "#ef4444"} opacity="0.28">
-                  <animate attributeName="r" values="18;26;18" dur="0.6s" repeatCount="indefinite" />
+                <circle r="24" fill={t === 0 ? "#3b82f6" : "#ef4444"} opacity="0.28">
+                  <animate attributeName="r" values="20;28;20" dur="0.5s" repeatCount="indefinite" />
                 </circle>
               )}
-              <rect x="-14" y="-7" width="28" height="14" rx="3" fill="#f8fafc" stroke="#0b0d10" strokeWidth="1" opacity={hidden ? 0.85 : 1} />
-              <rect x="-14" y="-1.4" width="28" height="2.8" fill="#0b0d10" />
-              <rect x="-12" y="-5.5" width="6" height="11" rx="1.2" fill="#dbe2ea" opacity="0.9" />
-              <rect x="6" y="-5.5" width="6" height="11" rx="1.2" fill="#dbe2ea" opacity="0.9" />
-              <rect x="-4" y="-3" width="8" height="6" rx="1.2" fill="#0b0d10" />
-              <circle cx="-2" cy="0" r="1.6" fill={ledA} />
-              <circle cx="2" cy="0" r="1.6" fill={ledB} />
-              <text x="0" y="1.6" textAnchor="middle" fontSize="3" fontWeight="900" fill="#0b0d10" pointerEvents="none">POLICE</text>
+              {/* Carrosserie : moitié avant bleu marine (PATROUILLE), moitié arrière blanche (POLICE) */}
+              <rect x="-15" y="-7.5" width="15" height="15" rx="3" fill="#15306b" stroke="#0b0d10" strokeWidth="1" opacity={hidden ? 0.85 : 1} />
+              <rect x="0" y="-7.5" width="15" height="15" rx="3" fill="#f8fafc" stroke="#0b0d10" strokeWidth="1" opacity={hidden ? 0.85 : 1} />
+              {/* Capot / coffre — vue de dessus */}
+              <rect x="-13" y="-6" width="6" height="12" rx="1" fill="#0e2350" opacity="0.55" />
+              <rect x="7" y="-6" width="6" height="12" rx="1" fill="#e2e8f0" opacity="0.7" />
+              {/* Pare-brise & lunette arrière */}
+              <rect x="-6" y="-5.5" width="4.5" height="11" rx="1" fill="#1a2230" opacity="0.85" />
+              <rect x="1.5" y="-5.5" width="4.5" height="11" rx="1" fill="#1a2230" opacity="0.85" />
+              {/* Rampe de gyrophares sur le toit */}
+              <rect x="-3.5" y="-3" width="7" height="6" rx="1" fill="#0b0d10" />
+              <rect x="-3" y="-2.5" width="3" height="5" rx="0.5" fill={ledA} />
+              <rect x="0" y="-2.5" width="3" height="5" rx="0.5" fill={ledB} />
+              {/* Bandes latérales */}
+              <rect x="-15" y="-7.8" width="30" height="1" fill="#fbbf24" opacity="0.7" />
+              <rect x="-15" y="6.8" width="30" height="1" fill="#fbbf24" opacity="0.7" />
+              {/* Texte POLICE sur le toit (côté blanc) */}
+              <text x="8" y="1.3" textAnchor="middle" fontSize="3.2" fontWeight="900" fill="#15306b" pointerEvents="none">POLICE</text>
               {hidden && (
-                <text x="0" y="-12" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
+                <text x="0" y="-13" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
               )}
             </g>
           );
@@ -1998,7 +2008,9 @@ export default function TaxiTycoon() {
           position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 200;
           display: flex; align-items: center; justify-content: center; padding: 16px;
           backdrop-filter: blur(4px);
+          pointer-events: auto;
         }
+        .tt-shop-overlay * { pointer-events: auto; }
         .tt-shop {
           width: 100%; max-width: 460px; background: #14171c; color: #e8edf2;
           border: 1px solid #2a2f38; border-radius: 14px; padding: 16px;
