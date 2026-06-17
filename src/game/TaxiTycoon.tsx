@@ -848,11 +848,6 @@ export default function TaxiTycoon() {
           } else if (taxi.mode === "to_gas") {
             taxi.mode = "refueling";
             taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
-          } else if (false) {
-            // placeholder pour conserver la chaîne if/else
-          } else if (taxi.mode === "to_gas") {
-            taxi.mode = "refueling";
-            taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
           }
         } else {
           // Respect des feux : si rouge devant, on s'arrête (skip ce frame)
