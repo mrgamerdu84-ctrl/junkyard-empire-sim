@@ -622,7 +622,7 @@ export default function TaxiTycoon() {
       // taxi neuf : path 0, posé près du QG
       const pIdx = 0;
       const pos = closestOnPath(pIdx, admin.hqX, admin.hqY);
-      taxisRef.current.push({
+      const spawnedTaxi: Taxi = {
         id: nextIdRef.current++,
         pathIdx: pIdx,
         pos,
@@ -633,7 +633,9 @@ export default function TaxiTycoon() {
         jobId: null,
         fuel: 100,
         ridesSinceDeposit: 0,
-      });
+      };
+      syncVehicleLane(spawnedTaxi);
+      taxisRef.current.push(spawnedTaxi);
     }
     taxisRef.current.forEach((t, i) => {
       t.speed = newSpeed;
@@ -642,6 +644,7 @@ export default function TaxiTycoon() {
         const pos = closestOnPath(t.pathIdx, admin.hqX, admin.hqY);
         t.pos = pos; t.target = pos;
       }
+      syncVehicleLane(t);
     });
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
