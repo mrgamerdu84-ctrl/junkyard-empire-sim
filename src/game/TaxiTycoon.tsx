@@ -285,23 +285,86 @@ function Depot({ tier, x, y, scale = 1, rotation = 0, capLvl = 0, revLvl = 0, pr
 
 
 function RivalDepot({ x, y }: { x: number; y: number }) {
+  // Vrai QG concurrent : dalle, immeuble 2 étages, vitrines, enseigne lumineuse,
+  // places de parking rouges, antenne radio. Aucun simple cube.
+  const W = 220;
+  const H = 200;
   return (
-    <g transform={`translate(${x},${y})`}>
-      <ellipse cx="0" cy="48" rx="92" ry="16" fill="rgba(0,0,0,0.55)" />
-      <path d="M -82 38 L 82 38 L 102 48 L -102 48 Z" fill="#2a2024" stroke="#1a0a10" strokeWidth="1.2" />
-      <rect x="-72" y="-14" width="144" height="54" rx="2" fill="#3a1820" stroke="#1a0a10" strokeWidth="1.8" />
-      <path d="M -78 -14 L 0 -46 L 78 -14 Z" fill="#7a1020" stroke="#1a0a10" strokeWidth="1.8" />
-      <rect x="-54" y="-2" width="32" height="40" fill="#0a0608" stroke="#000" strokeWidth="1.4" />
-      <rect x="22" y="-2" width="32" height="40" fill="#0a0608" stroke="#000" strokeWidth="1.4" />
-      <rect x="-18" y="4" width="36" height="20" fill="#ff3040" opacity="0.9" stroke="#1a0a10" strokeWidth="1" />
-      <rect x="-54" y="-40" width="108" height="16" rx="2.5" fill="#dc1a2a" stroke="#1a0a10" strokeWidth="1.6" />
-      <text x="0" y="-28" fontSize="10" fontWeight="900" textAnchor="middle" fill="#fff" letterSpacing="1">RIVAL CABS</text>
-      <circle cx="58" cy="-30" r="10" fill="#0a0608" stroke="#ff3040" strokeWidth="2" />
-      <text x="58" y="-26" fontSize="12" textAnchor="middle">⚔️</text>
-      <line x1="-56" y1="-46" x2="-56" y2="-60" stroke="#1a0a10" strokeWidth="1.4" />
-      <circle cx="-56" cy="-61" r="2" fill="#ff3040">
+    <g transform={`translate(${x},${y})`} filter="url(#taxi-shadow)">
+      {/* ombre portée */}
+      <ellipse cx="0" cy={H / 2 - 8} rx={W / 2 + 4} ry="14" fill="rgba(0,0,0,0.55)" />
+
+      {/* Dalle / parvis */}
+      <rect x={-W / 2} y={-H / 2} width={W} height={H} rx="5" fill="#1f1418" stroke="#0a0608" strokeWidth="2" />
+      <g opacity="0.55">
+        {Array.from({ length: 14 }).map((_, i) => (
+          <rect key={i} x={-W / 2 + i * (W / 14)} y={-H / 2} width={W / 28} height="5" fill="#ff3040" />
+        ))}
+      </g>
+
+      {/* Bâtiment principal (2 étages, façade vitrée) */}
+      <rect x={-W / 2 + 18} y={-H / 2 + 20} width={W - 36} height={H / 2 + 4} rx="2.5" fill="#3a1d24" stroke="#0a0608" strokeWidth="1.6" />
+      {/* Toit en pente */}
+      <path d={`M ${-W / 2 + 14} ${-H / 2 + 20} L 0 ${-H / 2 - 8} L ${W / 2 - 14} ${-H / 2 + 20} Z`} fill="#7a1020" stroke="#0a0608" strokeWidth="1.6" />
+      <rect x="-6" y={-H / 2 - 28} width="3" height="22" fill="#0a0608" />
+      <circle cx="-4.5" cy={-H / 2 - 30} r="2.2" fill="#ff3040">
         <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite" />
       </circle>
+
+      {/* Vitrines / fenêtres (2 rangées) */}
+      {[0, 1].map(row => (
+        <g key={row}>
+          {[0, 1, 2, 3].map(col => (
+            <rect
+              key={col}
+              x={-W / 2 + 30 + col * ((W - 60) / 4)}
+              y={-H / 2 + 30 + row * 28}
+              width={(W - 80) / 4}
+              height={20}
+              fill="#0a0608"
+              stroke="#1a0a10"
+              strokeWidth="1"
+            />
+          ))}
+        </g>
+      ))}
+      {/* Porte centrale */}
+      <rect x="-12" y={-H / 2 + 90} width="24" height="20" fill="#0a0608" stroke="#ff3040" strokeWidth="1.2" />
+      <rect x="-1" y={-H / 2 + 90} width="2" height="20" fill="#ff3040" opacity="0.7" />
+
+      {/* Enseigne au-dessus de la porte */}
+      <rect x={-70} y={-H / 2 + 4} width={140} height={14} rx="2" fill="#0a0608" stroke="#ff3040" strokeWidth="1.6" />
+      <text x="0" y={-H / 2 + 14} fontSize="11" fontWeight="900" textAnchor="middle" fill="#ff5566" letterSpacing="2" style={{ filter: "drop-shadow(0 0 4px #ff3040)" }}>RIVAL CABS</text>
+
+      {/* Bandes parking rouges */}
+      <g>
+        {[-3, -1, 1, 3].map((k, i) => {
+          const px = k * 22;
+          const py = H / 2 - 28;
+          return (
+            <g key={i}>
+              <rect x={px - 14} y={py - 16} width="28" height="32" rx="2" fill="#1a0a10" stroke="#ff3040" strokeWidth="1.1" strokeDasharray="3 2" opacity="0.9" />
+              <text x={px} y={py + 22} fontSize="5.5" textAnchor="middle" fill="#ff5566" opacity="0.7">R{String(i + 1).padStart(2, "0")}</text>
+            </g>
+          );
+        })}
+      </g>
+
+      {/* Plots éclairés entrée */}
+      <g>
+        {[-W / 2 + 8, W / 2 - 8].map((cx, i) => (
+          <g key={i} transform={`translate(${cx},${H / 2 - 26})`}>
+            <circle r="5" fill="#0a0608" stroke="#ff3040" strokeWidth="1.2" />
+            <circle r="2.5" fill="#ff5566" opacity="0.85" />
+          </g>
+        ))}
+      </g>
+
+      {/* Badge ⚔️ */}
+      <g transform={`translate(${W / 2 - 24},${-H / 2 + 30})`}>
+        <circle r="10" fill="#0a0608" stroke="#ff3040" strokeWidth="2" />
+        <text y="4" fontSize="12" textAnchor="middle">⚔️</text>
+      </g>
     </g>
   );
 }
