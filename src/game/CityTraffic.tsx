@@ -209,60 +209,41 @@ function HatchSVG({ color, accent, scale = 1 }: { color: string; accent: string;
 
 function Vehicle({
   kind,
-  color,
-  accent: _accent,
   scale = 1,
-  variant = "black",
+  photoIdx = 0,
 }: {
   kind: VehicleKind;
   color: string;
   accent: string;
   scale?: number;
   variant?: VehicleVariant;
+  photoIdx?: number;
 }) {
-  // Toutes les voitures PNJ utilisent des images top-down.
-  // - variant "black" : sedan noir (hood en haut dans l'image native) → rotate(+90)
-  // - variant "red"   : coupé rouge (hood en bas dans l'image native) → rotate(-90)
-  // Une teinte `color` en multiply colore légèrement la carrosserie.
-  const baseLen = kind === "truck" ? 96 : kind === "van" ? 80 : kind === "hatch" ? 60 : 70;
-  const baseWid = kind === "truck" ? 38 : kind === "van" ? 36 : 32;
+  // Voitures civiles : on utilise les photos de Dodge Charger (vue 3/4 côté).
+  // Les photos ont le capot à gauche : on applique scaleX(-1) pour que le
+  // capot pointe vers +x (est), ce qui aligne le sprite avec l'angle du path
+  // (0° = est) lors de la rotation appliquée par le parent.
+  const baseLen = kind === "truck" ? 88 : kind === "van" ? 78 : kind === "hatch" ? 62 : 72;
   const W = baseLen;
-  const H = baseWid;
-  const isRed = variant === "red";
-  const href = isRed ? npcRedTopdown : npcTopdown;
-  const innerRotate = isRed ? -90 : 90;
-  const lc = color.toLowerCase();
-  // Teinte légère, désactivée si la couleur est proche de la teinte native de l'image.
-  let tintOpacity = 0.5;
-  if (lc === "#000" || lc === "#000000") tintOpacity = 0;
-  if (isRed && (lc === "#d83a2a" || lc === "#b81c4a" || lc === "#e11d48")) tintOpacity = 0;
+  const H = W * 0.6;
+  const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
   return (
     <g transform={`scale(${scale})`}>
-      <ellipse cx="0" cy="3" rx={W / 2 + 2} ry={H / 2 - 1} fill="rgba(0,0,0,0.4)" />
-      <g transform={`rotate(${innerRotate})`}>
+      <ellipse cx="0" cy={H * 0.18} rx={W / 2 + 2} ry={H / 2 - 2} fill="rgba(0,0,0,0.4)" />
+      <g transform="scale(-1,1)">
         <image
           href={href}
-          x={-H / 2}
-          y={-W / 2}
-          width={H}
-          height={W}
+          x={-W / 2}
+          y={-H / 2}
+          width={W}
+          height={H}
           preserveAspectRatio="xMidYMid meet"
         />
-        <rect
-          x={-H / 2}
-          y={-W / 2}
-          width={H}
-          height={W}
-          fill={color}
-          opacity={tintOpacity}
-          style={{ mixBlendMode: "multiply" }}
-        />
       </g>
-      <circle cx={W / 2 - 2} cy={-H / 4} r="1.4" fill="#fff7c0" opacity="0.85" />
-      <circle cx={W / 2 - 2} cy={H / 4} r="1.4" fill="#fff7c0" opacity="0.85" />
     </g>
   );
 }
+
 
 // Composants SVG conservés pour référence/legacy (non utilisés depuis l'image PNG).
 void CarSVG; void VanSVG; void TruckSVG; void HatchSVG;
