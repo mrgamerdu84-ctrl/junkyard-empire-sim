@@ -53,11 +53,11 @@ export const DEFAULT_ADMIN: AdminConfig = {
   maxActiveTaxis: 6,
   taxiSpawnCooldown: 1.5,
 
-  // QG ancré par défaut sur le bâtiment TAXI CORP en bas-gauche de la map.
+  // QG ancré dans le décor du haut, juste au nord du rond-point.
   hqUseFreePos: true,
-  hqX: 230,
-  hqY: 780,
-  hqScale: 1,
+  hqX: 960,
+  hqY: 195,
+  hqScale: 1.45,
   hqRotation: 0,
 
   fuelConsumption: 0.6,
