@@ -1,41 +1,79 @@
-# Plan — Trafic, taxis & station-service
+# Rendre la ville vivante (taxis, PNJ, trafic, jour/nuit)
 
-## 1. Débloquer les camions figés (`CityTraffic.tsx`)
-Cause : dans la boucle de freinage, dès qu'un véhicule devant ralentit à ~1 px/s, tous ceux derrière s'alignent en cascade et tombent au plancher minimum. Les camions (les plus lents par `duration` élevée) finissent collés.
+## 1. Nettoyage zone "village" (haut de la map)
+Dans `CityTraffic.tsx` et `TaxiTycoon.tsx` :
+- Définir une `NO_SPAWN_ZONE` couvrant toute la bande supérieure (villages).
+- Filtrer le spawn des clients, PNJ, voitures et camions pour qu'aucun n'apparaisse ni ne traverse cette zone.
+- Supprimer les routes/segments qui passent sur les maisons du village.
 
-Correctifs :
-- Relever le plancher de vitesse de `1` à `~30 % de baseSpeed` (ils ne peuvent plus se figer).
-- Empêcher la cascade : si le leader est lui-même en train de freiner sans obstacle réel devant, ignorer son ralentissement (anti-deadlock).
-- Réduire `SAFE_GAP` pour les véhicules longs (truck) pour éviter qu'ils ne se bloquent mutuellement aux courbures du path.
+## 2. Suppression de l'ancien QG + nouveau QG "garage industriel chic"
+- Retirer `hq-taxi-depot.png` du rendu (asset gardé mais plus utilisé, ou supprimé).
+- Nouveau QG dessiné en SVG vue du ciel : grand toit plat gris béton, marquages jaunes au sol, rangée de places de parking pour taxis (visibles, taxis garés visibles quand inactifs), néons jaunes/noirs, enseigne "TAXI HQ", héliport optionnel niveau max.
+- Le QG évolue visuellement avec les upgrades de la boutique existante (+ places de parking visibles selon `hqCapacityLvl`, néons plus lumineux selon `hqRevenueLvl`, etc.).
 
-## 2. Variété des trajets taxis (`TaxiTycoon.tsx`)
-Aujourd'hui, le pathfinding choisit toujours le même path par défaut. Modifs :
-- Quand un taxi part en mission, choisir aléatoirement parmi les chemins disponibles vers la destination (sélection pondérée, pas toujours le plus court).
-- Ajouter une petite mémoire « dernier path utilisé » pour pénaliser sa réutilisation immédiate.
-- Idem pour le retour au QG.
+## 3. Feux rouges automatiques + code de la route
+Nouveau système dans `CityTraffic.tsx` :
+- Détecter automatiquement chaque intersection (croisement de routes).
+- À chaque intersection, créer un objet `TrafficLight` avec cycle vert 8s / orange 2s / rouge 10s, déphasé entre axes N-S et E-O.
+- Avant de franchir une intersection, chaque véhicule (taxi, voiture, camion) regarde le feu de sa direction :
+  - vert → passe
+  - orange → freine si encore loin, passe sinon
+  - rouge → s'arrête à la ligne d'arrêt (zone tampon ~20 px).
+- Passages piétons : zones marquées juste avant chaque feu. Quand feu véhicule = rouge, le feu piéton est vert → les PNJ peuvent traverser. Les véhicules ne redémarrent que si le passage est libre.
+- Respect de la priorité : à un croisement sans feu (ronds-points / petites rues), céder à la voiture déjà engagée.
 
-## 3. Spawn clients sur trottoir (`TaxiTycoon.tsx`)
-Les points pickup/dropoff sont posés directement sur la courbe de route. Correctif :
-- À la génération d'un job, calculer la normale du path au point choisi et décaler le client de `~22 px` perpendiculairement (côté trottoir aléatoire).
-- Le taxi reste sur la route ; le sprite client est décalé.
+## 4. Sprites vue du ciel uniformes
+Tous les acteurs en vue de dessus (top-down) cohérente avec les taxis :
+- PNJ : petit cercle/forme avec tête + épaules vus du dessus (SVG, ~14 px), couleurs variées.
+- Voitures civiles : rectangles arrondis vue du ciel avec pare-brise (différentes couleurs/tailles).
+- Camions : rectangle plus long avec cabine + remorque.
+- Feux rouges : pictogramme vu du ciel (3 pastilles rouge/orange/vert sur poteau, ombre courte).
+- Lampadaires : petit cercle lumineux sur trottoir, halo qui s'allume la nuit.
 
-## 4. Station-service & jauge d'essence (`TaxiTycoon.tsx` + `AdminPanel.tsx`)
-- Ajouter `fuel: number` (0–100) sur chaque taxi, sauvegardé.
-- Consommation : `−X` par seconde en mouvement (X paramétrable admin, défaut ~0.5).
-- Spawn d'une station-service fixe sur la map (sprite simple, à proximité d'une route).
-- Si `fuel < 25` ET taxi libre → mode `refueling` : il roule vers la station, attend 4 s (remplissage animé), repart avec `fuel = 100`.
-- Slider admin : vitesse de consommation + bouton « refaire le plein de toute la flotte ».
-- UI : petite jauge fuel sous chaque taxi dans le panneau de gestion.
+## 5. Cycle jour/nuit 5 minutes
+Nouveau hook `useDayNightCycle` :
+- Cycle complet 300 s : aube → jour → crépuscule → nuit.
+- Overlay SVG plein écran teinté (transparent jour, bleu nuit ~rgba(10,20,50,0.55) la nuit) au-dessus de la map sous l'UI.
+- Lampadaires et néons du QG : halo `<radialGradient>` activé quand `phase ∈ {dusk, night, dawn}`.
+- Phares des voitures la nuit : 2 petits cônes jaunes devant le véhicule.
+- Indicateur d'heure (petite horloge en haut) optionnel.
 
-## 5. Correction visuelle taxis
-- Auditer le composant `Taxi` : retirer halos résiduels, vérifier que la `tintOpacity` du multiply ne dénature pas le sprite, supprimer toute superposition orange/rouge incorrecte.
-- S'assurer que le transform JS n'écrase pas le scale (déjà OK via `<g scale>` interne, à confirmer).
+## 6. Boucle temps réel
+- Un seul `requestAnimationFrame` central calcule `dt` (delta-time en secondes) et le passe à : véhicules, PNJ, feux, cycle jour/nuit, clients.
+- Tous les mouvements deviennent `pos += speed * dt` au lieu de pas fixes → indépendant du framerate, sensation "temps réel".
 
-## Hors-scope (à traiter plus tard)
-Feux rouges, panneaux, piétons supplémentaires, refonte du sprite QG.
+## 7. PNJ piétons (densité moyenne)
+- ~25-40 PNJ actifs simultanément sur les trottoirs.
+- Marchent le long des trottoirs, traversent uniquement aux passages piétons quand feu piéton vert.
+- Spawn/despawn aux bords de la map (jamais dans la zone village).
 
 ## Détails techniques
-- `SaveData` bumpé v2 → v3 pour intégrer `fuel` (migration : si absent → 100).
-- Nouvelle constante `GAS_STATION_POS = { x, y }` ancrée sur une route existante.
-- `AdminConfig` : `fuelConsumption` (0.1–2), `gasStationX/Y`.
-- Pathfinding taxi : helper `pickRoute(from, to, excludeIdx?)` retournant un path index aléatoire pondéré.
+
+**Fichiers touchés**
+- `src/game/CityTraffic.tsx` : intersections, feux, passages piétons, sprites top-down, PNJ.
+- `src/game/TaxiTycoon.tsx` : nouveau QG SVG, suppression import `hq-taxi-depot`, intégration cycle jour/nuit overlay, respect des feux par les taxis.
+- `src/game/adminConfig.ts` : nouvelles options `dayNightSpeed`, `pedestrianDensity`, `trafficLightsEnabled`.
+- `src/game/AdminPanel.tsx` : toggles correspondants.
+- (optionnel) suppression de `src/assets/hq-taxi-depot.png.asset.json`.
+
+**Structures clés**
+```text
+TrafficLight { x, y, axis: 'NS'|'EO', state: 'green'|'orange'|'red', t: number }
+Intersection { x, y, lights: TrafficLight[2], crosswalks: Crosswalk[4] }
+Pedestrian { x, y, path, speed, waitingAt?: Crosswalk }
+DayNight { t: 0..1, phase: 'dawn'|'day'|'dusk'|'night' }
+```
+
+**Comportement véhicule (pseudo)**
+```text
+nextLight = lightAhead(vehicle, 60px)
+if nextLight.state === 'red'  → target speed 0 at stopLine
+if nextLight.state === 'orange' && dist > brakeDist → slow
+else → cruise
+if crosswalkAhead has pedestrian crossing → stop
+```
+
+## Hors scope (à confirmer après)
+- Klaxons / sons d'ambiance nuit.
+- Météo (pluie, neige).
+- Voitures de police / urgences avec priorité.
