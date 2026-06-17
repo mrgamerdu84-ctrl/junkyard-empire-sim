@@ -43,7 +43,7 @@ export const TAXI_COLORS = [
   { id: "yellow", name: "Jaune", body: "#f5c542", trim: "#9c7a1c" },
 ];
 
-type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling";
+type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
 type Taxi = {
   id: number;
   pathIdx: number;    // path actuel emprunté (0..ROADS.length-1)
@@ -55,7 +55,14 @@ type Taxi = {
   jobId: number | null;
   fuel: number;       // 0..100
   refuelUntil?: number; // timestamp ms : fin du remplissage
+  ridesSinceDeposit: number; // nb courses depuis le dernier dépôt au QG
+  depositUntil?: number;     // timestamp ms : fin du dépôt au QG
+  mustDeposit?: boolean;     // flag : doit déposer au QG en retournant
 };
+
+// Mécanique : retour au QG tous les N courses, attente de DEPOSIT_MS
+const DEPOSIT_EVERY_RIDES = 3;
+const DEPOSIT_MS = 5000;
 
 type JobStatus = "offered" | "accepted";
 type Job = {
@@ -622,6 +629,7 @@ export default function TaxiTycoon() {
         colorId: save.taxis[idx].colorId,
         jobId: null,
         fuel: 100,
+        ridesSinceDeposit: 0,
       });
     }
     taxisRef.current.forEach((t, i) => {
@@ -732,7 +740,7 @@ export default function TaxiTycoon() {
       // === Mouvement des taxis ===
       for (const taxi of taxisRef.current) {
         // Consommation carburant si en mouvement
-        if (taxi.mode !== "idle" && taxi.mode !== "refueling") {
+        if (taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing") {
           taxi.fuel = Math.max(0, taxi.fuel - adm.fuelConsumption * dt);
         }
 
@@ -761,6 +769,17 @@ export default function TaxiTycoon() {
             taxi.pos = closestOnPath(pIdx, here.x, here.y);
             taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
             taxi.mode = "returning";
+          }
+          continue;
+        }
+
+        // Depositing : taxi garé au QG, attend 5s avant de repartir
+        if (taxi.mode === "depositing") {
+          if (taxi.depositUntil && Date.now() >= taxi.depositUntil) {
+            taxi.depositUntil = undefined;
+            taxi.mustDeposit = false;
+            taxi.ridesSinceDeposit = 0;
+            taxi.mode = "idle";
           }
           continue;
         }
@@ -805,14 +824,26 @@ export default function TaxiTycoon() {
               setJobs((js) => js.filter((x) => x.id !== j.id));
             }
             taxi.jobId = null;
+            taxi.ridesSinceDeposit = (taxi.ridesSinceDeposit ?? 0) + 1;
             const pIdx = pickPath(taxi.pathIdx);
             const here = taxiXY(taxi);
             taxi.pathIdx = pIdx;
             taxi.pos = closestOnPath(pIdx, here.x, here.y);
             taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
             taxi.mode = "returning";
+            // tous les N courses, doit déposer au QG
+            if (taxi.ridesSinceDeposit >= DEPOSIT_EVERY_RIDES) {
+              taxi.mustDeposit = true;
+            }
           } else if (taxi.mode === "returning") {
-            taxi.mode = "idle";
+            if (taxi.mustDeposit) {
+              // arrivé au garage : dépose et attend 5s
+              taxi.mode = "depositing";
+              taxi.depositUntil = Date.now() + DEPOSIT_MS;
+              popFloat("💰 Dépôt", adm.hqX, adm.hqY - 24);
+            } else {
+              taxi.mode = "idle";
+            }
             taxi.jobId = null;
           } else if (taxi.mode === "to_gas") {
             taxi.mode = "refueling";
@@ -893,7 +924,7 @@ export default function TaxiTycoon() {
       {
         const nowMs = performance.now();
         for (const taxi of taxisRef.current) {
-          if (taxi.mode === "idle" || taxi.mode === "refueling") continue;
+          if (taxi.mode === "idle" || taxi.mode === "refueling" || taxi.mode === "depositing") continue;
           if (taxi.speed <= SPEED_LIMIT) continue;
           for (const rd of RADARS) {
             if (taxi.pathIdx !== rd.pathIdx) continue;
@@ -1077,7 +1108,7 @@ export default function TaxiTycoon() {
             const pcPt = pathRefs.current[pc.pathIdx]?.getPointAtLength(pc.pos);
             if (pcPt) {
               for (const taxi of taxisRef.current) {
-                if (taxi.mode === "idle" || taxi.mode === "refueling") continue;
+                if (taxi.mode === "idle" || taxi.mode === "refueling" || taxi.mode === "depositing") continue;
                 if (taxi.speed <= SPEED_LIMIT) continue;
                 const tPt = pathRefs.current[taxi.pathIdx]?.getPointAtLength(taxi.pos);
                 if (!tPt) continue;
@@ -1663,7 +1694,7 @@ export default function TaxiTycoon() {
           return (
             <g key={taxi.id}>
               <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
-                <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling"} />
+                <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing"} />
               </g>
               {/* Mini jauge essence sous le taxi */}
               <g transform={`translate(${p.x - 12},${p.y + 22})`}>
