@@ -3,6 +3,7 @@ import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import taxiYellowAsset from "@/assets/taxi-yellow-top.png";
 import taxiBlackAsset from "@/assets/taxi-black-top.png";
 import taxiRedAsset from "@/assets/taxi-red-top.png";
+import policeCarAsset from "@/assets/police-car-top.png";
 import musicAsset from "@/assets/midnight-fare.mp3.asset.json";
 import { shouldStopAhead, nowSeconds } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
@@ -10,6 +11,7 @@ import { getAdmin, useAdminConfig } from "./adminConfig";
 const TAXI_YELLOW_URL = taxiYellowAsset;
 const TAXI_BLACK_URL = taxiBlackAsset;
 const TAXI_RED_URL = taxiRedAsset;
+const POLICE_CAR_URL = policeCarAsset;
 const MUSIC_URL = musicAsset.url;
 
 /* ============================================================
@@ -1673,26 +1675,9 @@ export default function TaxiTycoon() {
                   <animate attributeName="r" values="20;28;20" dur="0.5s" repeatCount="indefinite" />
                 </circle>
               )}
-              {/* Carrosserie : moitié avant bleu marine (PATROUILLE), moitié arrière blanche (POLICE) */}
-              <rect x="-15" y="-7.5" width="15" height="15" rx="3" fill="#15306b" stroke="#0b0d10" strokeWidth="1" opacity={hidden ? 0.85 : 1} />
-              <rect x="0" y="-7.5" width="15" height="15" rx="3" fill="#f8fafc" stroke="#0b0d10" strokeWidth="1" opacity={hidden ? 0.85 : 1} />
-              {/* Capot / coffre — vue de dessus */}
-              <rect x="-13" y="-6" width="6" height="12" rx="1" fill="#0e2350" opacity="0.55" />
-              <rect x="7" y="-6" width="6" height="12" rx="1" fill="#e2e8f0" opacity="0.7" />
-              {/* Pare-brise & lunette arrière */}
-              <rect x="-6" y="-5.5" width="4.5" height="11" rx="1" fill="#1a2230" opacity="0.85" />
-              <rect x="1.5" y="-5.5" width="4.5" height="11" rx="1" fill="#1a2230" opacity="0.85" />
-              {/* Rampe de gyrophares sur le toit */}
-              <rect x="-3.5" y="-3" width="7" height="6" rx="1" fill="#0b0d10" />
-              <rect x="-3" y="-2.5" width="3" height="5" rx="0.5" fill={ledA} />
-              <rect x="0" y="-2.5" width="3" height="5" rx="0.5" fill={ledB} />
-              {/* Bandes latérales */}
-              <rect x="-15" y="-7.8" width="30" height="1" fill="#fbbf24" opacity="0.7" />
-              <rect x="-15" y="6.8" width="30" height="1" fill="#fbbf24" opacity="0.7" />
-              {/* Texte POLICE sur le toit (côté blanc) */}
-              <text x="8" y="1.3" textAnchor="middle" fontSize="3.2" fontWeight="900" fill="#15306b" pointerEvents="none">POLICE</text>
+              <image href={POLICE_CAR_URL} x={-28} y={-28} width={56} height={56} preserveAspectRatio="xMidYMid meet" opacity={hidden ? 0.85 : 1} />
               {hidden && (
-                <text x="0" y="-13" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
+                <text x="0" y="-32" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
               )}
             </g>
           );
