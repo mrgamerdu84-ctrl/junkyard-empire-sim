@@ -1390,6 +1390,7 @@ export default function TaxiTycoon() {
     free.pos = closestOnPath(job.pickupPath, here.x, here.y);
     free.target = job.pickup;
     free.mode = "to_pickup";
+    syncVehicleLane(free);
     setJobs((js) => js.map((j) => j.id === id ? { ...j, status: "accepted", acceptedAt: Date.now() } : j));
   };
 
