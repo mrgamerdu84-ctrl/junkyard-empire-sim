@@ -362,6 +362,40 @@ export default function TaxiTycoon() {
   const POLICE_FINE = 200;
   const POLICE_CATCH_DIST = 48; // px
 
+  // === Radars fixes & planques police (Speed Traps) ===
+  // Radars : couples (pathIdx, posFraction) -> position le long du path.
+  type RadarSpec = { id: number; pathIdx: number; posFrac: number };
+  const RADARS: RadarSpec[] = [
+    { id: 1, pathIdx: 0, posFrac: 0.25 },
+    { id: 2, pathIdx: 0, posFrac: 0.72 },
+    { id: 3, pathIdx: 2, posFrac: 0.40 },
+  ];
+  const SPEED_LIMIT = 78;          // px/s ; déclenche dès l'upgrade vitesse niveau 1+
+  const RADAR_FINE = 120;
+  const RADAR_TRIGGER_DIST = 26;   // px le long du path
+  const RADAR_COOLDOWN_MS = 6000;  // évite les amendes en chaîne
+  const radarLastHitRef = useRef<Record<string, number>>({}); // key = `${radarId}:${taxiId}`
+  const radarFlashRef = useRef<{ id: number; x: number; y: number; t: number } | null>(null);
+  const [radarFlashTick, setRadarFlashTick] = useState(0);
+
+  // Planques : points XY au bord de la route où la police se cache.
+  type HideoutSpec = { id: number; x: number; y: number };
+  const HIDEOUTS: HideoutSpec[] = [
+    { id: 1, x: 540,  y: 760 },
+    { id: 2, x: 1150, y: 540 },
+    { id: 3, x: 1620, y: 320 },
+  ];
+  const HIDEOUT_TRAP_DIST = 95;      // px : portée de détection radar embusqué
+  const HIDEOUT_FINE = 400;
+  const STAKEOUT_DURATION_MS = 18000;
+  const stakeoutHideoutRef = useRef<Record<number, number>>({}); // policeId -> hideoutId
+  const stakeoutUntilRef = useRef<Record<number, number>>({});   // policeId -> until ms
+  const wantedPlayerTaxiIdRef = useRef<number | null>(null);
+  const wantedPlayerUntilRef = useRef<number>(0);
+  const lastStakeoutTriggerRef = useRef<number>(performance.now());
+
+
+
   // === Circuit personnalisé (dessiné par le joueur) ===
   // Pré-calcule la longueur totale + offsets cumulés.
   const circuitInfo = useMemo(() => {
