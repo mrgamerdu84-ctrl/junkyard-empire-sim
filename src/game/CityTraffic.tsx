@@ -224,7 +224,7 @@ function Vehicle({
   // capot pointe vers +x (est), ce qui aligne le sprite avec l'angle du path
   // (0° = est) lors de la rotation appliquée par le parent.
   // Toutes les voitures civiles ont la même taille que les taxis (boîte 48px).
-  void kind;
+  void kind; void scale;
   const W = 56;
   const H = W * 0.6;
   const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
