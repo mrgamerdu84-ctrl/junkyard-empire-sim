@@ -282,9 +282,15 @@ const PEDESTRIANS: PedSpec[] = [
   { pathIdx: 2, duration: 200, delay: -170,side: -1, shirt: "#facc15", pants: "#374151", skin: "#f1c79b", flip: true, scale: 0.88 },
 ];
 
+// Largeur d'asphalte visible sur la carte ≈ 28-34px (stroke). On place
+// les piétons à 34px du centre du path => clairement sur le trottoir,
+// jamais sur la chaussée, même côté contre-voie.
+export const SIDEWALK_OFFSET = 34;
+
 function PedestrianSVG({ shirt, pants, skin, side, scale = 1 }: { shirt: string; pants: string; skin: string; side: 1 | -1; scale?: number }) {
-  // Offset Y dans le repère local = perpendiculaire au sens de marche (rotate="auto")
-  const oy = side * 22;
+  // Offset Y dans le repère local = perpendiculaire au sens de marche (rotate="auto").
+  // side ∈ {-1, 0, 1} : 0 = au centre (utilisé pour la traversée piétonne).
+  const oy = side === 0 ? 0 : side * SIDEWALK_OFFSET;
   return (
     <g transform={`translate(0,${oy}) scale(${scale})`}>
       <ellipse cx="0" cy="6" rx="4.5" ry="1.6" fill="rgba(0,0,0,0.5)" />
