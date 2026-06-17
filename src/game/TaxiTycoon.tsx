@@ -773,6 +773,17 @@ export default function TaxiTycoon() {
           continue;
         }
 
+        // Depositing : taxi garé au QG, attend 5s avant de repartir
+        if (taxi.mode === "depositing") {
+          if (taxi.depositUntil && Date.now() >= taxi.depositUntil) {
+            taxi.depositUntil = undefined;
+            taxi.mustDeposit = false;
+            taxi.ridesSinceDeposit = 0;
+            taxi.mode = "idle";
+          }
+          continue;
+        }
+
         const diff = taxi.target - taxi.pos;
         const step = taxi.speed * dt;
         if (Math.abs(diff) <= step) {
