@@ -1461,6 +1461,59 @@ export default function TaxiTycoon() {
           );
         })}
 
+        {/* Radars fixes au bord de la route */}
+        {RADARS.map((rd) => {
+          const plen = pathLensRef.current[rd.pathIdx] ?? 0;
+          if (plen <= 0) return null;
+          const p = getLaneXY(rd.pathIdx, rd.posFrac * plen, true);
+          // Décale le radar côté trottoir (à droite)
+          const a = (p.angle * Math.PI) / 180;
+          const ox = Math.sin(a) * 14, oy = -Math.cos(a) * 14;
+          return (
+            <g key={`radar-${rd.id}`} transform={`translate(${p.x + ox},${p.y + oy}) rotate(${p.angle})`}>
+              {/* poteau */}
+              <rect x="-1.5" y="-2" width="3" height="14" fill="#0b0d10" />
+              {/* boîtier caméra */}
+              <rect x="-7" y="-9" width="14" height="9" rx="2" fill="#222831" stroke="#0b0d10" strokeWidth="1" />
+              <circle cx="0" cy="-4.5" r="3" fill="#0b0d10" stroke="#94a3b8" strokeWidth="0.8" />
+              <circle cx="0" cy="-4.5" r="1.4" fill="#3b82f6" />
+              <text x="0" y="-12" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">RADAR</text>
+            </g>
+          );
+        })}
+
+        {/* Planques police — emplacements de stationnement */}
+        {HIDEOUTS.map((ho) => {
+          const occupied = Object.values(stakeoutHideoutRef.current).includes(ho.id);
+          return (
+            <g key={`hideout-${ho.id}`} transform={`translate(${ho.x},${ho.y})`}>
+              <rect x="-14" y="-9" width="28" height="18" rx="2"
+                fill="#1f2937" opacity="0.45"
+                stroke={occupied ? "#ef4444" : "#fbbf24"}
+                strokeWidth="1.2" strokeDasharray="3 2" />
+              {/* arbres autour pour la cachette */}
+              <circle cx="-18" cy="-2" r="6" fill="#0f3d2e" opacity="0.85" />
+              <circle cx="18" cy="2"   r="6" fill="#0f3d2e" opacity="0.85" />
+              <circle cx="-16" cy="10" r="5" fill="#0f3d2e" opacity="0.85" />
+            </g>
+          );
+        })}
+
+        {/* Flash radar (cercle blanc bref) */}
+        {(() => {
+          void radarFlashTick;
+          const fl = radarFlashRef.current;
+          if (!fl) return null;
+          return (
+            <g key={`flash-${fl.id}-${fl.t}`} transform={`translate(${fl.x},${fl.y})`} pointerEvents="none">
+              <circle r="60" fill="#ffffff" opacity="0.85">
+                <animate attributeName="r" values="20;120" dur="0.3s" fill="freeze" />
+                <animate attributeName="opacity" values="0.95;0" dur="0.3s" fill="freeze" />
+              </circle>
+            </g>
+          );
+        })()}
+
         {/* Voitures de police — patrouillent et chassent les contrevenants */}
         {policeCarsRef.current.map((pc) => {
           const movingForward = pc.target >= pc.pos;
