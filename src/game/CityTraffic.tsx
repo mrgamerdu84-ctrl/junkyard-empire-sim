@@ -287,7 +287,7 @@ const PEDESTRIANS: PedSpec[] = [
 // jamais sur la chaussée, même côté contre-voie.
 export const SIDEWALK_OFFSET = 34;
 
-function PedestrianSVG({ shirt, pants, skin, side, scale = 1 }: { shirt: string; pants: string; skin: string; side: 1 | -1; scale?: number }) {
+function PedestrianSVG({ shirt, pants, skin, side, scale = 1 }: { shirt: string; pants: string; skin: string; side: -1 | 0 | 1; scale?: number }) {
   // Offset Y dans le repère local = perpendiculaire au sens de marche (rotate="auto").
   // side ∈ {-1, 0, 1} : 0 = au centre (utilisé pour la traversée piétonne).
   const oy = side === 0 ? 0 : side * SIDEWALK_OFFSET;
