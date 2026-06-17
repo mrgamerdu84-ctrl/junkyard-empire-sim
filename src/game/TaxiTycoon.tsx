@@ -195,24 +195,90 @@ function TaxiSprite({
 
 
 
-function Depot({ tier, x, y, scale = 1, rotation = 0 }: { tier: DepotTier; x: number; y: number; scale?: number; rotation?: number }) {
-  // Le nouveau QG est une image isométrique (bâtiment + parking + station).
-  // Largeur/hauteur de base ; le joueur peut agrandir via admin.hqScale.
+function Depot({ tier, x, y, scale = 1, rotation = 0, capLvl = 0, revLvl = 0, prodLvl = 0, night = 0 }: { tier: DepotTier; x: number; y: number; scale?: number; rotation?: number; capLvl?: number; revLvl?: number; prodLvl?: number; night?: number }) {
+  // QG "Garage industriel chic" — SVG vue du ciel.
+  // Évolue avec les upgrades : places parking (cap), néons (rev), enseigne lumineuse (prod).
   const W = 260;
   const H = 260;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _tier = tier;
+  const _tier = tier; void _tier;
+  const lit = night > 0.35;
+  const neonOp = 0.55 + 0.09 * revLvl; // plus de revLvl = néons + lumineux
+  const slots = 4 + capLvl; // 4..9 places
+  const slotW = (W - 60) / slots;
   return (
     <g transform={`translate(${x},${y}) scale(${scale}) rotate(${rotation})`}>
-      <ellipse cx="0" cy={H / 2 - 10} rx={W / 2} ry="14" fill="rgba(0,0,0,0.45)" />
-      <image
-        href={HQ_DEPOT_URL}
-        x={-W / 2}
-        y={-H / 2}
-        width={W}
-        height={H}
-        preserveAspectRatio="xMidYMid meet"
-      />
+      {/* ombre */}
+      <ellipse cx="0" cy={H / 2 - 8} rx={W / 2 + 6} ry="18" fill="rgba(0,0,0,0.5)" />
+
+      {/* Dalle béton + marquages */}
+      <rect x={-W / 2} y={-H / 2} width={W} height={H} rx="6" fill="#2a2d33" stroke="#0a0b0d" strokeWidth="2" />
+      {/* Hachures bordure */}
+      <g opacity="0.55">
+        {Array.from({ length: 18 }).map((_, i) => (
+          <rect key={i} x={-W / 2 + i * (W / 18)} y={-H / 2} width={W / 36} height="6" fill="#f5c542" />
+        ))}
+      </g>
+
+      {/* Bâtiment principal (atelier toit plat) */}
+      <rect x={-W / 2 + 16} y={-H / 2 + 22} width={W - 32} height={H / 2 - 10} rx="3" fill="#3a3e46" stroke="#0a0b0d" strokeWidth="1.5" />
+      {/* Skylights */}
+      {[0, 1, 2, 3].map(i => (
+        <rect key={i} x={-W / 2 + 30 + i * ((W - 60) / 4)} y={-H / 2 + 34} width={(W - 80) / 4} height="14" rx="1" fill={lit ? "#ffe48a" : "#7d8390"} opacity={lit ? 0.95 : 0.6} />
+      ))}
+      {/* Cheminée d'aération */}
+      <circle cx={W / 2 - 36} cy={-H / 2 + 32} r="6" fill="#1a1d22" stroke="#000" strokeWidth="1" />
+      <circle cx={W / 2 - 36} cy={-H / 2 + 32} r="2.5" fill="#5a5f68" />
+
+      {/* Enseigne au sol */}
+      <rect x={-70} y={-H / 2 + 6} width={140} height={14} rx="3" fill="#0a0b0d" stroke={lit ? "#f5c542" : "#7a5f1a"} strokeWidth="1.5" opacity={lit ? neonOp + 0.3 : 0.9} />
+      <text x="0" y={-H / 2 + 16} fontSize="11" fontWeight="900" textAnchor="middle" fill={lit ? "#fff7c0" : "#f5c542"} letterSpacing="2" style={{ filter: lit ? "drop-shadow(0 0 4px #f5c542)" : undefined }}>TAXI HQ</text>
+
+      {/* Parvis : places de parking taxis (visibles, jaunes) */}
+      <g>
+        {Array.from({ length: slots }).map((_, i) => {
+          const px = -W / 2 + 30 + i * slotW + slotW / 2;
+          const py = 30;
+          return (
+            <g key={i}>
+              <rect x={px - slotW / 2 + 3} y={py - 18} width={slotW - 6} height="36" rx="2" fill="#1f2228" stroke="#f5c542" strokeWidth="1.2" strokeDasharray="3 2" opacity="0.9" />
+              {/* numéro */}
+              <text x={px} y={py + 24} fontSize="6" textAnchor="middle" fill="#f5c542" opacity="0.6">{String(i + 1).padStart(2, "0")}</text>
+            </g>
+          );
+        })}
+      </g>
+
+      {/* Bandes de circulation au sol (entrée / sortie) */}
+      <path d={`M ${-W / 2 + 8} ${H / 2 - 14} L ${W / 2 - 8} ${H / 2 - 14}`} stroke="#f5c542" strokeWidth="2" strokeDasharray="8 6" opacity="0.7" />
+      {/* Flèche entrée */}
+      <path d={`M ${-W / 2 + 16} ${H / 2 - 6} l 10 -4 l -10 -4 z`} fill="#f5c542" opacity="0.8" />
+      <path d={`M ${W / 2 - 16} ${H / 2 - 6} l -10 -4 l 10 -4 z`} fill="#f5c542" opacity="0.8" />
+
+      {/* Néons bord de toit */}
+      {lit && (
+        <g>
+          <rect x={-W / 2 + 16} y={-H / 2 + 20} width={W - 32} height="2" fill="#ffd84a" opacity={neonOp}>
+            <animate attributeName="opacity" values={`${neonOp};${Math.min(1, neonOp + 0.25)};${neonOp}`} dur="2.4s" repeatCount="indefinite" />
+          </rect>
+          <rect x={-W / 2 + 16} y={H / 2 / 2 + 10} width={W - 32} height="1.5" fill="#ffd84a" opacity={neonOp * 0.7} />
+        </g>
+      )}
+
+      {/* Plot d'entrée illuminé (proportionnel à prodLvl) */}
+      <g>
+        {Array.from({ length: 2 }).map((_, i) => {
+          const cx = i === 0 ? -W / 2 + 8 : W / 2 - 8;
+          return (
+            <g key={i} transform={`translate(${cx},${H / 2 - 26})`}>
+              <circle r="5" fill="#0e1217" stroke="#f5c542" strokeWidth="1.2" />
+              <circle r="2.5" fill={lit ? "#ffd84a" : "#5a4818"} opacity={lit ? Math.min(1, 0.6 + 0.08 * prodLvl) : 0.7} />
+            </g>
+          );
+        })}
+      </g>
+
+      {/* Halo nuit global */}
+      {lit && <circle r={W * 0.62} fill="#f5c542" opacity={night * 0.08} />}
     </g>
   );
 }
