@@ -332,6 +332,26 @@ export default function AdminPanel() {
               </>
             )}
 
+            {tab === "export" && (
+              <>
+                <div style={{ fontSize: 12, color: "#c8ccd2", lineHeight: 1.5, marginBottom: 10 }}>
+                  📦 <strong style={{ color: "#f5c542" }}>Export du projet pour Android Studio</strong>
+                </div>
+                <div style={{ fontSize: 11, color: "#8a8e94", lineHeight: 1.6, marginBottom: 12 }}>
+                  Pour récupérer le ZIP à jour avec les dernières modifications, écris simplement à Lovable :
+                  <div style={{ background: "#1f242b", padding: "8px 10px", borderRadius: 6, marginTop: 8, color: "#f5c542", fontFamily: "monospace", fontSize: 12 }}>
+                    fais-moi le zip
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: "#8a8e94", lineHeight: 1.6 }}>
+                  Le ZIP contient tout le code source (hors <code>node_modules</code>) prêt à être importé dans Android Studio via Capacitor / Bubblewrap.
+                </div>
+                <div style={{ fontSize: 11, color: "#6a6e74", marginTop: 14, padding: "8px 10px", background: "#1f242b", borderRadius: 6 }}>
+                  💡 Astuce : demande "fais-moi le zip" après chaque session de modifs pour avoir toujours la dernière version.
+                </div>
+              </>
+            )}
+
 
             <button className="adm-reset" onClick={resetAdmin}>↺ Réinitialiser les valeurs</button>
           </div>
