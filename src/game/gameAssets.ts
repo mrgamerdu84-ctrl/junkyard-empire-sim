@@ -51,11 +51,14 @@ const DEFAULTS: Record<AssetKey, string> = {
   "taxi.yellow": taxiYellowAsset,
   "taxi.black": taxiBlackAsset,
   "taxi.red": taxiRedAsset,
-  "police.car": policeCarAsset,
-  "civil.car.1": carBlueAsset.url,
-  "civil.car.2": carPurpleAsset.url,
-  "civil.car.3": carOrangeAsset.url,
-  "civil.car.4": carGreenAsset.url,
+  // Police = même modèle que les taxis (silhouette identique, couleur sombre).
+  // Les gyrophares animés (chase) la distinguent visuellement à l'écran.
+  "police.car": taxiBlackAsset,
+  // Voitures civiles = même modèle que les taxis, simples variantes de couleur.
+  "civil.car.1": taxiBlackAsset,
+  "civil.car.2": taxiRedAsset,
+  "civil.car.3": taxiYellowAsset,
+  "civil.car.4": taxiBlackAsset,
   "pedestrian.man": pedManTopAsset,
   "pedestrian.woman": pedWomanTopAsset,
 
