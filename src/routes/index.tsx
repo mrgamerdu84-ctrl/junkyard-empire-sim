@@ -7,6 +7,7 @@ import AdminPanel from "@/game/AdminPanel";
 import RulesPanel from "@/game/RulesPanel";
 import VersionBanner from "@/game/VersionBanner";
 import HomeScreen from "@/game/HomeScreen";
+import SplashScreen from "@/game/SplashScreen";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -22,10 +23,14 @@ export const Route = createFileRoute("/")({
 });
 
 function TaxiTycoonPage() {
-  const [started, setStarted] = useState(false);
+  const [phase, setPhase] = useState<"splash" | "home" | "game">("splash");
 
-  if (!started) {
-    return <HomeScreen onPlay={() => setStarted(true)} />;
+  if (phase === "splash") {
+    return <SplashScreen onDone={() => setPhase("home")} />;
+  }
+
+  if (phase === "home") {
+    return <HomeScreen onPlay={() => setPhase("game")} />;
   }
 
   return (
