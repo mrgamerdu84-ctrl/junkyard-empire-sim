@@ -649,10 +649,14 @@ export default function TaxiTycoon() {
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
 
-  // Sync rival AI taxis fleet
+  // Sync rival AI taxis fleet — IA décide combien de taxis rouges déployer
+  // en fonction de la flotte du joueur (pas de joueurs multi pour l'instant).
   useEffect(() => {
     if (!pathsReady) return;
-    const target = admin.rivalEnabled ? Math.max(0, Math.min(6, admin.rivalTaxiCount)) : 0;
+    // IA : ~60% de la flotte joueur, min 1, max 6 ; 0 si rival désactivé.
+    const playerFleet = save.taxis.length;
+    const aiCount = Math.max(1, Math.min(6, Math.ceil(playerFleet * 0.6)));
+    const target = admin.rivalEnabled ? aiCount : 0;
     while (rivalTaxisRef.current.length < target) {
       const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
       const spawnedRival: RivalTaxi = {
@@ -664,7 +668,7 @@ export default function TaxiTycoon() {
     }
     while (rivalTaxisRef.current.length > target) rivalTaxisRef.current.pop();
     forceRender((n) => n + 1);
-  }, [pathsReady, admin.rivalEnabled, admin.rivalTaxiCount, admin.rivalHQX, admin.rivalHQY]);
+  }, [pathsReady, admin.rivalEnabled, save.taxis.length, admin.rivalHQX, admin.rivalHQY]);
 
   // Sync police fleet (2 voitures qui patrouillent en permanence)
   useEffect(() => {
