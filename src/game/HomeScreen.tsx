@@ -3,13 +3,16 @@ import bgAsset from "@/assets/home-bg.png.asset.json";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import TutorialDialog from "@/components/TutorialDialog";
 import LeaderboardPanel from "@/components/LeaderboardPanel";
-import { hasSeenTutorial, resetTutorial } from "@/lib/leaderboard";
+import { hasSeenTutorial, resetTutorial, getPlayerName, setPlayerName } from "@/lib/leaderboard";
 
 export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showPseudo, setShowPseudo] = useState(false);
+  const [pseudoInput, setPseudoInput] = useState(getPlayerName());
+  const [displayName, setDisplayName] = useState(getPlayerName());
 
   // Premier lancement → tuto auto
   useEffect(() => {
@@ -106,11 +109,68 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
           box-shadow: 0 2px 0 #8a6510, 0 4px 8px rgba(0,0,0,0.4);
         }
         .hs-apk-icon { width: 22px; height: 22px; fill: #1a1208; }
+        .hs-name-badge {
+          text-align: center;
+          color: #f5c542;
+          font-weight: 900;
+          font-size: 16px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+          margin-bottom: 2px;
+        }
+        .hs-pseudo-overlay {
+          position: fixed; inset: 0; z-index: 11000;
+          background: rgba(0,0,0,0.7);
+          display: flex; align-items: center; justify-content: center;
+          padding: 16px;
+        }
+        .hs-pseudo-card {
+          background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+          border: 2px solid #f5c542;
+          border-radius: 16px;
+          max-width: 360px; width: 100%;
+          padding: 24px;
+          display: flex; flex-direction: column; gap: 16px;
+        }
+        .hs-pseudo-title {
+          color: #f5c542; font-size: 20px; font-weight: 900;
+          margin: 0; text-align: center;
+        }
+        .hs-pseudo-input {
+          width: 100%;
+          background: #0a0c10;
+          border: 2px solid #374151;
+          border-radius: 10px;
+          padding: 12px 14px;
+          color: #fff;
+          font-size: 18px;
+          font-weight: 700;
+          outline: none;
+          box-sizing: border-box;
+        }
+        .hs-pseudo-input:focus { border-color: #f5c542; }
+        .hs-pseudo-actions {
+          display: flex; gap: 10px; justify-content: flex-end;
+        }
+        .hs-pseudo-btn {
+          appearance: none; border: none; cursor: pointer;
+          background: linear-gradient(180deg, #f5c542 0%, #e0a92a 100%);
+          color: #1a1208;
+          font-weight: 900;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 16px;
+        }
+        .hs-pseudo-secondary {
+          background: #374151; color: #fff;
+        }
       `}</style>
 
       <UpdateNotification />
 
       <div className="hs-btns">
+        {displayName !== "Chauffeur" && (
+          <div className="hs-name-badge">👤 {displayName}</div>
+        )}
         <button className="hs-btn" onClick={() => setLoading(true)}>
           Jouer ▶
         </button>
@@ -119,6 +179,9 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         </button>
         <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
           📖 Tuto
+        </button>
+        <button className="hs-btn" onClick={() => { setPseudoInput(getPlayerName()); setShowPseudo(true); }}>
+          ✏️ Pseudo
         </button>
         <button
           className="hs-btn"
@@ -135,6 +198,32 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
 
       {showTutorial && <TutorialDialog onClose={() => setShowTutorial(false)} />}
       {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}
+
+      {showPseudo && (
+        <div className="hs-pseudo-overlay">
+          <div className="hs-pseudo-card">
+            <h3 className="hs-pseudo-title">✏️ Ton pseudo</h3>
+            <input
+              className="hs-pseudo-input"
+              type="text"
+              maxLength={16}
+              value={pseudoInput}
+              onChange={(e) => setPseudoInput(e.target.value)}
+              placeholder="Chauffeur"
+              onKeyDown={(e) => { if (e.key === "Enter") { setPlayerName(pseudoInput); setDisplayName(getPlayerName()); setShowPseudo(false); } }}
+            />
+            <div className="hs-pseudo-actions">
+              <button className="hs-pseudo-btn hs-pseudo-secondary" onClick={() => setShowPseudo(false)}>Annuler</button>
+              <button
+                className="hs-pseudo-btn"
+                onClick={() => { setPlayerName(pseudoInput); setDisplayName(getPlayerName()); setShowPseudo(false); }}
+              >
+                Valider
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

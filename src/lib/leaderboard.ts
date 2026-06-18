@@ -122,6 +122,7 @@ function checkWeeklyReward() {
 }
 
 const TUTORIAL_KEY = "tt-tutorial-seen";
+const PLAYER_NAME_KEY = "tt-player-name";
 
 export function hasSeenTutorial(): boolean {
   if (typeof window === "undefined") return true;
@@ -134,4 +135,13 @@ export function markTutorialSeen() {
 
 export function resetTutorial() {
   try { localStorage.removeItem(TUTORIAL_KEY); } catch {}
+}
+
+export function getPlayerName(): string {
+  if (typeof window === "undefined") return "Chauffeur";
+  try { return localStorage.getItem(PLAYER_NAME_KEY) || "Chauffeur"; } catch { return "Chauffeur"; }
+}
+
+export function setPlayerName(name: string) {
+  try { localStorage.setItem(PLAYER_NAME_KEY, name.trim() || "Chauffeur"); } catch {}
 }

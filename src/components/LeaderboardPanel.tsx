@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { getLast7Days, isSpecialTaxiUnlocked, getBestWeekScore, getTodayScore } from "@/lib/leaderboard";
+import { getLast7Days, isSpecialTaxiUnlocked, getBestWeekScore, getTodayScore, getPlayerName } from "@/lib/leaderboard";
 import goldTaxi from "@/assets/taxi-gold.png.asset.json";
 
 const fmt = (n: number) => Math.round(n).toLocaleString("fr-FR");
@@ -9,6 +9,7 @@ export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const unlocked = isSpecialTaxiUnlocked();
   const best = getBestWeekScore();
   const todayScore = getTodayScore();
+  const playerName = getPlayerName();
 
   // Tri par score décroissant pour le classement
   const ranked = [...days].sort((a, b) => b.score - a.score);
@@ -48,7 +49,7 @@ export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="lb-today">
-          <div className="lb-today-label">Score du jour</div>
+          <div className="lb-today-label">{playerName} — Score du jour</div>
           <div className="lb-today-val">{fmt(todayScore)} $</div>
         </div>
 
