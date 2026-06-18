@@ -7,6 +7,7 @@ import AdminPanel from "@/game/AdminPanel";
 import RulesPanel from "@/game/RulesPanel";
 import VersionBanner from "@/game/VersionBanner";
 import HomeScreen from "@/game/HomeScreen";
+import SplashScreen from "@/game/SplashScreen";
 
 export const Route = createFileRoute("/")({
   head: () => ({
