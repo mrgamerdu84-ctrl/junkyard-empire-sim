@@ -5,10 +5,10 @@ const config: CapacitorConfig = {
   appName: "Junky City Empire",
   webDir: "dist",
   server: {
-    // En production, l'APK charge les fichiers embarqués
-    // Pour les live updates, on peut switcher sur l'URL distante
+    url: "https://junkyard-empire-sim.lovable.app",
     androidScheme: "https",
     iosScheme: "https",
+    cleartext: false,
   },
   plugins: {
     // Configuration pour les mises à jour automatiques
