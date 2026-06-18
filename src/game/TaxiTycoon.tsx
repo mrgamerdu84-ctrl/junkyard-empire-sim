@@ -3,6 +3,8 @@ import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./Ci
 import { GAME_ASSETS } from "./gameAssets";
 import { shouldStopAhead, nowSeconds } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
+import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
+
 
 // Skins centralisés — pour changer un taxi / la voiture de police,
 // édite `src/game/gameAssets.ts` (clés "taxi.*" / "police.car").
