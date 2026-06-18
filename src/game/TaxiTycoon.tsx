@@ -168,7 +168,7 @@ function TaxiSprite({
   moving,
   image,
   faceRight,
-  size = 48,
+  size = 36,
 }: {
   withClient: boolean;
   moving: boolean;
@@ -431,7 +431,7 @@ export default function TaxiTycoon() {
   const policeCarsRef = useRef<PoliceCar[]>([]);
   const wantedRivalIdRef = useRef<number | null>(null);
   const wantedUntilRef = useRef<number>(0);
-  const lastViolationRef = useRef<number>(performance.now());
+  const lastViolationRef = useRef<number>(performance.now()); void lastViolationRef;
   const POLICE_SPEED = 92;     // px/s patrol
   const POLICE_CHASE_SPEED = 140;
   const POLICE_FINE = 200;
@@ -965,23 +965,10 @@ export default function TaxiTycoon() {
       if (policeCarsRef.current.length > 0) {
         const nowMs = performance.now();
 
-        // 1) Trigger aléatoire d'une infraction par un rival mobile (toutes les ~25-40 s)
-        if (
-          wantedRivalIdRef.current === null &&
-          nowMs - lastViolationRef.current > 25000 + Math.random() * 15000 &&
-          rivalTaxisRef.current.length > 0
-        ) {
-          const movingRivals = rivalTaxisRef.current.filter(r => r.mode !== "idle");
-          if (movingRivals.length > 0) {
-            const victim = movingRivals[Math.floor(Math.random() * movingRivals.length)];
-            wantedRivalIdRef.current = victim.id;
-            wantedUntilRef.current = nowMs + 20000;
-            lastViolationRef.current = nowMs;
-            showToast("🚨 Rival Cabs grille un feu — la police arrive !");
-          } else {
-            lastViolationRef.current = nowMs;
-          }
-        }
+        // 1) Plus de déclenchement aléatoire : la police n'arrête JAMAIS
+        //    rivaux/PNJ sans raison. Une arrestation ne survient que sur
+        //    vraie infraction (radar = excès de vitesse, planque = excès
+        //    de vitesse, ou collision déclenchée ailleurs dans le code).
         if (wantedRivalIdRef.current !== null && nowMs > wantedUntilRef.current) {
           wantedRivalIdRef.current = null;
         }
@@ -1674,7 +1661,7 @@ export default function TaxiTycoon() {
                 </circle>
               )}
               <g transform="rotate(90)">
-                <image href={POLICE_CAR_URL} x={-28} y={-28} width={56} height={56} preserveAspectRatio="xMidYMid meet" opacity={hidden ? 0.85 : 1} />
+                <image href={POLICE_CAR_URL} x={-20} y={-20} width={40} height={40} preserveAspectRatio="xMidYMid meet" opacity={hidden ? 0.85 : 1} />
               </g>
               {hidden && (
                 <text x="0" y="-32" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
