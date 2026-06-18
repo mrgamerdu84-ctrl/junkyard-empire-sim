@@ -301,6 +301,44 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         </div>
       )}
 
+      {showAdmin && (
+        <div className="hs-pseudo-overlay" onClick={() => setShowAdmin(false)}>
+          <div className="hs-pseudo-card" onClick={(e) => e.stopPropagation()}>
+            <h3 className="hs-pseudo-title">🛠️ Accès créateur</h3>
+            <input
+              className="hs-pseudo-input"
+              type="email"
+              placeholder="email"
+              value={adminEmail}
+              onChange={(e) => setAdminEmail(e.target.value)}
+            />
+            <input
+              className="hs-pseudo-input"
+              type="password"
+              placeholder="mot de passe"
+              value={adminPass}
+              onChange={(e) => setAdminPass(e.target.value)}
+            />
+            {adminErr && <div style={{ color: "#f87171", fontSize: 13, textAlign: "center" }}>{adminErr}</div>}
+            <div className="hs-pseudo-actions">
+              <button className="hs-pseudo-btn hs-pseudo-secondary" onClick={() => setShowAdmin(false)}>Annuler</button>
+              <button
+                className="hs-pseudo-btn"
+                onClick={async () => {
+                  setAdminErr("");
+                  const { error } = await supabase.auth.signInWithPassword({ email: adminEmail, password: adminPass });
+                  if (error) { setAdminErr(error.message); return; }
+                  setShowAdmin(false);
+                  setAdminEmail(""); setAdminPass("");
+                }}
+              >
+                Connexion
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showTrialEnded && (
         <div className="hs-pseudo-overlay">
           <div className="hs-pseudo-card">
