@@ -1,9 +1,4 @@
-name: Build & Upload APK (Debug)
-
-# Workflow simplifié : build DEBUG (pas de signature, pas de keystore).
-# Tu n'as besoin que de 2 secrets GitHub :
-#   UPLOAD_URL  → https://aljocjqlccsgfnqrsutx.supabase.co/functions/v1/upload-apk
-#   UPLOAD_TOKEN → même valeur que côté Lovable Cloud secrets
+name: Build & Upload APK
 
 
 on:
@@ -26,26 +21,44 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Android project
+        run: npx cap sync android
+
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-home-cache-cleanup: true
 
       - name: Make gradlew executable
-        run: chmod +x ./gradlew
+        run: chmod +x android/gradlew
 
       - name: Build debug APK
+        working-directory: android
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Locate APK
         id: apk
         run: |
-          APK_PATH=$(find app/build/outputs/apk/debug -name "*.apk" | head -n 1)
+          APK_PATH=$(find android/app/build/outputs/apk/debug -name "*.apk" | head -n 1)
           if [ -z "$APK_PATH" ]; then
-            echo "❌ Aucun APK debug trouvé sous app/build/outputs/apk/debug/"
+            echo "❌ Aucun APK debug trouvé sous android/app/build/outputs/apk/debug/"
             exit 1
           fi
           echo "Found APK: $APK_PATH"
           echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
-          echo "name=MyTaxiWorldTycoon-debug.apk" >> "$GITHUB_OUTPUT"
+          echo "name=JunkyCityEmpire-debug.apk" >> "$GITHUB_OUTPUT"
 
       - name: Upload APK to Lovable
         env:
