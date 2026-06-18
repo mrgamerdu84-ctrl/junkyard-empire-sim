@@ -23,10 +23,14 @@ export const Route = createFileRoute("/")({
 });
 
 function TaxiTycoonPage() {
-  const [started, setStarted] = useState(false);
+  const [phase, setPhase] = useState<"splash" | "home" | "game">("splash");
 
-  if (!started) {
-    return <HomeScreen onPlay={() => setStarted(true)} />;
+  if (phase === "splash") {
+    return <SplashScreen onDone={() => setPhase("home")} />;
+  }
+
+  if (phase === "home") {
+    return <HomeScreen onPlay={() => setPhase("game")} />;
   }
 
   return (
