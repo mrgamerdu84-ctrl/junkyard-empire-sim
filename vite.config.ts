@@ -9,11 +9,19 @@ import { writeFileSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 import type { Plugin } from "vite";
 
+// Version du jeu - incrémenter à chaque mise à jour majeure
+const GAME_VERSION = "1.0.0";
+
 function versionStampPlugin(): Plugin {
   const writeStamp = () => {
     const builtAt = Date.now();
     const buildId = new Date(builtAt).toISOString();
-    const payload = JSON.stringify({ buildId, builtAt }, null, 2);
+    const payload = JSON.stringify({
+      version: GAME_VERSION,
+      buildId,
+      builtAt,
+      changelog: "Mise à jour automatique active",
+    }, null, 2);
     try {
       mkdirSync(resolve(process.cwd(), "public"), { recursive: true });
       writeFileSync(resolve(process.cwd(), "public/version.json"), payload);
