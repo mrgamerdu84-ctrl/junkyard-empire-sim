@@ -97,6 +97,8 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         .hs-apk-icon { width: 22px; height: 22px; fill: #1a1208; }
       `}</style>
 
+      <UpdateNotification />
+
       <div className="hs-btns">
         <button className="hs-btn" onClick={() => setLoading(true)}>
           Jouer ▶
