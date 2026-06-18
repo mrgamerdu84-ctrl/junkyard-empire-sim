@@ -4,13 +4,44 @@ import { useAdminConfig, setAdmin, resetAdmin, type AdminConfig } from "./adminC
 import { useVersionCheck, formatBuildDate } from "@/lib/version-check";
 import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey } from "./gameAssets";
 
+// SHA-256 du mot de passe admin. Modifie ce hash pour changer le mot de passe.
+const ADMIN_PASS_HASH = "7d473072673d5b86575304cb2a23b92a51e0cde043856919249b3df582a8625d";
+const UNLOCK_KEY = "tt-admin-unlocked";
+
+async function sha256(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /* Floating gear button + slide-in admin panel. */
 export default function AdminPanel() {
   const [open, setOpen] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwd, setPwd] = useState("");
+  const [pwdErr, setPwdErr] = useState("");
   const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "skins" | "export">("trafic");
   const [placeMode, setPlaceMode] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const cfg = useAdminConfig();
+
+  // Rappel du déverrouillage pour la session courante
+  useEffect(() => {
+    try { if (sessionStorage.getItem(UNLOCK_KEY) === "1") setUnlocked(true); } catch {}
+  }, []);
+
+  const tryUnlock = async () => {
+    const h = await sha256(pwd);
+    if (h === ADMIN_PASS_HASH) {
+      setUnlocked(true);
+      setPwd("");
+      setPwdErr("");
+      try { sessionStorage.setItem(UNLOCK_KEY, "1"); } catch {}
+    } else {
+      setPwdErr("Mot de passe incorrect");
+      setPwd("");
+    }
+  };
+
 
   // Mode "placer le QG" — clic sur la map = nouvelle position.
   // On ferme le panneau pendant le placement pour que le clic atteigne la map,
@@ -211,7 +242,38 @@ export default function AdminPanel() {
         <button className="adm-btn" onClick={() => setOpen(true)} aria-label="Panneau admin" title="Panneau admin">⚙</button>
       )}
 
-      {open && (
+
+      {open && !unlocked && (
+        <>
+          <div className="adm-overlay" onClick={() => setOpen(false)} />
+          <div className="adm-panel" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 360 }}>
+            <div className="adm-h">
+              <h2>🔒 Accès admin</h2>
+              <button className="adm-close" onClick={() => { setOpen(false); setPwd(""); setPwdErr(""); }} aria-label="Fermer">×</button>
+            </div>
+            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+              <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Entre le mot de passe pour accéder au panneau.</p>
+              <input
+                type="password"
+                autoFocus
+                value={pwd}
+                onChange={(e) => setPwd(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") void tryUnlock(); }}
+                placeholder="Mot de passe"
+                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+              />
+              {pwdErr && <div style={{ color: "#ff6b6b", fontSize: 13 }}>{pwdErr}</div>}
+              <button
+                onClick={() => void tryUnlock()}
+                style={{ padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
+              >Déverrouiller</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {open && unlocked && (
+
         <>
           <div className="adm-overlay" onClick={() => setOpen(false)} />
           <div className="adm-panel" onClick={(e) => e.stopPropagation()}>
