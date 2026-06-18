@@ -60,7 +60,10 @@ function DownloadPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [dlProgress, setDlProgress] = useState(0);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoStarted, setAutoStarted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -68,9 +71,70 @@ function DownloadPage() {
     const info = await loadLatest();
     setApk(info);
     setLoading(false);
+    return info;
   };
 
-  useEffect(() => { refresh(); }, []);
+  // Force download via blob (signed URL is cross-origin → `download` attr ignored otherwise)
+  const triggerDownload = async (info: ApkInfo) => {
+    setError(null);
+    setDownloading(true);
+    setDlProgress(0);
+    try {
+      const res = await fetch(info.url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const total = Number(res.headers.get("content-length") || info.size || 0);
+      const reader = res.body?.getReader();
+      if (!reader) {
+        // Fallback: direct link
+        const a = document.createElement("a");
+        a.href = info.url;
+        a.download = info.name;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          received += value.length;
+          if (total) setDlProgress(Math.round((received / total) * 100));
+        }
+      }
+      const blob = new Blob(chunks as BlobPart[], { type: "application/vnd.android.package-archive" });
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = info.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+      setDlProgress(100);
+    } catch (e: any) {
+      setError(e?.message ?? "Échec du téléchargement");
+    } finally {
+      setDownloading(false);
+      setTimeout(() => setDlProgress(0), 1200);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const info = await refresh();
+      // Auto-start download on first visit if URL has ?auto=1
+      if (info && !autoStarted && new URLSearchParams(window.location.search).get("auto") === "1") {
+        setAutoStarted(true);
+        triggerDownload(info);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUpload = async (file: File) => {
     setError(null);
