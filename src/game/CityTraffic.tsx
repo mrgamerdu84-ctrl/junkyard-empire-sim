@@ -255,7 +255,34 @@ const PHOTO_PEDS: PhotoPedSpec[] = [
   { pathIdx: 2, side: 1,  speed: 18, startFrac: 0.56, imageIdx: 1, scale: 0.5 },
   { pathIdx: 2, side: -1, speed: 25, startFrac: 0.78, imageIdx: 1, scale: 0.55 },
 ];
-const PHOTO_PED_OFFSET = 52;
+// === Verrou de trottoir ===
+// Distance perpendiculaire MINIMALE entre un piéton et l'axe de la route.
+// La largeur visible d'une route ≈ 46 px ; on garde une marge confortable
+// pour qu'AUCUN piéton ne puisse glisser sur la chaussée — même si une IA,
+// une collision ou un futur effet tentait d'altérer sa position.
+export const SIDEWALK_LOCK_OFFSET = 52;
+const PHOTO_PED_OFFSET = SIDEWALK_LOCK_OFFSET;
+
+/** Verrouille une coordonnée XY sur le trottoir : si elle est plus proche
+ *  de l'axe que `SIDEWALK_LOCK_OFFSET`, on la repousse vers `side`. */
+export function lockToSidewalk(
+  pathPoint: { x: number; y: number },
+  tangent: { dx: number; dy: number },
+  side: 1 | -1,
+  x: number,
+  y: number,
+): { x: number; y: number } {
+  const L = Math.hypot(tangent.dx, tangent.dy) || 1;
+  const nx = -tangent.dy / L;
+  const ny = tangent.dx / L;
+  // Distance signée du point (x,y) à l'axe, projetée sur la normale `side`.
+  const dist = ((x - pathPoint.x) * nx + (y - pathPoint.y) * ny) * side;
+  if (dist >= SIDEWALK_LOCK_OFFSET) return { x, y };
+  return {
+    x: pathPoint.x + nx * SIDEWALK_LOCK_OFFSET * side,
+    y: pathPoint.y + ny * SIDEWALK_LOCK_OFFSET * side,
+  };
+}
 
 function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGPathElement | null)[]> }) {
   const nodes = useRef<(SVGGElement | null)[]>([]);
@@ -287,9 +314,20 @@ function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGP
         const ny =  dx / L * PHOTO_PED_OFFSET * st.spec.side;
         // angle de marche (le sprite top-down tourne dans la direction du mouvement)
         const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+        // 🔒 Verrou trottoir : même si une IA/collision tentait de bouger
+        // ce nœud, on recalcule la position à chaque frame depuis l'axe
+        // du path et on la passe dans lockToSidewalk() pour garantir
+        // qu'elle reste à >= SIDEWALK_LOCK_OFFSET de la chaussée.
+        const locked = lockToSidewalk(
+          { x: p.x, y: p.y },
+          { dx, dy },
+          st.spec.side,
+          p.x + nx,
+          p.y + ny,
+        );
         node.setAttribute(
           "transform",
-          `translate(${(p.x + nx).toFixed(2)},${(p.y + ny).toFixed(2)}) rotate(${ang.toFixed(2)})`,
+          `translate(${locked.x.toFixed(2)},${locked.y.toFixed(2)}) rotate(${ang.toFixed(2)})`,
         );
       }
       raf = requestAnimationFrame(step);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
+import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
 import { GAME_ASSETS } from "./gameAssets";
 import { shouldStopAhead, nowSeconds } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
@@ -568,7 +568,7 @@ export default function TaxiTycoon() {
   const pathLen = pathLensRef.current[0] ?? 0;
 
   // === Helpers de rendu position (déclarés tôt pour usage dans les effets) ===
-  const SIDEWALK_OFFSET = 48;
+  const SIDEWALK_OFFSET = SIDEWALK_LOCK_OFFSET;
 
   // Trouve la longueur sur `pathIdx` la plus proche d'un point (x,y) du SVG.
   const closestOnPath = (pathIdx: number, x: number, y: number): number => {
@@ -1236,9 +1236,17 @@ export default function TaxiTycoon() {
     const { dx, dy } = getRoadTangent(pathIdx, safe);
     const L = Math.hypot(dx, dy) || 1;
     const nx = -dy / L, ny = dx / L; // normale unitaire
-    return {
+    // 🔒 Verrou trottoir : on passe la position finale dans lockToSidewalk
+    // pour qu'AUCUN client/piéton ne puisse jamais déborder sur la chaussée,
+    // même si un futur code IA / collision tentait de l'y pousser.
+    const raw = {
       x: pt.x + nx * SIDEWALK_OFFSET * side,
       y: pt.y + ny * SIDEWALK_OFFSET * side,
+    };
+    const locked = lockToSidewalk({ x: pt.x, y: pt.y }, { dx, dy }, side, raw.x, raw.y);
+    return {
+      x: locked.x,
+      y: locked.y,
       angle: (Math.atan2(dy, dx) * 180) / Math.PI,
     };
   };
