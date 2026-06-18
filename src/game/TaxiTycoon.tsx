@@ -1098,7 +1098,7 @@ export default function TaxiTycoon() {
                 const d = Math.hypot(pcPt.x - tPt.x, pcPt.y - tPt.y);
                 if (d < POLICE_CATCH_DIST) {
                   if (pc.chasePlayerTaxiId !== null) {
-                    setSave(s => ({ ...s, money: Math.max(0, s.money - HIDEOUT_FINE) }));
+                    setSave(s => ({ ...s, money: Math.max(0, s.money - HIDEOUT_FINE), cityFund: s.cityFund + HIDEOUT_FINE }));
                     popFloat(`-${HIDEOUT_FINE}$ gros PV`, tPt.x, tPt.y - 8);
                     showToast(`🚓 Piégé par la planque ! Amende ${HIDEOUT_FINE}$`);
                     wantedPlayerTaxiIdRef.current = null;
