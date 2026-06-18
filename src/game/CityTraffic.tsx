@@ -314,9 +314,20 @@ function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGP
         const ny =  dx / L * PHOTO_PED_OFFSET * st.spec.side;
         // angle de marche (le sprite top-down tourne dans la direction du mouvement)
         const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+        // 🔒 Verrou trottoir : même si une IA/collision tentait de bouger
+        // ce nœud, on recalcule la position à chaque frame depuis l'axe
+        // du path et on la passe dans lockToSidewalk() pour garantir
+        // qu'elle reste à >= SIDEWALK_LOCK_OFFSET de la chaussée.
+        const locked = lockToSidewalk(
+          { x: p.x, y: p.y },
+          { dx, dy },
+          st.spec.side,
+          p.x + nx,
+          p.y + ny,
+        );
         node.setAttribute(
           "transform",
-          `translate(${(p.x + nx).toFixed(2)},${(p.y + ny).toFixed(2)}) rotate(${ang.toFixed(2)})`,
+          `translate(${locked.x.toFixed(2)},${locked.y.toFixed(2)}) rotate(${ang.toFixed(2)})`,
         );
       }
       raf = requestAnimationFrame(step);
