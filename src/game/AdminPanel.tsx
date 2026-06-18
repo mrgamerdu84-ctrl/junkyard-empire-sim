@@ -335,6 +335,7 @@ export default function AdminPanel() {
               </>
             )}
 
+            {tab === "skins" && <SkinsTab />}
             {tab === "export" && <ExportTab />}
 
 
