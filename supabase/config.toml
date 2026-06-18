@@ -1,1 +1,3 @@
 project_id = "aljocjqlccsgfnqrsutx"
+[functions.upload-apk]
+verify_jwt = false
