@@ -109,7 +109,60 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
           box-shadow: 0 2px 0 #8a6510, 0 4px 8px rgba(0,0,0,0.4);
         }
         .hs-apk-icon { width: 22px; height: 22px; fill: #1a1208; }
-      `}</style>
+        .hs-name-badge {
+          text-align: center;
+          color: #f5c542;
+          font-weight: 900;
+          font-size: 16px;
+          text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+          margin-bottom: 2px;
+        }
+        .hs-pseudo-overlay {
+          position: fixed; inset: 0; z-index: 11000;
+          background: rgba(0,0,0,0.7);
+          display: flex; align-items: center; justify-content: center;
+          padding: 16px;
+        }
+        .hs-pseudo-card {
+          background: linear-gradient(180deg, #1f2937 0%, #111827 100%);
+          border: 2px solid #f5c542;
+          border-radius: 16px;
+          max-width: 360px; width: 100%;
+          padding: 24px;
+          display: flex; flex-direction: column; gap: 16px;
+        }
+        .hs-pseudo-title {
+          color: #f5c542; font-size: 20px; font-weight: 900;
+          margin: 0; text-align: center;
+        }
+        .hs-pseudo-input {
+          width: 100%;
+          background: #0a0c10;
+          border: 2px solid #374151;
+          border-radius: 10px;
+          padding: 12px 14px;
+          color: #fff;
+          font-size: 18px;
+          font-weight: 700;
+          outline: none;
+          box-sizing: border-box;
+        }
+        .hs-pseudo-input:focus { border-color: #f5c542; }
+        .hs-pseudo-actions {
+          display: flex; gap: 10px; justify-content: flex-end;
+        }
+        .hs-pseudo-btn {
+          appearance: none; border: none; cursor: pointer;
+          background: linear-gradient(180deg, #f5c542 0%, #e0a92a 100%);
+          color: #1a1208;
+          font-weight: 900;
+          padding: 10px 18px;
+          border-radius: 10px;
+          font-size: 16px;
+        }
+        .hs-pseudo-secondary {
+          background: #374151; color: #fff;
+        }
 
       <UpdateNotification />
 
