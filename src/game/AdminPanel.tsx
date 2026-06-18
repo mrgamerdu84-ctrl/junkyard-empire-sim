@@ -508,7 +508,7 @@ function SkinsTab() {
   );
 }
 
-const btnMini: React.CSSProperties = {
+const btnMini: CSSProperties = {
   fontSize: 10, padding: "4px 6px", background: "#14171c",
   border: "1px solid #3a3f48", borderRadius: 4, cursor: "pointer", color: "#e8edf2",
 };
