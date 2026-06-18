@@ -2036,6 +2036,10 @@ export default function TaxiTycoon() {
           pointer-events: auto;
         }
         .tt-stat.money { color: #34d399; }
+        .tt-stat.tt-city { color: #fde047; position: relative; padding-right: 10px; }
+        .tt-city-bar { position: absolute; left: 8px; right: 8px; bottom: 2px; height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; }
+        .tt-city-fill { height: 100%; background: linear-gradient(90deg, #fde047, #f97316); transition: width 0.4s ease; }
+
         .tt-stat-icon { font-size: 16px; }
 
         .tt-depot-card {
