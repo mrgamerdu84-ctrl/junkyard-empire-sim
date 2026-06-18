@@ -114,6 +114,9 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
       <UpdateNotification />
 
       <div className="hs-btns">
+        {displayName !== "Chauffeur" && (
+          <div className="hs-name-badge">👤 {displayName}</div>
+        )}
         <button className="hs-btn" onClick={() => setLoading(true)}>
           Jouer ▶
         </button>
@@ -122,6 +125,9 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         </button>
         <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
           📖 Tuto
+        </button>
+        <button className="hs-btn" onClick={() => { setPseudoInput(getPlayerName()); setShowPseudo(true); }}>
+          ✏️ Pseudo
         </button>
         <button
           className="hs-btn"
