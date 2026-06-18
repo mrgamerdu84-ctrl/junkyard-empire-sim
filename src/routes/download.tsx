@@ -60,7 +60,10 @@ function DownloadPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [dlProgress, setDlProgress] = useState(0);
+  const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoStarted, setAutoStarted] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = async () => {
@@ -68,9 +71,70 @@ function DownloadPage() {
     const info = await loadLatest();
     setApk(info);
     setLoading(false);
+    return info;
   };
 
-  useEffect(() => { refresh(); }, []);
+  // Force download via blob (signed URL is cross-origin → `download` attr ignored otherwise)
+  const triggerDownload = async (info: ApkInfo) => {
+    setError(null);
+    setDownloading(true);
+    setDlProgress(0);
+    try {
+      const res = await fetch(info.url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const total = Number(res.headers.get("content-length") || info.size || 0);
+      const reader = res.body?.getReader();
+      if (!reader) {
+        // Fallback: direct link
+        const a = document.createElement("a");
+        a.href = info.url;
+        a.download = info.name;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        return;
+      }
+      const chunks: Uint8Array[] = [];
+      let received = 0;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (value) {
+          chunks.push(value);
+          received += value.length;
+          if (total) setDlProgress(Math.round((received / total) * 100));
+        }
+      }
+      const blob = new Blob(chunks as BlobPart[], { type: "application/vnd.android.package-archive" });
+      const objUrl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = objUrl;
+      a.download = info.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(objUrl), 2000);
+      setDlProgress(100);
+    } catch (e: any) {
+      setError(e?.message ?? "Échec du téléchargement");
+    } finally {
+      setDownloading(false);
+      setTimeout(() => setDlProgress(0), 1200);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      const info = await refresh();
+      // Auto-start download on first visit if URL has ?auto=1
+      if (info && !autoStarted && new URLSearchParams(window.location.search).get("auto") === "1") {
+        setAutoStarted(true);
+        triggerDownload(info);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleUpload = async (file: File) => {
     setError(null);
@@ -151,19 +215,41 @@ function DownloadPage() {
         {loading ? (
           <div style={{ color: "#9ca3af", padding: 20 }}>Chargement…</div>
         ) : apk ? (
-          <a
-            href={apk.url}
-            download={apk.name}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
-              background: "linear-gradient(180deg, #f5c542 0%, #e0a92a 100%)",
-              color: "#1a1208", textDecoration: "none", fontSize: 20, fontWeight: 900,
-              letterSpacing: 1, padding: "16px 0", borderRadius: 14,
-              boxShadow: "0 6px 0 #8a6510, 0 12px 24px rgba(0,0,0,0.5)", textTransform: "uppercase",
-            }}
-          >
-            ⬇ Télécharger l'APK
-          </a>
+          <>
+            <button
+              type="button"
+              disabled={downloading}
+              onClick={() => triggerDownload(apk)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
+                background: downloading
+                  ? "linear-gradient(180deg, #6b7280 0%, #4b5563 100%)"
+                  : "linear-gradient(180deg, #f5c542 0%, #e0a92a 100%)",
+                color: "#1a1208", border: "none", fontSize: 20, fontWeight: 900,
+                letterSpacing: 1, padding: "16px 0", borderRadius: 14,
+                boxShadow: downloading ? "none" : "0 6px 0 #8a6510, 0 12px 24px rgba(0,0,0,0.5)",
+                textTransform: "uppercase", cursor: downloading ? "wait" : "pointer",
+              }}
+            >
+              {downloading ? `⏬ Téléchargement… ${dlProgress}%` : "⬇ Télécharger l'APK"}
+            </button>
+            {downloading && dlProgress > 0 && (
+              <div style={{ marginTop: 10, height: 6, background: "#1f2937", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ width: `${dlProgress}%`, height: "100%", background: "#f5c542", transition: "width 0.2s" }} />
+              </div>
+            )}
+            <a
+              href={apk.url}
+              download={apk.name}
+              rel="noopener"
+              style={{ display: "inline-block", marginTop: 10, color: "#93c5fd", fontSize: 12, textDecoration: "underline" }}
+            >
+              Lien direct (si le bouton ne fonctionne pas)
+            </a>
+            {error && (
+              <div style={{ marginTop: 10, color: "#fca5a5", fontSize: 12 }}>⚠ {error}</div>
+            )}
+          </>
         ) : (
           <div style={{
             background: "#1a1f2e", border: "1px dashed #f59e0b", borderRadius: 14,
