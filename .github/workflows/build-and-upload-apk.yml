@@ -40,6 +40,7 @@ jobs:
       - name: Prepare Capacitor webDir stub
         run: |
           mkdir -p dist
+          mkdir -p android/app/src/main/assets
           cat > dist/index.html <<'EOF'
           <!doctype html><html><head><meta charset="utf-8"><title>Junky City Empire</title><meta http-equiv="refresh" content="0; url=https://junkyard-empire-sim.lovable.app"></head><body>Loading…</body></html>
           EOF
