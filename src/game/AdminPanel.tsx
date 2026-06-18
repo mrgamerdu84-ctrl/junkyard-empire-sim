@@ -6,7 +6,7 @@ import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey } from "./g
 /* Floating gear button + slide-in admin panel. */
 export default function AdminPanel() {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "export">("trafic");
+  const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "skins" | "export">("trafic");
   const [placeMode, setPlaceMode] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const cfg = useAdminConfig();
