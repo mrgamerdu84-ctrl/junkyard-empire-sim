@@ -385,24 +385,6 @@ function PedestrianSVG({ shirt, pants, skin, side, scale = 1 }: { shirt: string;
   );
 }
 
-function Lamp({ x, y, night }: { x: number; y: number; night: number }) {
-  const lit = night > 0.32;
-  return (
-    <g transform={`translate(${x},${y})`}>
-      {lit && (
-        <circle r="62" fill="#ffd66a" opacity={night * 0.32}>
-          <animate attributeName="opacity" values={`${night * 0.22};${night * 0.42};${night * 0.22}`} dur="3s" repeatCount="indefinite" />
-        </circle>
-      )}
-      {/* base / poteau plus visible */}
-      <ellipse cx="0" cy="4" rx="5" ry="2" fill="rgba(0,0,0,0.55)" />
-      <path d="M 0 30 L 0 -2 L -26 -10" stroke="#0e1115" strokeWidth="6" strokeLinecap="round" fill="none" />
-      <circle cx="-28" cy="-10" r="8" fill={lit ? "#fff5b0" : "#5a5d54"} stroke="#1a1d22" strokeWidth="1.2" />
-      {lit && <circle cx="-28" cy="-10" r="16" fill="#ffd66a" opacity="0.45" />}
-    </g>
-  );
-}
-
 // Distance de sécurité et freinage (en px du viewBox 1920x1080)
 const SAFE_GAP = 55;     // distance désirée pare-chocs à pare-chocs
 const BRAKE_GAP = 110;   // au-delà : pleine vitesse ; en deçà : freinage progressif
