@@ -1805,7 +1805,21 @@ export default function TaxiTycoon() {
               <span className="tt-stat-val">{rivalStolen}</span>
             </div>
           )}
+          {(() => {
+            const city = getCityLevel(save.cityFund);
+            const nextT = city.next?.threshold ?? city.threshold;
+            const prevT = city.threshold;
+            const pct = city.next ? Math.min(100, Math.round(((save.cityFund - prevT) / (nextT - prevT)) * 100)) : 100;
+            return (
+              <div className="tt-stat tt-city" title={`Caisse de la ville : ${fmt(save.cityFund)}$ — alimentée par les amendes`}>
+                <span className="tt-stat-icon">{city.emoji}</span>
+                <span className="tt-stat-val">{city.name}</span>
+                <div className="tt-city-bar"><div className="tt-city-fill" style={{ width: `${pct}%` }} /></div>
+              </div>
+            );
+          })()}
         </div>
+
 
         <div className="tt-depot-card">
           <div className="tt-depot-name">{tier.name} (x{tier.fareMult.toFixed(1)})</div>
