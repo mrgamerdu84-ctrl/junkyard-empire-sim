@@ -45,15 +45,6 @@ export default function SplashScreen({ onDone }: { onDone: () => void }) {
         .sp-content.sp-in  { opacity: 1; transform: translateY(0); }
         .sp-content.sp-out { opacity: 0; transform: translateY(-12px); transition-duration: 0.6s; }
 
-        .sp-title {
-          color: #f5c542;
-          font-size: clamp(28px, 7vw, 52px);
-          font-weight: 900;
-          letter-spacing: 4px;
-          text-transform: uppercase;
-          text-shadow: 0 2px 12px rgba(0,0,0,0.8), 0 0 40px rgba(245,197,66,0.25);
-          margin: 0;
-        }
         .sp-sub {
           color: #c9b896;
           font-size: clamp(12px, 3vw, 16px);
