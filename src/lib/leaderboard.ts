@@ -1,10 +1,13 @@
 /* ============================================================
- * LEADERBOARD — Classement quotidien local + récompense hebdo.
+ * LEADERBOARD — Classement quotidien local + sync online.
  * ============================================================
  * Stocke les gains par jour (YYYY-MM-DD) dans localStorage.
- * Tous les lundis, le meilleur jour de la semaine écoulée
- * débloque le "Taxi d'Or" pour la semaine suivante.
+ * Si l'utilisateur est connecté, les scores sont aussi sync
+ * vers Supabase (table daily_scores) — chaque joueur ne voit
+ * QUE ses propres scores grâce aux RLS policies.
  * ============================================================ */
+import { supabase } from "@/integrations/supabase/client";
+
 
 const SCORES_KEY = "tt-daily-scores";
 const UNLOCK_KEY = "tt-special-taxi-unlocked";
@@ -40,7 +43,7 @@ function saveScores(s: DailyScores) {
   try { localStorage.setItem(SCORES_KEY, JSON.stringify(s)); } catch {}
 }
 
-/** Ajoute des gains au score du jour. */
+/** Ajoute des gains au score du jour (local + sync online si connecté). */
 export function recordEarning(amount: number) {
   if (typeof window === "undefined" || amount <= 0) return;
   const s = loadScores();
@@ -48,7 +51,63 @@ export function recordEarning(amount: number) {
   s[k] = (s[k] || 0) + amount;
   saveScores(s);
   checkWeeklyReward();
+  // Sync vers Supabase (fire & forget) si connecté
+  syncDayToCloud(k, s[k]).catch(() => {});
 }
+
+/** Upsert le score du jour vers Supabase si l'utilisateur est connecté. */
+async function syncDayToCloud(day: string, score: number) {
+  const { data } = await supabase.auth.getSession();
+  const uid = data.session?.user?.id;
+  if (!uid) return;
+  await supabase
+    .from("daily_scores")
+    .upsert({ user_id: uid, day, score }, { onConflict: "user_id,day" });
+}
+
+/** Récupère les scores du joueur connecté depuis Supabase (7 derniers jours). */
+export async function fetchCloudLast7Days(): Promise<Array<{ date: string; score: number; label: string }> | null> {
+  const { data: sess } = await supabase.auth.getSession();
+  const uid = sess.session?.user?.id;
+  if (!uid) return null;
+  const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const out: Array<{ date: string; score: number; label: string }> = [];
+  const keys: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    const key = `${y}-${m}-${day}`;
+    keys.push(key);
+    out.push({ date: key, score: 0, label: days[d.getDay()] });
+  }
+  const { data } = await supabase
+    .from("daily_scores")
+    .select("day,score")
+    .eq("user_id", uid)
+    .in("day", keys);
+  if (data) {
+    for (const row of data) {
+      const idx = out.findIndex((o) => o.date === row.day);
+      if (idx >= 0) out[idx].score = Number(row.score) || 0;
+    }
+  }
+  return out;
+}
+
+/** Pousse tous les scores locaux vers le cloud (appelé à la connexion). */
+export async function pushLocalScoresToCloud() {
+  const { data: sess } = await supabase.auth.getSession();
+  const uid = sess.session?.user?.id;
+  if (!uid) return;
+  const local = loadScores();
+  const rows = Object.entries(local).map(([day, score]) => ({ user_id: uid, day, score }));
+  if (rows.length === 0) return;
+  await supabase.from("daily_scores").upsert(rows, { onConflict: "user_id,day" });
+}
+
 
 /** Liste les 7 derniers jours triés par score décroissant. */
 export function getLast7Days(): Array<{ date: string; score: number; label: string }> {

@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
 import bgAsset from "@/assets/home-bg.png.asset.json";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import TutorialDialog from "@/components/TutorialDialog";
 import LeaderboardPanel from "@/components/LeaderboardPanel";
-import { hasSeenTutorial, resetTutorial, getPlayerName, setPlayerName } from "@/lib/leaderboard";
+import { hasSeenTutorial, resetTutorial, getPlayerName, setPlayerName, pushLocalScoresToCloud } from "@/lib/leaderboard";
+import { useAuth, signOut } from "@/lib/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
+  const navigate = useNavigate();
+  const { user, pseudo: cloudPseudo } = useAuth();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -14,10 +19,19 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const [pseudoInput, setPseudoInput] = useState(getPlayerName());
   const [displayName, setDisplayName] = useState(getPlayerName());
 
+  // Pseudo affiché : cloud si connecté, sinon local
+  const effectiveName = user ? cloudPseudo : displayName;
+
+  // Quand on se connecte, on pousse les scores locaux vers le cloud
+  useEffect(() => {
+    if (user) pushLocalScoresToCloud().catch(() => {});
+  }, [user]);
+
   // Premier lancement → tuto auto
   useEffect(() => {
     if (!hasSeenTutorial()) setShowTutorial(true);
   }, []);
+
 
 
   useEffect(() => {
@@ -168,8 +182,11 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
       <UpdateNotification />
 
       <div className="hs-btns">
-        {displayName !== "Chauffeur" && (
-          <div className="hs-name-badge">👤 {displayName}</div>
+        {effectiveName !== "Chauffeur" && (
+          <div className="hs-name-badge">
+            {user ? "🔒" : "👤"} {effectiveName}
+            {user && <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>(compte en ligne)</span>}
+          </div>
         )}
         <button className="hs-btn" onClick={() => setLoading(true)}>
           Jouer ▶
@@ -180,9 +197,18 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
           📖 Tuto
         </button>
-        <button className="hs-btn" onClick={() => { setPseudoInput(getPlayerName()); setShowPseudo(true); }}>
+        <button className="hs-btn" onClick={() => { setPseudoInput(user ? cloudPseudo : getPlayerName()); setShowPseudo(true); }}>
           ✏️ Pseudo
         </button>
+        {user ? (
+          <button className="hs-btn" style={{ background: "linear-gradient(180deg,#6b7280,#374151)", color: "#fff", boxShadow: "0 6px 0 #1f2937, 0 12px 20px rgba(0,0,0,0.5)" }} onClick={() => signOut()}>
+            🚪 Déconnexion
+          </button>
+        ) : (
+          <button className="hs-btn" style={{ background: "linear-gradient(180deg,#10b981,#059669)", color: "#fff", boxShadow: "0 6px 0 #064e3b, 0 12px 20px rgba(0,0,0,0.5)" }} onClick={() => navigate({ to: "/auth" })}>
+            🔐 Connexion
+          </button>
+        )}
         <button
           className="hs-btn"
           onClick={() => {
@@ -210,13 +236,20 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
               value={pseudoInput}
               onChange={(e) => setPseudoInput(e.target.value)}
               placeholder="Chauffeur"
-              onKeyDown={(e) => { if (e.key === "Enter") { setPlayerName(pseudoInput); setDisplayName(getPlayerName()); setShowPseudo(false); } }}
             />
             <div className="hs-pseudo-actions">
               <button className="hs-pseudo-btn hs-pseudo-secondary" onClick={() => setShowPseudo(false)}>Annuler</button>
               <button
                 className="hs-pseudo-btn"
-                onClick={() => { setPlayerName(pseudoInput); setDisplayName(getPlayerName()); setShowPseudo(false); }}
+                onClick={async () => {
+                  const newName = pseudoInput.trim() || "Chauffeur";
+                  setPlayerName(newName);
+                  setDisplayName(getPlayerName());
+                  if (user) {
+                    await supabase.from("profiles").update({ pseudo: newName }).eq("id", user.id);
+                  }
+                  setShowPseudo(false);
+                }}
               >
                 Valider
               </button>
