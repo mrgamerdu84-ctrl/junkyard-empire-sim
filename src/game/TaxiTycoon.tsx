@@ -1959,33 +1959,7 @@ export default function TaxiTycoon() {
           🏁
         </button>
 
-        {/* Musique de fond */}
-        <audio
-          ref={(el) => {
-            audioRef.current = el;
-            if (el) el.loop = true;
-          }}
-          src={MUSIC_URL}
-          loop
-          preload="auto"
-          onEnded={(e) => {
-            const a = e.currentTarget;
-            a.currentTime = 0;
-            a.play().catch(() => {});
-          }}
-        />
-        <button
-          className="tt-music-fab"
-          onClick={() => {
-            const a = audioRef.current;
-            if (!a) return;
-            if (musicOn) { a.pause(); setMusicOn(false); }
-            else { a.loop = true; a.volume = 0.45; a.play().catch(() => {}); setMusicOn(true); }
-          }}
-          title={musicOn ? "Couper la musique" : "Activer la musique"}
-        >
-          {musicOn ? "🎵" : "🔇"}
-        </button>
+        {/* Musique de fond : gérée globalement par <BackgroundMusic /> dans __root.tsx */}
 
         {garageOpen && (
           <div className="tt-modal-overlay" onClick={() => setGarageOpen(false)}>
