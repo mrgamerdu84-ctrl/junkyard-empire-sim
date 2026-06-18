@@ -981,7 +981,7 @@ export default function TaxiTycoon() {
             if (nowMs - (radarLastHitRef.current[key] ?? 0) < RADAR_COOLDOWN_MS) continue;
             radarLastHitRef.current[key] = nowMs;
             const pt = pathRefs.current[rd.pathIdx]?.getPointAtLength(rdPos);
-            setSave(s => ({ ...s, money: Math.max(0, s.money - RADAR_FINE) }));
+            setSave(s => ({ ...s, money: Math.max(0, s.money - RADAR_FINE), cityFund: s.cityFund + RADAR_FINE }));
             if (pt) {
               radarFlashRef.current = { id: rd.id, x: pt.x, y: pt.y, t: nowMs };
               setRadarFlashTick(n => (n + 1) % 1_000_000);
