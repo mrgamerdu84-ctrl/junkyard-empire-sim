@@ -10,6 +10,9 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const [progress, setProgress] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showPseudo, setShowPseudo] = useState(false);
+  const [pseudoInput, setPseudoInput] = useState(getPlayerName());
+  const [displayName, setDisplayName] = useState(getPlayerName());
 
   // Premier lancement → tuto auto
   useEffect(() => {
