@@ -60,27 +60,28 @@ jobs:
           echo "path=$APK_PATH" >> "$GITHUB_OUTPUT"
           echo "name=MyTaxiWorldTycoon.apk" >> "$GITHUB_OUTPUT"
 
-      # --- Upload Lovable Cloud (Supabase Storage) ---
-      - name: Upload APK to Lovable Cloud bucket "apks"
+      # --- Upload via endpoint Lovable (recommandé) ---
+      # UPLOAD_URL : ex. https://junkyard-empire-sim.lovable.app/api/public/upload-apk
+      # UPLOAD_TOKEN : token partagé (même valeur que côté Lovable Cloud secrets)
+      - name: Upload APK to Lovable
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          UPLOAD_URL: ${{ secrets.UPLOAD_URL }}
+          UPLOAD_TOKEN: ${{ secrets.UPLOAD_TOKEN }}
           APK_PATH: ${{ steps.apk.outputs.path }}
           APK_NAME: ${{ steps.apk.outputs.name }}
         run: |
           set -e
-          echo "Uploading $APK_PATH -> apks/$APK_NAME"
+          echo "Uploading $APK_PATH -> $UPLOAD_URL?name=$APK_NAME"
           HTTP_CODE=$(curl -sS -o /tmp/up.json -w "%{http_code}" \
             -X POST \
-            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${UPLOAD_TOKEN}" \
             -H "Content-Type: application/vnd.android.package-archive" \
-            -H "x-upsert: true" \
             --data-binary "@${APK_PATH}" \
-            "${SUPABASE_URL}/storage/v1/object/apks/${APK_NAME}")
+            "${UPLOAD_URL}?name=${APK_NAME}")
           echo "HTTP $HTTP_CODE"
           cat /tmp/up.json || true
-          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+          echo
+          if [ "$HTTP_CODE" != "200" ]; then
             echo "❌ Upload failed"
             exit 1
           fi

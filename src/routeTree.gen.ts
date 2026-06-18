@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as DownloadRouteImport } from './routes/download'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiPublicUploadApkRouteImport } from './routes/api/public/upload-apk'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -34,18 +35,25 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicUploadApkRoute = ApiPublicUploadApkRouteImport.update({
+  id: '/api/public/upload-apk',
+  path: '/api/public/upload-apk',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/upload-apk': typeof ApiPublicUploadApkRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/upload-apk': typeof ApiPublicUploadApkRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,25 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/download': typeof DownloadRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/api/public/upload-apk': typeof ApiPublicUploadApkRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/download' | '/reset-password'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/download'
+    | '/reset-password'
+    | '/api/public/upload-apk'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/download' | '/reset-password'
-  id: '__root__' | '/' | '/auth' | '/download' | '/reset-password'
+  to: '/' | '/auth' | '/download' | '/reset-password' | '/api/public/upload-apk'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/download'
+    | '/reset-password'
+    | '/api/public/upload-apk'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +87,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   DownloadRoute: typeof DownloadRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicUploadApkRoute: typeof ApiPublicUploadApkRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/upload-apk': {
+      id: '/api/public/upload-apk'
+      path: '/api/public/upload-apk'
+      fullPath: '/api/public/upload-apk'
+      preLoaderRoute: typeof ApiPublicUploadApkRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +135,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   DownloadRoute: DownloadRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicUploadApkRoute: ApiPublicUploadApkRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
