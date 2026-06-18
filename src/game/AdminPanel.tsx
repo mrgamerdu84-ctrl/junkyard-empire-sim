@@ -223,6 +223,7 @@ export default function AdminPanel() {
               <button className={`adm-tab ${tab === "missions" ? "active" : ""}`} onClick={() => setTab("missions")}>Miss.</button>
               <button className={`adm-tab ${tab === "rival" ? "active" : ""}`} onClick={() => setTab("rival")}>Rival</button>
               <button className={`adm-tab ${tab === "circuit" ? "active" : ""}`} onClick={() => setTab("circuit")}>Circuit</button>
+              <button className={`adm-tab ${tab === "export" ? "active" : ""}`} onClick={() => setTab("export")}>Export</button>
             </div>
 
             {tab === "trafic" && (
