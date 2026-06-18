@@ -236,13 +236,20 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
               value={pseudoInput}
               onChange={(e) => setPseudoInput(e.target.value)}
               placeholder="Chauffeur"
-              onKeyDown={(e) => { if (e.key === "Enter") { setPlayerName(pseudoInput); setDisplayName(getPlayerName()); setShowPseudo(false); } }}
             />
             <div className="hs-pseudo-actions">
               <button className="hs-pseudo-btn hs-pseudo-secondary" onClick={() => setShowPseudo(false)}>Annuler</button>
               <button
                 className="hs-pseudo-btn"
-                onClick={() => { setPlayerName(pseudoInput); setDisplayName(getPlayerName()); setShowPseudo(false); }}
+                onClick={async () => {
+                  const newName = pseudoInput.trim() || "Chauffeur";
+                  setPlayerName(newName);
+                  setDisplayName(getPlayerName());
+                  if (user) {
+                    await supabase.from("profiles").update({ pseudo: newName }).eq("id", user.id);
+                  }
+                  setShowPseudo(false);
+                }}
               >
                 Valider
               </button>
