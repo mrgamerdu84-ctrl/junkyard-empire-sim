@@ -206,23 +206,20 @@ function Vehicle({
   variant?: VehicleVariant;
   photoIdx?: number;
 }) {
-  // Voitures civiles : sprites top-down. Les images générées ont le capot
-  // côté gauche -> scaleX(-1) pour le pointer vers +x (sens d'avancée).
+  // Voitures civiles : sprites top-down orientés vers +x (sens d'avancée).
   // Taille uniforme (toutes les voitures au même niveau).
   const W = 60;
   const H = W * 0.45;
   const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
   return (
-    <g transform="scale(-1,1)">
-      <image
-        href={href}
-        x={-W / 2}
-        y={-H / 2}
-        width={W}
-        height={H}
-        preserveAspectRatio="xMidYMid meet"
-      />
-    </g>
+    <image
+      href={href}
+      x={-W / 2}
+      y={-H / 2}
+      width={W}
+      height={H}
+      preserveAspectRatio="xMidYMid meet"
+    />
   );
 }
 
