@@ -622,7 +622,6 @@ export default function CityTraffic() {
       {activeCars.map((car, i) => (
         <g
           key={i}
-          filter="url(#jce-soft-shadow)"
           ref={(el) => {
             carNodes.current[i] = el;
           }}
@@ -630,6 +629,7 @@ export default function CityTraffic() {
           <Vehicle kind={car.kind} color={car.color} accent={car.accent} scale={car.scale} variant={car.variant} photoIdx={i} />
         </g>
       ))}
+
 
       {/* Piétons photos qui marchent sur les trottoirs (markets/promeneurs) */}
       <PhotoPedestrians pathRefs={pathRefs} />
