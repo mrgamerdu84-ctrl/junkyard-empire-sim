@@ -4,7 +4,7 @@ import { useAdminConfig, setAdmin, resetAdmin, type AdminConfig } from "./adminC
 /* Floating gear button + slide-in admin panel. */
 export default function AdminPanel() {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit">("trafic");
+  const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "export">("trafic");
   const [placeMode, setPlaceMode] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
   const cfg = useAdminConfig();
