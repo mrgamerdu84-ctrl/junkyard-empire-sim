@@ -236,7 +236,8 @@ function Vehicle({
 
 
 // Composants SVG conservés pour référence/legacy (non utilisés depuis l'image PNG).
-void CarSVG; void VanSVG; void TruckSVG; void HatchSVG;
+void CarSVG; void VanSVG; void TruckSVG; void HatchSVG; void PEDESTRIANS;
+
 
 // === Piétons photos qui marchent sur les trottoirs ===
 type PhotoPedSpec = {
