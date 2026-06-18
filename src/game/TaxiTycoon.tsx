@@ -1475,31 +1475,27 @@ export default function TaxiTycoon() {
         )}
 
 
-        {/* Clients en attente (course offerte ou acceptée) — sur le trottoir */}
+        {/* Clients en attente (course offerte ou acceptée) — vue du ciel, sur le trottoir */}
         {jobs.map((j) => {
           const p = getSidewalk(j.pickupPath, j.pickup, j.sidePickup);
-          const age = (Date.now() - (j.deadline - j.duration)) / 1000;
-          const bob = Math.sin(age * 3) * 0.8;
-          const pulse = 1 + Math.sin(age * 4) * 0.18;
           const haloColor = j.status === "accepted" ? "#3b82f6" : "#10b981";
+          // Sprite vue du ciel (top-down) : épaules + tête vue d'en haut.
+          // Pas de SMIL/animations par client = beaucoup moins de charge.
           return (
-            <g key={j.id} transform={`translate(${p.x},${p.y + bob})`} filter="url(#taxi-shadow)">
-              <circle r={16 * pulse} fill={haloColor} opacity="0.28" />
-              <ellipse cx="0" cy="9" r="6" rx="6" ry="2" fill="rgba(0,0,0,0.5)" />
-              <rect x="-3" y="-2" width="2.4" height="7" rx="0.6" fill="#1f2937" />
-              <rect x="0.6" y="-2" width="2.4" height="7" rx="0.6" fill="#1f2937" />
-              <path d="M -4 -8 Q 0 -10 4 -8 L 3.4 -1 L -3.4 -1 Z" fill={haloColor} stroke="#0f172a" strokeWidth="0.5" />
-              <rect x="-5" y="-7" width="1.6" height="5" rx="0.5" fill={haloColor} />
-              <rect x="3.4" y="-7" width="1.6" height="5" rx="0.5" fill={haloColor} />
-              <circle cx="0" cy="-12" r="3" fill="#f1c79b" stroke="#0f172a" strokeWidth="0.5" />
-              {j.status === "offered" && (
-                <rect x="4" y="-14" width="1.4" height="6" rx="0.5" fill={haloColor} transform="rotate(-30 4 -14)">
-                  <animateTransform attributeName="transform" type="rotate" values="-30 4 -14;-10 4 -14;-30 4 -14" dur="0.9s" repeatCount="indefinite" />
-                </rect>
-              )}
-              <g transform="translate(0,-26)">
-                <rect x="-18" y="-9" width="36" height="13" rx="3" fill="#0f172a" stroke={haloColor} strokeWidth="1" />
-                <text y="0.5" fontSize="8.5" fontWeight="900" textAnchor="middle" fill={haloColor}>{fmt(j.fare)}$</text>
+            <g key={j.id} transform={`translate(${p.x},${p.y})`}>
+              {/* halo au sol */}
+              <circle r="13" fill={haloColor} opacity="0.22" />
+              <circle r="9" fill={haloColor} opacity="0.35" />
+              {/* ombre douce au sol */}
+              <ellipse cx="0" cy="0" rx="5.5" ry="5" fill="rgba(0,0,0,0.35)" />
+              {/* épaules / corps vu du dessus (ellipse aplatie aux couleurs du job) */}
+              <ellipse cx="0" cy="0" rx="5" ry="4" fill={haloColor} stroke="#0f172a" strokeWidth="0.7" />
+              {/* tête vue du ciel */}
+              <circle cx="0" cy="0" r="2.6" fill="#f1c79b" stroke="#0f172a" strokeWidth="0.5" />
+              {/* étiquette tarif */}
+              <g transform="translate(0,-18)">
+                <rect x="-16" y="-8" width="32" height="12" rx="3" fill="#0f172a" stroke={haloColor} strokeWidth="1" />
+                <text y="1" fontSize="8" fontWeight="900" textAnchor="middle" fill={haloColor}>{fmt(j.fare)}$</text>
               </g>
             </g>
           );
