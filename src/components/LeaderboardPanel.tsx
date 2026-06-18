@@ -9,6 +9,7 @@ export default function LeaderboardPanel({ onClose }: { onClose: () => void }) {
   const unlocked = isSpecialTaxiUnlocked();
   const best = getBestWeekScore();
   const todayScore = getTodayScore();
+  const playerName = getPlayerName();
 
   // Tri par score décroissant pour le classement
   const ranked = [...days].sort((a, b) => b.score - a.score);
