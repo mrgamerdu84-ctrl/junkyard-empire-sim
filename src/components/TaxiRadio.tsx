@@ -6,10 +6,10 @@ type Station = {
   id: string;
   name: string;
   emoji: string;
-  url?: string;        // pour les stations audio classiques
+  url?: string;
   loop?: boolean;
   volume?: number;
-  tts?: boolean;       // station "infos" : utilise la synthèse vocale
+  tts?: boolean;
 };
 
 const STATIONS: Station[] = [
@@ -20,26 +20,15 @@ const STATIONS: Station[] = [
   { id: "rock",    name: "Radio Rock",     emoji: "🎸", url: "https://ice6.somafm.com/thetrip-128-mp3", volume: 0.5 },
 ];
 
-const STORAGE_KEY = "mttw.taxiRadio"; // id station, ou "off"
-const LANG_KEY = "mttw.lang";          // "fr" | "en"
+const STORAGE_KEY = "mttw.taxiRadio";
+const LANG_KEY = "mttw.lang";
 
 function readPref(): string {
-  try {
-    return localStorage.getItem(STORAGE_KEY) ?? "main";
-  } catch {
-    return "main";
-  }
+  try { return localStorage.getItem(STORAGE_KEY) ?? "main"; } catch { return "main"; }
 }
-
 function readLang(): "fr" | "en" {
-  try {
-    const v = localStorage.getItem(LANG_KEY);
-    return v === "en" ? "en" : "fr";
-  } catch {
-    return "fr";
-  }
+  try { const v = localStorage.getItem(LANG_KEY); return v === "en" ? "en" : "fr"; } catch { return "fr"; }
 }
-
 function pickVoice(lang: "fr" | "en"): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return null;
   const voices = window.speechSynthesis.getVoices();
@@ -57,71 +46,117 @@ export default function TaxiRadio() {
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [lang, setLang] = useState<"fr" | "en">("fr");
+  const langRef = useRef<"fr" | "en">("fr");
+  const [ticker, setTicker] = useState<string>("");
   const ambientTimerRef = useRef<number | null>(null);
   const ambientIdxRef = useRef<number>(0);
+  const tickerTimerRef = useRef<number | null>(null);
+  const ttsUnlockedRef = useRef<boolean>(false);
+
+  useEffect(() => { langRef.current = lang; }, [lang]);
+
+  // Débloque la synthèse vocale au premier geste utilisateur (requis sur mobile)
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    const unlock = () => {
+      if (ttsUnlockedRef.current) return;
+      try {
+        const u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+        ttsUnlockedRef.current = true;
+      } catch {}
+    };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("touchstart", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("touchstart", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
 
   useEffect(() => {
     setStationId(readPref());
-    setLang(readLang());
+    const l = readLang();
+    setLang(l);
+    langRef.current = l;
     setReady(true);
-    // Force le chargement des voix (certaines plateformes l'exigent)
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.getVoices();
       window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
     }
-    const onLang = () => setLang(readLang());
+    const onLang = () => { const nl = readLang(); setLang(nl); langRef.current = nl; };
     window.addEventListener("jce:lang-changed", onLang);
     return () => window.removeEventListener("jce:lang-changed", onLang);
   }, []);
 
-  // Lit une brève
-  const speak = (news: RadioNews) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    try {
-      const text = lang === "en" ? news.en : news.fr;
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = lang === "en" ? "en-US" : "fr-FR";
-      const v = pickVoice(lang);
-      if (v) u.voice = v;
-      u.rate = 1.0;
-      u.pitch = 1.0;
-      u.volume = 1.0;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    } catch {
-      // pas de TTS — silencieusement ignoré
-    }
+  const showTicker = (text: string) => {
+    setTicker(text);
+    if (tickerTimerRef.current) window.clearTimeout(tickerTimerRef.current);
+    tickerTimerRef.current = window.setTimeout(() => setTicker(""), 9000);
   };
 
-  // Stations audio normales
+  // Lit une brève (TTS + bandeau visuel)
+  const speak = (news: RadioNews) => {
+    const l = langRef.current;
+    const text = l === "en" ? news.en : news.fr;
+    showTicker(text);
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      const synth = window.speechSynthesis;
+      try { synth.cancel(); } catch {}
+      try { synth.resume(); } catch {}
+      const trySpeak = () => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = l === "en" ? "en-US" : "fr-FR";
+        const v = pickVoice(l);
+        if (v) u.voice = v;
+        u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+        synth.speak(u);
+        ttsUnlockedRef.current = true;
+      };
+      if (synth.getVoices().length === 0) {
+        // attend que les voix soient chargées puis parle
+        const onReady = () => { trySpeak(); synth.onvoiceschanged = null; };
+        synth.onvoiceschanged = onReady;
+        window.setTimeout(trySpeak, 250);
+      } else {
+        trySpeak();
+      }
+    } catch {}
+  };
+
+  // Stations
   useEffect(() => {
     if (!ready) return;
     const a = audioRef.current;
     const st = STATIONS.find((s) => s.id === stationId);
 
-    // Coupe toujours la synthèse vocale entre deux switches
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       try { window.speechSynthesis.cancel(); } catch {}
     }
     if (ambientTimerRef.current) { window.clearInterval(ambientTimerRef.current); ambientTimerRef.current = null; }
+    setTicker("");
 
     if (!a) return;
-
-    if (!st || st.id === "off") {
-      a.pause();
-      return;
-    }
+    if (!st || st.id === "off") { a.pause(); return; }
 
     if (st.tts) {
-      // Station Infos : on coupe l'audio musical et on annonce un jingle d'ouverture
       a.pause();
       speak({ fr: "Radio Infos, votre ville en direct.", en: "Taxi News Radio, your city live." });
-      // Brève d'ambiance régulière s'il n'y a pas d'événement
+      // première brève rapidement
+      window.setTimeout(() => {
+        const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
+        ambientIdxRef.current++;
+        speak(AMBIENT_NEWS[idx]);
+      }, 4500);
       ambientTimerRef.current = window.setInterval(() => {
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
         speak(AMBIENT_NEWS[idx]);
-      }, 35000);
+      }, 25000);
       return;
     }
 
@@ -141,9 +176,8 @@ export default function TaxiRadio() {
         window.addEventListener("touchstart", start, { once: true });
       });
     }
-  }, [stationId, ready, lang]);
+  }, [stationId, ready]);
 
-  // Écoute les news temps réel — uniquement si la station Infos est active
   useEffect(() => {
     const onNews = (e: Event) => {
       if (stationId !== "infos") return;
@@ -153,12 +187,12 @@ export default function TaxiRadio() {
     };
     window.addEventListener(RADIO_NEWS_EVENT, onNews);
     return () => window.removeEventListener(RADIO_NEWS_EVENT, onNews);
-  }, [stationId, lang]);
+  }, [stationId]);
 
-  // Cleanup à l'unmount
   useEffect(() => {
     return () => {
       if (ambientTimerRef.current) window.clearInterval(ambientTimerRef.current);
+      if (tickerTimerRef.current) window.clearTimeout(tickerTimerRef.current);
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try { window.speechSynthesis.cancel(); } catch {}
       }
@@ -168,10 +202,20 @@ export default function TaxiRadio() {
   const pick = (id: string) => {
     setStationId(id);
     try { localStorage.setItem(STORAGE_KEY, id); } catch {}
+    // déblocage TTS au clic (sur la bonne piste utilisateur)
+    if (id === "infos" && typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        const u = new SpeechSynthesisUtterance(" ");
+        u.volume = 0;
+        window.speechSynthesis.speak(u);
+        ttsUnlockedRef.current = true;
+      } catch {}
+    }
   };
 
   const setLanguage = (l: "fr" | "en") => {
     setLang(l);
+    langRef.current = l;
     try { localStorage.setItem(LANG_KEY, l); } catch {}
     try { window.dispatchEvent(new CustomEvent("jce:lang-changed", { detail: l })); } catch {}
   };
@@ -190,6 +234,26 @@ export default function TaxiRadio() {
           if (st?.loop) { a.currentTime = 0; a.play().catch(() => {}); }
         }}
       />
+
+      {ticker && stationId === "infos" && (
+        <div
+          style={{
+            position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)",
+            zIndex: 9999, maxWidth: "92vw",
+            background: "linear-gradient(180deg,#991b1b,#450a0a)",
+            color: "#fff7d6", padding: "8px 14px", borderRadius: 999,
+            border: "2px solid #fde047", fontWeight: 800, fontSize: 13,
+            boxShadow: "0 6px 18px rgba(0,0,0,0.5)",
+            fontFamily: "system-ui, sans-serif",
+            display: "flex", alignItems: "center", gap: 8,
+          }}
+        >
+          <span>📰</span>
+          <span style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", maxWidth: "75vw" }}>
+            {ticker}
+          </span>
+        </div>
+      )}
 
       <button
         type="button"
