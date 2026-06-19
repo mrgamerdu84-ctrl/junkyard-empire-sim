@@ -1496,7 +1496,7 @@ export default function TaxiTycoon() {
               // La minuterie de dégagement ne démarre que quand les 3 secours sont sur place
               const allHere = emergencyRef.current.every(e => e.accidentId === acc.id && e.mode === "onsite") || acc.responders.size >= 3;
               if (allHere && !acc.clearAt) {
-                acc.clearAt = tMs + ACCIDENT_BLOCK_MIN_MS;
+                acc.clearAt = tMs + acc.interventionMs;
                 // Aligne la fin d'intervention de tous les secours présents
                 for (const e of emergencyRef.current) {
                   if (e.accidentId === acc.id) e.onsiteUntil = acc.clearAt;
