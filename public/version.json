@@ -1,6 +1,6 @@
 {
-  "version": "1.9.1",
-  "buildId": "2026-06-19T18:45:00.000Z",
-  "builtAt": 1781894700000,
-  "changelog": "Option « Image déjà vue du ciel » pour ajouter un véhicule sans rotation auto"
+  "version": "1.9.2",
+  "buildId": "2026-06-19T18:55:00.000Z",
+  "builtAt": 1781895300000,
+  "changelog": "Ajout véhicule : aperçu en jeu (vue du ciel) côte à côte pour valider la bonne orientation"
 }

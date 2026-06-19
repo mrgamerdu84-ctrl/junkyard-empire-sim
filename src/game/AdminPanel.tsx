@@ -1019,21 +1019,40 @@ function CustomVehiclesSection() {
       ) : (
         <div style={{ background: "#14171c", border: "1px solid #3a3f48", borderRadius: 6, padding: 10 }}>
           <div style={{ fontSize: 10, color: "#8a8e94", marginBottom: 6, textAlign: "center" }}>
-            Aperçu — la flèche ↑ indique le sens de marche
+            Aperçu source (↑ = avant) <span style={{ color: "#6a6e74" }}>|</span> Aperçu jeu (vue du ciel)
           </div>
-          <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto", background: "#0a0c10", borderRadius: 6, overflow: "hidden" }}>
-            {/* Repère du sens de marche */}
-            <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", color: "#22c55e", fontSize: 18, fontWeight: 900, lineHeight: 1, zIndex: 2 }}>↑</div>
-            <img
-              src={pendingSrc}
-              alt="aperçu"
-              style={{
-                position: "absolute", inset: 0, width: "100%", height: "100%",
-                objectFit: "contain", transform: `rotate(${rotation}deg)`, transition: "transform 0.15s",
-              }}
-            />
+          <div style={{ display: "flex", gap: 8, justifyContent: "center" }}>
+            {/* Aperçu source */}
+            <div style={{ position: "relative", width: 100, height: 100, background: "#0a0c10", borderRadius: 6, overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", color: "#22c55e", fontSize: 16, fontWeight: 900, lineHeight: 1, zIndex: 2 }}>↑</div>
+              <img
+                src={pendingSrc}
+                alt="aperçu source"
+                style={{
+                  position: "absolute", inset: 0, width: "100%", height: "100%",
+                  objectFit: "contain", transform: `rotate(${rotation}deg)`, transition: "transform 0.15s",
+                }}
+              />
+            </div>
+            {/* Aperçu en jeu (simule rotate(90) du moteur de rendu) */}
+            <div style={{ position: "relative", width: 100, height: 100, background: "#2a2f38", borderRadius: 6, overflow: "hidden", border: "1px dashed #f5c542" }}>
+              <div style={{ position: "absolute", top: 2, left: 4, color: "#f5c542", fontSize: 9, fontWeight: 700, zIndex: 2 }}>EN JEU</div>
+              <div style={{ position: "absolute", bottom: 2, right: 4, color: "#22c55e", fontSize: 12, fontWeight: 900, lineHeight: 1, zIndex: 2 }}>→</div>
+              <img
+                src={pendingSrc}
+                alt="aperçu jeu"
+                style={{
+                  position: "absolute", inset: 0, width: "100%", height: "100%",
+                  objectFit: "contain", transform: `rotate(${(rotation + 90) % 360}deg)`, transition: "transform 0.15s",
+                }}
+              />
+            </div>
           </div>
-          <div style={{ display: "flex", gap: 4, marginTop: 8, justifyContent: "center" }}>
+          <div style={{ fontSize: 10, color: "#8a8e94", marginTop: 6, textAlign: "center", lineHeight: 1.4 }}>
+            La flèche verte → est le sens de marche.<br />
+            Tourne jusqu'à ce que le nez du véhicule pointe dans cette direction.
+          </div>
+          <div style={{ display: "flex", gap: 4, marginTop: 8, justifyContent: "center", alignItems: "center" }}>
             <button onClick={() => setRotation(((rotation + 270) % 360) as 0 | 90 | 180 | 270)} style={btnMini}>↺ -90°</button>
             <span style={{ fontSize: 11, color: "#f5c542", padding: "4px 8px", fontWeight: 700 }}>{rotation}°</span>
             <button onClick={() => setRotation(((rotation + 90) % 360) as 0 | 90 | 180 | 270)} style={btnMini}>↻ +90°</button>
@@ -1048,6 +1067,7 @@ function CustomVehiclesSection() {
           </div>
         </div>
       )}
+
 
       {items.length > 0 && (
         <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
