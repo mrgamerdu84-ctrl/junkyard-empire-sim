@@ -278,23 +278,68 @@ export default function AdminPanel() {
               <h2>🔒 Accès admin</h2>
               <button className="adm-close" onClick={() => { setOpen(false); setPwd(""); setPwdErr(""); }} aria-label="Fermer">×</button>
             </div>
-            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Entre le mot de passe pour accéder au panneau.</p>
-              <input
-                type="password"
-                autoFocus
-                value={pwd}
-                onChange={(e) => setPwd(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void tryUnlock(); }}
-                placeholder="Mot de passe"
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
-              />
-              {pwdErr && <div style={{ color: "#ff6b6b", fontSize: 13 }}>{pwdErr}</div>}
-              <button
-                onClick={() => void tryUnlock()}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
-              >Déverrouiller</button>
-            </div>
+            {!resetMode ? (
+              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Entre le mot de passe pour accéder au panneau.</p>
+                <input
+                  type="password"
+                  autoFocus
+                  value={pwd}
+                  onChange={(e) => setPwd(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") void tryUnlock(); }}
+                  placeholder="Mot de passe"
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                {pwdErr && <div style={{ color: "#ff6b6b", fontSize: 13 }}>{pwdErr}</div>}
+                <button
+                  onClick={() => void tryUnlock()}
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
+                >Déverrouiller</button>
+                <button
+                  onClick={() => { setResetMode(true); setPwdErr(""); }}
+                  style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #555", background: "transparent", color: "#facc15", fontSize: 13, cursor: "pointer" }}
+                >Mot de passe oublié ?</button>
+              </div>
+            ) : (
+              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ margin: 0, fontSize: 13, opacity: 0.85 }}>
+                  Réinitialise ton mot de passe admin. Pour confirmer, tape <b>{RESET_PHRASE}</b> dans le champ ci-dessous.
+                </p>
+                <input
+                  type="text"
+                  value={resetPhrase}
+                  onChange={(e) => setResetPhrase(e.target.value)}
+                  placeholder={`Tape ${RESET_PHRASE}`}
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                <input
+                  type="password"
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  placeholder="Nouveau mot de passe"
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                <input
+                  type="password"
+                  value={newPwd2}
+                  onChange={(e) => setNewPwd2(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") void doReset(); }}
+                  placeholder="Confirme le mot de passe"
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                {resetMsg && <div style={{ color: resetMsg.startsWith("✅") ? "#4ade80" : "#ff6b6b", fontSize: 13 }}>{resetMsg}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => { setResetMode(false); setResetMsg(""); setNewPwd(""); setNewPwd2(""); setResetPhrase(""); }}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #555", background: "transparent", color: "#fff", cursor: "pointer" }}
+                  >Annuler</button>
+                  <button
+                    onClick={() => void doReset()}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
+                  >Réinitialiser</button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
