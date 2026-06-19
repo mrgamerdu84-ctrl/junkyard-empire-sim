@@ -1842,6 +1842,46 @@ export default function TaxiTycoon() {
         {/* QG concurrent */}
         {pathsReady && admin.rivalEnabled && <RivalDepot x={admin.rivalHQX} y={admin.rivalHQY - 18} />}
 
+        {/* Mascotte rivale qui nargue le joueur */}
+        {pathsReady && admin.rivalEnabled && (
+          <g transform={`translate(${admin.rivalHQX + 130},${admin.rivalHQY - 70})`} style={{ pointerEvents: "none" }}>
+            {/* petit bonhomme */}
+            <g>
+              <ellipse cx="0" cy="34" rx="14" ry="3.5" fill="rgba(0,0,0,0.45)" />
+              {/* corps */}
+              <rect x="-9" y="6" width="18" height="22" rx="4" fill="#c81b2c" stroke="#0b0d10" strokeWidth="1.2" />
+              {/* bras */}
+              <rect x="-13" y="10" width="5" height="12" rx="2" fill="#c81b2c" stroke="#0b0d10" strokeWidth="1" />
+              <rect x="8" y="10" width="5" height="12" rx="2" fill="#c81b2c" stroke="#0b0d10" strokeWidth="1" />
+              {/* tête */}
+              <circle cx="0" cy="-2" r="9" fill="#f1c27d" stroke="#0b0d10" strokeWidth="1.2" />
+              {/* casquette */}
+              <path d="M -9 -4 Q 0 -14 9 -4 L 9 -2 L -9 -2 Z" fill="#0b0d10" />
+              <rect x="-12" y="-3" width="10" height="2" rx="1" fill="#0b0d10" />
+              {/* yeux */}
+              <circle cx="-3" cy="-2" r="1.1" fill="#0b0d10" />
+              <circle cx="3" cy="-2" r="1.1" fill="#0b0d10" />
+              {/* sourire narquois */}
+              <path d="M -3 3 Q 0 5.5 3 3" stroke="#0b0d10" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+              <animateTransform attributeName="transform" type="translate" values="0 0; 0 -3; 0 0" dur="1.6s" repeatCount="indefinite" />
+            </g>
+            {/* bulle de dialogue */}
+            {rivalTaunt && (() => {
+              const w = Math.max(70, rivalTaunt.length * 4.2 + 16);
+              return (
+                <g transform={`translate(${w / 2 + 12},-22)`}>
+                  <path d={`M -${w / 2} -14 h ${w} q 6 0 6 6 v 14 q 0 6 -6 6 h -${w / 2 - 10} l -6 7 l -1 -7 h -${w / 2 - 3} q -6 0 -6 -6 v -14 q 0 -6 6 -6 z`}
+                    fill="#fff" stroke="#0b0d10" strokeWidth="1.2" />
+                  <text x="0" y="2" textAnchor="middle" fontSize="6.5" fontWeight="700" fill="#0b0d10">
+                    {rivalTaunt}
+                  </text>
+                </g>
+              );
+            })()}
+          </g>
+        )}
+
+
         {/* Circuit dessiné par le joueur */}
         {circuitInfo.pts.length >= 2 && (
           <g>
