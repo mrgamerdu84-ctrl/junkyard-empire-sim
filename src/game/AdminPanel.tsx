@@ -147,8 +147,8 @@ export default function AdminPanel() {
           background: rgba(0,0,0,0.5);
         }
         .adm-panel {
-          position: absolute; top: 0; right: 0; bottom: 0; width: min(380px, 92vw);
-          z-index: 50; background: #14171c; color: #e8edf2;
+          position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw);
+          z-index: 9999; background: #14171c; color: #e8edf2;
           box-shadow: -8px 0 32px rgba(0,0,0,0.6);
           padding: 18px 18px 24px; overflow-y: auto;
           font-family: system-ui, -apple-system, sans-serif;
