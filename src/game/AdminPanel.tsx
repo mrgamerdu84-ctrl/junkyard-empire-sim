@@ -755,23 +755,51 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-/** Applique la rotation (0/90/180/270°) ET normalise dans un canvas carré 256×256.
+type VehicleRotation = 0 | 90 | 180 | 270;
+
+function getOpaqueBounds(img: HTMLImageElement): { x: number; y: number; w: number; h: number } | null {
+  const w = img.naturalWidth, h = img.naturalHeight;
+  if (w <= 0 || h <= 0) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+  ctx.drawImage(img, 0, 0);
+  let data: Uint8ClampedArray;
+  try { data = ctx.getImageData(0, 0, w, h).data; } catch { return null; }
+
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] <= 12) continue;
+      if (x < minX) minX = x;
+      if (y < minY) minY = y;
+      if (x > maxX) maxX = x;
+      if (y > maxY) maxY = y;
+    }
+  }
+  if (maxX < minX || maxY < minY) return null;
+  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
+
+/** Applique la rotation (0/90/180/270°), recentre le vrai véhicule et normalise en 256×256.
  *  Règle de jeu : l'image sauvegardée doit être en vue du ciel avec l'avant vers ↑.
  *  Ensuite le moteur la tourne automatiquement dans le sens de la route. */
-async function rotateToDataUrl(src: string, deg: 0 | 90 | 180 | 270): Promise<string> {
+async function rotateToDataUrl(src: string, deg: VehicleRotation): Promise<string> {
   const img = await loadImage(src);
-  const w = img.naturalWidth, h = img.naturalHeight;
+  const bounds = getOpaqueBounds(img) ?? { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
   const swap = deg === 90 || deg === 270;
-  const rotW = swap ? h : w;
-  const rotH = swap ? w : h;
+  const rotW = swap ? bounds.h : bounds.w;
+  const rotH = swap ? bounds.w : bounds.h;
 
   const SIZE = 256;
   const FILL = 0.86;
   // On contient le véhicule entier dans le carré au lieu de remplir seulement
   // la largeur : plus aucun camion/ambulance ne se retrouve coupé ou énorme.
   const scale = (SIZE * FILL) / Math.max(rotW, rotH, 1);
-  const drawW = w * scale;
-  const drawH = h * scale;
+  const drawW = bounds.w * scale;
+  const drawH = bounds.h * scale;
 
   const canvas = document.createElement("canvas");
   canvas.width = SIZE;
@@ -781,15 +809,18 @@ async function rotateToDataUrl(src: string, deg: 0 | 90 | 180 | 270): Promise<st
   ctx.imageSmoothingEnabled = true;
   ctx.translate(SIZE / 2, SIZE / 2);
   ctx.rotate((deg * Math.PI) / 180);
-  ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+  ctx.drawImage(img, bounds.x, bounds.y, bounds.w, bounds.h, -drawW / 2, -drawH / 2, drawW, drawH);
   return canvas.toDataURL("image/png");
 }
 
-async function guessVehicleRotation(src: string): Promise<0 | 90 | 180 | 270> {
+async function guessVehicleRotation(src: string): Promise<VehicleRotation> {
   const img = await loadImage(src);
-  // Si l'image est couchée, la plupart des véhicules uploadés pointent vers la droite :
-  // on les remet automatiquement avant vers le haut pour qu'ils roulent droit.
-  return img.naturalWidth > img.naturalHeight * 1.15 ? 270 : 0;
+  const bounds = getOpaqueBounds(img);
+  const w = bounds?.w ?? img.naturalWidth;
+  const h = bounds?.h ?? img.naturalHeight;
+  // Même si le fichier est carré avec beaucoup de transparence, on regarde le vrai véhicule :
+  // s'il est couché, on le remet automatiquement avant vers ↑ pour qu'il roule droit.
+  return w > h * 1.15 ? 270 : 0;
 }
 
 
