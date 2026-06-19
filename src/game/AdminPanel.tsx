@@ -132,7 +132,7 @@ export default function AdminPanel() {
       <style>{`
         .adm-btn {
           position: fixed;
-          top: max(14px, env(safe-area-inset-top, 0px));
+          bottom: max(80px, calc(80px + env(safe-area-inset-bottom, 0px)));
           right: max(14px, env(safe-area-inset-right, 0px));
           z-index: 9999;
           width: 48px; height: 48px; border-radius: 50%; border: 2px solid #f5c542;
