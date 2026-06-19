@@ -17,11 +17,23 @@ export default function BackgroundMusic() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [on, setOn] = useState<boolean>(true);
   const [ready, setReady] = useState(false);
+  const [radioActive, setRadioActive] = useState<boolean>(false);
+  const savedTimeRef = useRef<number>(0);
 
   // Charge la préférence côté client
   useEffect(() => {
     setOn(readPref());
     setReady(true);
+  }, []);
+
+  // Écoute l'état de la radio du taxi
+  useEffect(() => {
+    const onRadio = (e: Event) => {
+      const active = !!(e as CustomEvent<{ active: boolean }>).detail?.active;
+      setRadioActive(active);
+    };
+    window.addEventListener("jce:taxi-radio", onRadio);
+    return () => window.removeEventListener("jce:taxi-radio", onRadio);
   }, []);
 
   // Applique l'état au tag audio
@@ -30,9 +42,13 @@ export default function BackgroundMusic() {
     if (!a || !ready) return;
     a.loop = true;
     a.volume = 0.4;
-    if (on) {
+    const shouldPlay = on && !radioActive;
+    if (shouldPlay) {
+      // Reprend là où on s'était arrêté si on revient depuis la radio
+      if (savedTimeRef.current > 0 && a.currentTime < 0.1) {
+        try { a.currentTime = savedTimeRef.current; } catch {}
+      }
       a.play().catch(() => {
-        // Autoplay bloqué : attendre une 1ère interaction utilisateur
         const start = () => {
           a.play().catch(() => {});
           window.removeEventListener("pointerdown", start);
@@ -44,9 +60,12 @@ export default function BackgroundMusic() {
         window.addEventListener("touchstart", start, { once: true });
       });
     } else {
+      // Sauvegarde la position avant de couper
+      if (!a.paused) savedTimeRef.current = a.currentTime;
       a.pause();
     }
-  }, [on, ready]);
+  }, [on, ready, radioActive]);
+
 
   const toggle = () => {
     setOn((prev) => {
