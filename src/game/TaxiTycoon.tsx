@@ -659,6 +659,28 @@ export default function TaxiTycoon() {
 
 
 
+  // === Circuit VIP de session (invisible) ===
+  // 6 points planqués sur les trottoirs où surgissent en priorité des clients
+  // VIP/STAR pour le joueur. Régénéré aléatoirement à chaque session / lorsque vide.
+  const vipCircuitRef = useRef<{ pickupPath: number; pickup: number; sidePickup: 1 | -1 }[]>([]);
+  const regenVipCircuit = () => {
+    const lens = pathLensRef.current;
+    const allowed: number[] = [];
+    for (let i = 0; i < lens.length; i++) if (!VILLAGE_PATHS.has(i) && lens[i] > 0) allowed.push(i);
+    if (allowed.length === 0) return;
+    const count = 5 + Math.floor(Math.random() * 4); // 5..8
+    const pts: { pickupPath: number; pickup: number; sidePickup: 1 | -1 }[] = [];
+    for (let k = 0; k < count; k++) {
+      const p = allowed[Math.floor(Math.random() * allowed.length)];
+      pts.push({
+        pickupPath: p,
+        pickup: Math.random() * lens[p],
+        sidePickup: Math.random() < 0.5 ? 1 : -1,
+      });
+    }
+    vipCircuitRef.current = pts;
+  };
+
   const genJob = (tierIdx: number): Job => {
     const now = Date.now();
     const t = DEPOT_TIERS[tierIdx];
@@ -666,21 +688,38 @@ export default function TaxiTycoon() {
     const lens = pathLensRef.current;
     const allowed: number[] = [];
     for (let i = 0; i < lens.length; i++) if (!VILLAGE_PATHS.has(i)) allowed.push(i);
-    const pickupPath = allowed[Math.floor(Math.random() * allowed.length)];
+
+    // Tente d'utiliser un point du circuit VIP (invisible) pour booster la course
+    const license = getLicense();
+    const wantVip = vipCircuitRef.current.length > 0 && Math.random() < 0.35;
+    let pickupPath: number;
+    let pickup: number;
+    let sidePickup: 1 | -1;
+    let forcedTier: "vip" | "star" | null = null;
+    if (wantVip) {
+      const wp = vipCircuitRef.current.shift()!;
+      pickupPath = wp.pickupPath;
+      pickup = wp.pickup;
+      sidePickup = wp.sidePickup;
+      forcedTier = license.level >= 4 ? "star" : "vip";
+      if (vipCircuitRef.current.length === 0) regenVipCircuit();
+    } else {
+      pickupPath = allowed[Math.floor(Math.random() * allowed.length)];
+      pickup = Math.random() * lens[pickupPath];
+      sidePickup = Math.random() < 0.5 ? 1 : -1;
+    }
     let dropoffPath = allowed[Math.floor(Math.random() * allowed.length)];
     if (allowed.length > 1 && dropoffPath === pickupPath && Math.random() < 0.65) {
       const others = allowed.filter(p => p !== pickupPath);
       dropoffPath = others[Math.floor(Math.random() * others.length)];
     }
-    const pickup = Math.random() * lens[pickupPath];
     const dropoff = Math.random() * lens[dropoffPath];
     // tarif basé sur la distance approximative + tier + admin
     const distNorm = 0.4 + Math.random() * 0.6;
     const adm = getAdmin();
     const revBonus = 1 + 0.10 * (saveRef.current.hqRevenueLvl ?? 0);
-    // tier client selon permis (VIP / STAR)
-    const license = getLicense();
-    const tier = rollClientTier(license.level);
+    // tier client : forcé par circuit VIP, sinon roll selon permis
+    const tier = forcedTier ?? rollClientTier(license.level);
     const tMult = tierFareMult(tier);
     const baseFare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult * revBonus * tMult);
     const duration = (22 + Math.min(20, baseFare / 30)) * 1000;
@@ -688,7 +727,7 @@ export default function TaxiTycoon() {
       id, pickupPath, pickup, dropoffPath, dropoff, fare: baseFare,
       deadline: now + duration, duration,
       status: "offered",
-      sidePickup: Math.random() < 0.5 ? 1 : -1,
+      sidePickup,
       sideDrop: Math.random() < 0.5 ? 1 : -1,
       tier,
     };
