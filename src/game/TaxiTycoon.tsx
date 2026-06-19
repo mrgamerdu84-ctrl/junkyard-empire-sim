@@ -1828,6 +1828,43 @@ export default function TaxiTycoon() {
     setJobs((js) => js.map((j) => j.id === id ? { ...j, status: "accepted", acceptedAt: Date.now() } : j));
   };
 
+  // === Mission spéciale joueur ===
+  // Déclenchée par le bouton HUD. Injecte un client doré dans la file avec
+  // récompense majorée + gros XP, et applique un cooldown.
+  const triggerSpecialMission = () => {
+    const now = Date.now();
+    if (now < specialCooldownUntil) {
+      const sec = Math.ceil((specialCooldownUntil - now) / 1000);
+      showToast(`⏳ Prochaine mission dans ${sec}s`);
+      return;
+    }
+    if (jobsRef.current.some((j) => j.tier === "special")) {
+      showToast("👑 Une mission est déjà active");
+      return;
+    }
+    const license = getLicense();
+    const def = pickSpecialMission(license.level);
+    // Génère un Job de base puis le surcharge en "special".
+    const base = genJob(saveRef.current.depotTier);
+    const special: Job = {
+      ...base,
+      tier: "special",
+      specialMissionId: def.id,
+      specialFareMult: def.fareMult,
+      specialXp: def.xpReward,
+      // tarif affiché = tarif majoré directement (clarté UX)
+      fare: Math.round(base.fare * def.fareMult),
+      duration: def.durationMs,
+      deadline: now + def.durationMs,
+      status: "offered",
+    };
+    setJobs((js) => [...js, special]);
+    setSpecialCooldownUntil(now + SPECIAL_COOLDOWN_MS);
+    showToast(`${def.emoji} ${def.title} — récupère le client !`);
+  };
+
+
+
 
 
 
