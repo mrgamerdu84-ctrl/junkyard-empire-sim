@@ -267,14 +267,17 @@ function RoadAlignedVehicleSprite({
   image,
   size = 40,
   opacity = 1,
+  children,
 }: {
   image: string;
   size?: number;
   opacity?: number;
+  children?: React.ReactNode;
 }) {
   return (
     <g transform="rotate(90)">
       <image href={image} x={-size / 2} y={-size / 2} width={size} height={size} preserveAspectRatio="xMidYMid meet" opacity={opacity} />
+      {children}
     </g>
   );
 }
@@ -2103,7 +2106,7 @@ export default function TaxiTycoon() {
                 </circle>
               )}
               <g>
-                <RoadAlignedVehicleSprite image={POLICE_CAR_URL} opacity={hidden ? 0.85 : 1} />
+                <RoadAlignedVehicleSprite image={POLICE_CAR_URL} opacity={hidden ? 0.85 : 1}>
                 {/* Voiture civile contrôlée, juste devant la police */}
                 {controlling && (
                   <g transform="translate(0,-34)">
@@ -2114,6 +2117,7 @@ export default function TaxiTycoon() {
                     <circle cx="6" cy="-13" r="1.4" fill="#fff7c0" />
                   </g>
                 )}
+                </RoadAlignedVehicleSprite>
               </g>
               {hidden && (
                 <text x="0" y="-32" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
@@ -2215,7 +2219,7 @@ export default function TaxiTycoon() {
           return (
             <g key={ev.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
               <g>
-                <RoadAlignedVehicleSprite image={href} size={W} />
+                <RoadAlignedVehicleSprite image={href} size={W}>
                 {alerting && (
                   <g>
                     {/* halo lumineux localisé autour de chaque dôme */}
@@ -2227,6 +2231,7 @@ export default function TaxiTycoon() {
                     <rect x="0.5" y="-1.4" width="5" height="2.8" rx="0.8" fill={blueOn ? "#7f1d1d" : "#f87171"} />
                   </g>
                 )}
+                </RoadAlignedVehicleSprite>
               </g>
               {alerting && (
                 <text x="0" y="32" textAnchor="middle" fontSize="3.6" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">
