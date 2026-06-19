@@ -2846,7 +2846,72 @@ export default function TaxiTycoon() {
           color: #6b7280; cursor: not-allowed; border-color: #14171c;
         }
 
+        /* === Bouton flottant Missions + Panneau coulissant === */
+        .tt-missions-fab {
+          position: absolute; top: 56px; right: 10px;
+          display: flex; align-items: center; gap: 6px;
+          background: linear-gradient(180deg, #1f2127 0%, #0d0e12 100%);
+          border: 1px solid #f5c542; border-radius: 999px;
+          padding: 7px 14px; color: #fde68a;
+          font-family: inherit; font-weight: 900; font-size: 12px;
+          cursor: pointer; pointer-events: auto;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+        }
+        .tt-missions-fab:hover { filter: brightness(1.15); }
+        .tt-mfab-ico { font-size: 16px; }
+        .tt-mfab-badge {
+          background: #ef4444; color: #fff; font-size: 10px; font-weight: 900;
+          border-radius: 999px; padding: 1px 6px; min-width: 16px; text-align: center;
+        }
+        .tt-mfab-badge-blue { background: #3b82f6; }
+
+        .tt-missions-overlay {
+          position: absolute; inset: 0; z-index: 80;
+          background: rgba(0,0,0,0.55);
+          display: flex; justify-content: flex-end;
+          pointer-events: auto; backdrop-filter: blur(3px);
+        }
+        .tt-missions-panel {
+          width: 100%; max-width: 360px; height: 100%;
+          background: linear-gradient(180deg, #14171c 0%, #0a0c10 100%);
+          border-left: 1px solid #2a2f38;
+          display: flex; flex-direction: column;
+          box-shadow: -10px 0 30px rgba(0,0,0,0.7);
+          animation: ttMissionsSlide 0.22s ease;
+        }
+        @keyframes ttMissionsSlide {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        .tt-missions-head {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 12px 14px; border-bottom: 1px solid #2a2f38;
+        }
+        .tt-missions-head h3 { margin: 0; color: #fde68a; font-size: 15px; }
+        .tt-missions-x { background: transparent; border: none; color: #8a8e94; font-size: 26px; line-height: 1; cursor: pointer; }
+        .tt-missions-tabs { display: flex; gap: 4px; padding: 8px 8px 0; }
+        .tt-missions-tab {
+          flex: 1; padding: 8px; background: #1a1d22; color: #9ca0a6;
+          border: 1px solid #2a2f38; border-radius: 8px 8px 0 0;
+          font-family: inherit; font-weight: 800; font-size: 12px; cursor: pointer;
+        }
+        .tt-missions-tab.active { background: #20231a; color: #fde68a; border-color: #f5c542; border-bottom-color: transparent; }
+        .tt-missions-body {
+          flex: 1; overflow-y: auto; padding: 12px;
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .tt-depot-card-inline {
+          background: rgba(20,22,28,0.95); border: 1px solid #f5c542;
+          border-radius: 10px; padding: 10px; text-align: center;
+        }
+        .tt-depot-stat-row {
+          display: flex; justify-content: space-between;
+          padding: 8px 12px; background: #1a1d22; border: 1px solid #2a2f38;
+          border-radius: 8px; font-size: 13px; color: #c8ccd2;
+        }
+        .tt-depot-stat-row b { color: #fff; }
       `}</style>
+
     </>
   );
 }
