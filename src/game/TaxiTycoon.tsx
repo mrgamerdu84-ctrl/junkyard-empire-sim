@@ -4,6 +4,7 @@ import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
+import { pushNews } from "@/lib/radioNews";
 
 
 // Skins centralisés — pour changer un taxi / la voiture de police,
@@ -1404,6 +1405,10 @@ export default function TaxiTycoon() {
               accidentsRef.current.push(acc);
               registerAccident({ id, pathIdx: pIdx, s: sPos, x: pt.x, y: pt.y, kind });
               showToast(kind === "vehicle" ? "💥 Accident signalé ! Secours en route…" : "🚑 Piéton renversé ! Ambulance en route…");
+              pushNews(kind === "vehicle"
+                ? { fr: "Flash info : accident de la circulation signalé en ville, les secours sont en route.", en: "News flash: a traffic accident has been reported downtown, emergency services are on the way." }
+                : { fr: "Flash info : un piéton vient d'être renversé, l'ambulance est en chemin.", en: "News flash: a pedestrian has just been hit, an ambulance is on its way." }
+              );
             }
           }
           nextAccidentAtRef.current = tMs + 40000 + Math.random() * 40000;
@@ -1492,6 +1497,7 @@ export default function TaxiTycoon() {
               clearAccident(a.id);
               accidentsRef.current.splice(i, 1);
               showToast("✅ Accident dégagé, circulation rétablie.");
+              pushNews({ fr: "Bonne nouvelle : l'accident a été dégagé, la circulation reprend normalement.", en: "Good news: the accident has been cleared, traffic is back to normal." });
             }
           }
         }
