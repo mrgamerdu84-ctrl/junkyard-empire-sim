@@ -880,15 +880,25 @@ async function guessVehicleRotation(src: string): Promise<VehicleRotation> {
 }
 
 
+const TOPDOWN_PREF_KEY = "mttw.admin.alreadyTopDown";
+
 function CustomVehiclesSection() {
   const [items, setItems] = useState<CustomVehicle[]>(() => listCustomVehicles());
   const [name, setName] = useState("");
   const [category, setCategory] = useState<CustomVehicleCategory>("civil");
   const [pendingSrc, setPendingSrc] = useState<string | null>(null);
   const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
+  const [alreadyTopDown, setAlreadyTopDown] = useState<boolean>(() => {
+    try { return localStorage.getItem(TOPDOWN_PREF_KEY) === "1"; } catch { return false; }
+  });
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => setItems(listCustomVehicles());
+
+  const setAlreadyTopDownPref = (v: boolean) => {
+    setAlreadyTopDown(v);
+    try { localStorage.setItem(TOPDOWN_PREF_KEY, v ? "1" : "0"); } catch {}
+  };
 
   const onPickFile = (f: File) => {
     const reader = new FileReader();
@@ -896,7 +906,9 @@ function CustomVehiclesSection() {
       const src = String(reader.result);
       setPendingSrc(src);
       setRotation(0);
-      void guessVehicleRotation(src).then(setRotation).catch(() => {});
+      if (!alreadyTopDown) {
+        void guessVehicleRotation(src).then(setRotation).catch(() => {});
+      }
       if (fileRef.current) fileRef.current.value = "";
     };
     reader.readAsDataURL(f);
@@ -908,8 +920,11 @@ function CustomVehiclesSection() {
     const src = url.trim();
     setPendingSrc(src);
     setRotation(0);
-    void guessVehicleRotation(src).then(setRotation).catch(() => {});
+    if (!alreadyTopDown) {
+      void guessVehicleRotation(src).then(setRotation).catch(() => {});
+    }
   };
+
 
   const confirmAdd = async () => {
     if (!pendingSrc) return;
