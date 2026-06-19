@@ -2758,8 +2758,7 @@ export default function TaxiTycoon() {
           .tt-btn-lbl { font-size: 10px; }
           .tt-btn-cost { font-size: 10px; }
           .tt-garage-fab { bottom: 6px; width: 36px; height: 36px; font-size: 16px; }
-          .tt-depot-card { top: 48px; padding: 4px 10px; }
-          .tt-contracts { top: 48px; width: 180px; max-height: calc(100% - 110px); }
+          .tt-missions-fab { top: 48px; padding: 4px 8px; font-size: 10px; }
         }
 
 
