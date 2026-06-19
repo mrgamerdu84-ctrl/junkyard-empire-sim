@@ -72,6 +72,7 @@ export default function TaxiRadio() {
 
   // Tick toutes les 30s pour rafraîchir l'horloge + fetch météo au montage et toutes les 30 min
   useEffect(() => {
+    setNowTick(Date.now());
     const t = window.setInterval(() => setNowTick(Date.now()), 30 * 1000);
     return () => window.clearInterval(t);
   }, []);
