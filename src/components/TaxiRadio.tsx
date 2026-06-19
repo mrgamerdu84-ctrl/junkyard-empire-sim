@@ -356,6 +356,7 @@ export default function TaxiRadio() {
     if (djTimerRef.current) { window.clearInterval(djTimerRef.current); djTimerRef.current = null; }
     if (djRestoreRef.current) { window.clearInterval(djRestoreRef.current); djRestoreRef.current = null; }
     setTicker("");
+    if (interludeRef.current) { try { interludeRef.current.pause(); } catch {} interludeRef.current = null; }
 
     if (!a) return;
     if (!st || st.id === "off") { a.pause(); return; }
