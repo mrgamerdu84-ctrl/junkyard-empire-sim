@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
 import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
@@ -259,6 +259,25 @@ function TaxiSprite({
           </g>
         )}
       </g>
+    </g>
+  );
+}
+
+function RoadAlignedVehicleSprite({
+  image,
+  size = 40,
+  opacity = 1,
+  children,
+}: {
+  image: string;
+  size?: number;
+  opacity?: number;
+  children?: ReactNode;
+}) {
+  return (
+    <g transform="rotate(90)">
+      <image href={image} x={-size / 2} y={-size / 2} width={size} height={size} preserveAspectRatio="xMidYMid meet" opacity={opacity} />
+      {children}
     </g>
   );
 }
@@ -2086,8 +2105,8 @@ export default function TaxiTycoon() {
                   <animate attributeName="r" values="20;28;20" dur="0.5s" repeatCount="indefinite" />
                 </circle>
               )}
-              <g transform="rotate(90)">
-                <image href={POLICE_CAR_URL} x={-20} y={-20} width={40} height={40} preserveAspectRatio="xMidYMid meet" opacity={hidden ? 0.85 : 1} />
+              <g>
+                <RoadAlignedVehicleSprite image={POLICE_CAR_URL} opacity={hidden ? 0.85 : 1}>
                 {/* Voiture civile contrôlée, juste devant la police */}
                 {controlling && (
                   <g transform="translate(0,-34)">
@@ -2098,6 +2117,7 @@ export default function TaxiTycoon() {
                     <circle cx="6" cy="-13" r="1.4" fill="#fff7c0" />
                   </g>
                 )}
+                </RoadAlignedVehicleSprite>
               </g>
               {hidden && (
                 <text x="0" y="-32" textAnchor="middle" fontSize="3.4" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">PLANQUE</text>
@@ -2198,8 +2218,8 @@ export default function TaxiTycoon() {
           const blueOn = t === 0;
           return (
             <g key={ev.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
-              <g transform="rotate(90)">
-                <image href={href} x={-W / 2} y={-W / 2} width={W} height={W} preserveAspectRatio="xMidYMid meet" />
+              <g>
+                <RoadAlignedVehicleSprite image={href} size={W}>
                 {alerting && (
                   <g>
                     {/* halo lumineux localisé autour de chaque dôme */}
@@ -2211,6 +2231,7 @@ export default function TaxiTycoon() {
                     <rect x="0.5" y="-1.4" width="5" height="2.8" rx="0.8" fill={blueOn ? "#7f1d1d" : "#f87171"} />
                   </g>
                 )}
+                </RoadAlignedVehicleSprite>
               </g>
               {alerting && (
                 <text x="0" y="32" textAnchor="middle" fontSize="3.6" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">
