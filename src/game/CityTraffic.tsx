@@ -215,15 +215,15 @@ function Vehicle({
   variant?: VehicleVariant;
   photoIdx?: number;
 }) {
-  // Voitures civiles : sprites top-down orientés vers +x (sens d'avancée).
-  // Taille réduite (36×36) pour rester proportionnel aux piétons (~20px).
-  const W = 36;
-  const H = 36;
+  // Tous les uploads admin sont sauvegardés en vue du ciel, avant vers ↑.
+  // Le parent tourne sur l'angle de la route (+x), donc +90° = roule droit.
+  const W = 40;
+  const H = 40;
   const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
   return (
-    <g transform="rotate(90)">
-      {/* +90° car le sprite taxi pointe vers le haut (nord) dans le PNG ;
-          le parent applique rotate(angle_du_path) basé sur +x. */}
+    <g>
+      <ellipse cx="0" cy="4" rx="15" ry="6" fill="rgba(0,0,0,0.42)" />
+      <g transform="rotate(90)">
       <image
         href={href}
         x={-W / 2}
@@ -232,6 +232,7 @@ function Vehicle({
         height={H}
         preserveAspectRatio="xMidYMid meet"
       />
+      </g>
     </g>
   );
 }
