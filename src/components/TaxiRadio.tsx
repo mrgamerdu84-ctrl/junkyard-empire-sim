@@ -302,11 +302,14 @@ export default function TaxiRadio() {
     return () => {
       if (ambientTimerRef.current) window.clearInterval(ambientTimerRef.current);
       if (tickerTimerRef.current) window.clearTimeout(tickerTimerRef.current);
+      if (djTimerRef.current) window.clearTimeout(djTimerRef.current);
+      if (djRestoreRef.current) window.clearInterval(djRestoreRef.current);
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         try { window.speechSynthesis.cancel(); } catch {}
       }
     };
   }, []);
+
 
   const pick = (id: string) => {
     setStationId(id);
