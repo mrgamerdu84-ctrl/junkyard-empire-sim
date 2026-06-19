@@ -99,8 +99,6 @@ export function getAsset(key: AssetKey): string {
 }
 
 // --- Auto-découverte des voitures civiles ---
-// Dépose simplement un PNG/JPG/WebP dans `src/assets/civil/`
-// (ex: `src/assets/civil/my-car.png`) -> il sera utilisé automatiquement.
 const civilGlob = import.meta.glob<{ default: string }>(
   "/src/assets/civil/*.{png,jpg,jpeg,webp,svg}",
   { eager: true }
@@ -109,15 +107,61 @@ const civilAutoUrls: string[] = Object.keys(civilGlob)
   .sort()
   .map((k) => civilGlob[k].default);
 
-/** Liste ordonnée des skins de voitures civiles (auto + défauts du registre). */
-export const CIVIL_CAR_URLS: string[] = civilAutoUrls.length > 0
-  ? civilAutoUrls
-  : [
-      GAME_ASSETS["civil.car.1"],
-      GAME_ASSETS["civil.car.2"],
-      GAME_ASSETS["civil.car.3"],
-      GAME_ASSETS["civil.car.4"],
-    ];
+// --- Véhicules personnalisés uploadés via le panel admin ---
+export type CustomVehicle = {
+  id: string;
+  name: string;
+  url: string;
+  category: "civil" | "taxi";
+};
+
+const CUSTOM_KEY = "jce.customVehicles";
+
+export function listCustomVehicles(): CustomVehicle[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(CUSTOM_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v) => v && v.url && v.id) : [];
+  } catch { return []; }
+}
+
+export function addCustomVehicle(v: Omit<CustomVehicle, "id"> & { id?: string }): CustomVehicle {
+  const item: CustomVehicle = {
+    id: v.id ?? `cv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    name: v.name || "Véhicule",
+    url: v.url,
+    category: v.category ?? "civil",
+  };
+  const all = listCustomVehicles();
+  all.push(item);
+  try { window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(all)); } catch {}
+  return item;
+}
+
+export function removeCustomVehicle(id: string) {
+  if (typeof window === "undefined") return;
+  const all = listCustomVehicles().filter((v) => v.id !== id);
+  try { window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(all)); } catch {}
+}
+
+const customCivilUrls = listCustomVehicles()
+  .filter((v) => v.category === "civil")
+  .map((v) => v.url);
+
+/** Liste ordonnée des skins de voitures civiles (auto + custom + défauts). */
+export const CIVIL_CAR_URLS: string[] = (() => {
+  const base = civilAutoUrls.length > 0
+    ? civilAutoUrls
+    : [
+        GAME_ASSETS["civil.car.1"],
+        GAME_ASSETS["civil.car.2"],
+        GAME_ASSETS["civil.car.3"],
+        GAME_ASSETS["civil.car.4"],
+      ];
+  return [...base, ...customCivilUrls];
+})();
 
 /** Liste ordonnée des skins piétons photo. */
 export const PEDESTRIAN_PHOTO_URLS: string[] = [
