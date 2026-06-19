@@ -2194,18 +2194,18 @@ export default function TaxiTycoon() {
             <g key={ev.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
               <g transform="rotate(90)">
                 <image href={href} x={-W / 2} y={-W / 2} width={W} height={W} preserveAspectRatio="xMidYMid meet" />
+                {alerting && (
+                  <g>
+                    {/* halo lumineux localisé autour de chaque dôme */}
+                    <circle cx="-3" cy="0" r="3.2" fill="#3b82f6" opacity={blueOn ? 0.55 : 0.12} />
+                    <circle cx="3" cy="0" r="3.2" fill="#ef4444" opacity={blueOn ? 0.12 : 0.55} />
+                    {/* barre de gyrophares posée en travers du toit */}
+                    <rect x="-6" y="-1.7" width="12" height="3.4" rx="1.1" fill="#0b0d10" stroke="#1f2937" strokeWidth="0.3" />
+                    <rect x="-5.5" y="-1.4" width="5" height="2.8" rx="0.8" fill={blueOn ? "#60a5fa" : "#1e3a8a"} />
+                    <rect x="0.5" y="-1.4" width="5" height="2.8" rx="0.8" fill={blueOn ? "#7f1d1d" : "#f87171"} />
+                  </g>
+                )}
               </g>
-              {alerting && (
-                <g>
-                  {/* halo lumineux localisé autour de chaque dôme */}
-                  <circle cx="-3" cy="0" r="3.2" fill="#3b82f6" opacity={blueOn ? 0.55 : 0.12} />
-                  <circle cx="3" cy="0" r="3.2" fill="#ef4444" opacity={blueOn ? 0.12 : 0.55} />
-                  {/* barre de gyrophares sur le toit */}
-                  <rect x="-5.5" y="-1.6" width="11" height="3.2" rx="1.1" fill="#0b0d10" stroke="#1f2937" strokeWidth="0.3" />
-                  <rect x="-5" y="-1.3" width="4.6" height="2.6" rx="0.8" fill={blueOn ? "#60a5fa" : "#1e3a8a"} />
-                  <rect x="0.4" y="-1.3" width="4.6" height="2.6" rx="0.8" fill={blueOn ? "#7f1d1d" : "#f87171"} />
-                </g>
-              )}
               {alerting && (
                 <text x="0" y="32" textAnchor="middle" fontSize="3.6" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">
                   {ev.kind === "ambulance" ? "URGENCE" : ev.kind === "firetruck" ? "POMPIERS" : "POLICE"}
