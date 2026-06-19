@@ -459,11 +459,13 @@ export default function TaxiTycoon() {
   const wantedUntilRef = useRef<number>(0);
   const lastViolationRef = useRef<number>(performance.now()); void lastViolationRef;
   const lastCivilControlRef = useRef<number>(performance.now());
-  const POLICE_SPEED = 92;     // px/s patrol
-  const POLICE_CHASE_SPEED = 140;
+  const POLICE_SPEED = 55;        // px/s patrouille lente (rondes)
+  const POLICE_RESPONSE_SPEED = 150; // px/s vers un contrôle (gyrophares)
+  const POLICE_CHASE_SPEED = 160;
   const POLICE_FINE = 200;
   const POLICE_CATCH_DIST = 48; // px
   const CIVIL_CONTROL_DURATION_MS = 6500; // durée d'un contrôle
+
 
   // === Radars fixes & planques police (Speed Traps) ===
   // Radars : couples (pathIdx, posFraction) -> position le long du path.
@@ -1068,13 +1070,19 @@ export default function TaxiTycoon() {
           const freePatrol = policeCarsRef.current.filter(p => p.mode === "patrol");
           if (freePatrol.length > 0) {
             const pc = freePatrol[Math.floor(Math.random() * freePatrol.length)];
-            pc.mode = "control_wait";
+            const plen = pathLensRef.current[pc.pathIdx] ?? 0;
+            // Roule en alerte (gyrophares) vers un point ~120-220 px devant
+            const forwardDist = 120 + Math.random() * 100;
+            const dir = pc.target >= pc.pos ? 1 : -1;
+            const tgt = Math.max(2, Math.min(plen - 2, pc.pos + dir * forwardDist));
+            pc.mode = "control_drive";
+            pc.target = tgt;
             pc.controlUntil = nowMs + CIVIL_CONTROL_DURATION_MS;
-            pc.controlStoppedPos = pc.pos;
-            showToast("🚓 Contrôle de police en cours…");
+            showToast("🚨 Police en intervention — contrôle imminent…");
           }
           lastCivilControlRef.current = nowMs;
         }
+
 
         // 3) MAJ chaque police
         for (const pc of policeCarsRef.current) {
