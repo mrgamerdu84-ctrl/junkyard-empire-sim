@@ -1661,15 +1661,24 @@ export default function TaxiTycoon() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const allLiveries = useMemo(() => getAllLiveries(), []);
   const currentLivery = allLiveries.find((l) => l.id === save.liveryId) ?? allLiveries[0];
+  const currentPaint = TAXI_PAINTS.find((p) => p.id === save.playerTaxiColor) ?? TAXI_PAINTS[0];
 
-  // Synchronise la livrée si le joueur la change depuis le profil
+  // Synchronise la livrée/couleur si le joueur les change depuis le profil
   useEffect(() => {
     const onLivery = (e: Event) => {
       const id = (e as CustomEvent<string>).detail;
       if (typeof id === "string") setSave((s) => ({ ...s, liveryId: id }));
     };
+    const onColor = (e: Event) => {
+      const id = (e as CustomEvent<string>).detail;
+      if (typeof id === "string") setSave((s) => ({ ...s, playerTaxiColor: id }));
+    };
     window.addEventListener("jce:livery-changed", onLivery);
-    return () => window.removeEventListener("jce:livery-changed", onLivery);
+    window.addEventListener("jce:taxi-color-changed", onColor);
+    return () => {
+      window.removeEventListener("jce:livery-changed", onLivery);
+      window.removeEventListener("jce:taxi-color-changed", onColor);
+    };
   }, []);
 
 
