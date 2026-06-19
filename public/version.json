@@ -1,6 +1,6 @@
 {
-  "version": "1.5.1",
-  "buildId": "2026-06-19T12:00:00.000Z",
-  "builtAt": 1781870400000,
-  "changelog": "Correction de l’orientation et du centrage des véhicules ajoutés et des secours en vue du ciel"
+  "version": "1.5.2",
+  "buildId": "2026-06-19T13:00:00.000Z",
+  "builtAt": 1781874000000,
+  "changelog": "Auto-orientation renforcée des véhicules ajoutés (symétrie + portrait + masse) : le nez se remet vers le haut tout seul à chaque import."
 }
