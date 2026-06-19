@@ -8,6 +8,7 @@ import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey, listCustom
 const ADMIN_PASS_HASH_DEFAULT = "7d473072673d5b86575304cb2a23b92a51e0cde043856919249b3df582a8625d";
 const UNLOCK_KEY = "tt-admin-unlocked";
 const PWD_HASH_KEY = "tt-admin-pwd-hash";
+const PWD_HASH_COOKIE = "tt_admin_pwd_hash";
 const RESET_PHRASE = "RESET";
 
 async function sha256(s: string): Promise<string> {
@@ -16,8 +17,29 @@ async function sha256(s: string): Promise<string> {
 }
 
 function getCurrentHash(): string {
+  try {
+    const cookieHash = document.cookie
+      .split(";")
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${PWD_HASH_COOKIE}=`))
+      ?.split("=")[1];
+    if (cookieHash) return decodeURIComponent(cookieHash);
+  } catch {}
   try { return localStorage.getItem(PWD_HASH_KEY) || ADMIN_PASS_HASH_DEFAULT; }
   catch { return ADMIN_PASS_HASH_DEFAULT; }
+}
+
+function savePasswordHash(hash: string): boolean {
+  let saved = false;
+  try {
+    localStorage.setItem(PWD_HASH_KEY, hash);
+    saved = localStorage.getItem(PWD_HASH_KEY) === hash;
+  } catch {}
+  try {
+    document.cookie = `${PWD_HASH_COOKIE}=${encodeURIComponent(hash)}; Max-Age=31536000; Path=/; SameSite=Lax`;
+    saved = saved || getCurrentHash() === hash;
+  } catch {}
+  return saved;
 }
 
 /* Floating gear button + slide-in admin panel. */
@@ -31,6 +53,10 @@ export default function AdminPanel() {
   const [newPwd, setNewPwd] = useState("");
   const [newPwd2, setNewPwd2] = useState("");
   const [resetMsg, setResetMsg] = useState("");
+  const [adminPwdOpen, setAdminPwdOpen] = useState(false);
+  const [adminPwdNew, setAdminPwdNew] = useState("");
+  const [adminPwdNew2, setAdminPwdNew2] = useState("");
+  const [adminPwdMsg, setAdminPwdMsg] = useState("");
   const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "skins" | "export">("trafic");
   const [placeMode, setPlaceMode] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
@@ -60,10 +86,22 @@ export default function AdminPanel() {
     if (newPwd.length < 4) { setResetMsg("Le nouveau mot de passe doit faire au moins 4 caractères."); return; }
     if (newPwd !== newPwd2) { setResetMsg("Les deux mots de passe ne correspondent pas."); return; }
     const h = await sha256(newPwd);
-    try { localStorage.setItem(PWD_HASH_KEY, h); } catch {}
+    if (!savePasswordHash(h)) { setResetMsg("Impossible d'enregistrer le mot de passe sur cet appareil."); return; }
     setResetMsg("✅ Mot de passe réinitialisé. Tu peux te connecter.");
     setNewPwd(""); setNewPwd2(""); setResetPhrase("");
     setTimeout(() => { setResetMode(false); setResetMsg(""); }, 1200);
+  };
+
+  const changeAdminPassword = async () => {
+    setAdminPwdMsg("");
+    if (adminPwdNew.length < 4) { setAdminPwdMsg("Le nouveau mot de passe doit faire au moins 4 caractères."); return; }
+    if (adminPwdNew !== adminPwdNew2) { setAdminPwdMsg("Les deux mots de passe ne correspondent pas."); return; }
+    const h = await sha256(adminPwdNew);
+    if (!savePasswordHash(h)) { setAdminPwdMsg("Impossible d'enregistrer le mot de passe sur cet appareil."); return; }
+    setAdminPwdMsg("✅ Mot de passe admin enregistré.");
+    setAdminPwdNew("");
+    setAdminPwdNew2("");
+    setPwd("");
   };
 
 
