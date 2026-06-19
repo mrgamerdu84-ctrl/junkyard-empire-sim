@@ -224,14 +224,14 @@ function Vehicle({
     <g>
       <ellipse cx="0" cy="4" rx="15" ry="6" fill="rgba(0,0,0,0.42)" />
       <g transform="rotate(90)">
-      <image
-        href={href}
-        x={-W / 2}
-        y={-H / 2}
-        width={W}
-        height={H}
-        preserveAspectRatio="xMidYMid meet"
-      />
+        <image
+          href={href}
+          x={-W / 2}
+          y={-H / 2}
+          width={W}
+          height={H}
+          preserveAspectRatio="xMidYMid meet"
+        />
       </g>
     </g>
   );
