@@ -84,4 +84,16 @@ export const AMBIENT_NEWS: RadioNews[] = [
     fr: "Flash info : la compagnie rivale tente de débaucher nos clients, restons vigilants !",
     en: "News flash: the rival company is trying to poach our riders, stay sharp!",
   },
+  {
+    fr: "Coup de cœur de la rédac : La Jungle de l'Arcade, l'appli qui réveille le gamer en vous, foncez la télécharger !",
+    en: "Editor's pick: La Jungle de l'Arcade, the app that wakes up the gamer in you, go download it now!",
+  },
+  {
+    fr: "Pause pub : entre deux courses, lancez La Jungle de l'Arcade sur votre téléphone, des heures de fun garanties !",
+    en: "Ad break: between two rides, fire up La Jungle de l'Arcade on your phone, hours of fun guaranteed!",
+  },
+  {
+    fr: "Le saviez-vous ? La Jungle de l'Arcade regorge de pépites rétro, dispo dès maintenant en téléchargement.",
+    en: "Did you know? La Jungle de l'Arcade is packed with retro gems, available to download right now.",
+  },
 ];
