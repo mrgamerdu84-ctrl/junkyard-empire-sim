@@ -274,7 +274,7 @@ export default function TaxiRadio() {
       const scheduleDj = () => {
         const delay = 75000 + Math.random() * 45000;
         djTimerRef.current = window.setTimeout(() => {
-          if (!paused) playDjLine(st.name);
+          if (!pausedRef.current) playDjLine(st.name);
           scheduleDj();
         }, delay) as unknown as number;
       };
