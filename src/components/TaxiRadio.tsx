@@ -73,15 +73,37 @@ export default function TaxiRadio() {
   const [newsHour, setNewsHour] = useState<boolean>(false);
   const newsHourRef = useRef<boolean>(false);
   useEffect(() => { newsHourRef.current = newsHour; }, [newsHour]);
+  // Bascule alignée précisément sur l'horloge murale réelle :
+  // tous les clients basculent au même moment (xx:00 → infos, xx:10 → musique),
+  // y compris après rechargement de la page ou changement d'onglet.
   useEffect(() => {
-    const check = () => {
-      const m = new Date().getMinutes();
-      const active = m < 10;
+    const apply = () => {
+      const active = new Date().getMinutes() < 10;
       setNewsHour((prev) => (prev !== active ? active : prev));
     };
-    check();
-    const t = window.setInterval(check, 20 * 1000);
-    return () => window.clearInterval(t);
+    let timer: number | null = null;
+    const scheduleAligned = () => {
+      apply();
+      const now = new Date();
+      // ms restants jusqu'à la prochaine minute pile + petite marge
+      const msToNextMinute =
+        60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+      timer = window.setTimeout(scheduleAligned, msToNextMinute + 50);
+    };
+    scheduleAligned();
+    // Re-synchronise immédiatement quand l'onglet redevient visible / reprend le focus
+    const onVis = () => {
+      apply();
+      if (timer) { window.clearTimeout(timer); timer = null; }
+      scheduleAligned();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("focus", onVis);
+    return () => {
+      if (timer) window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("focus", onVis);
+    };
   }, []);
   const interludeRef = useRef<HTMLAudioElement | null>(null);
   const playMusicInterlude = (url: string, ms: number = 15000) => {
