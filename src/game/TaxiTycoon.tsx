@@ -2407,7 +2407,14 @@ export default function TaxiTycoon() {
                     const urgent = isOffered && remainSec <= 6;
                     const freeTaxi = taxisRef.current.some((t) => t.mode === "idle");
                     return (
-                      <div key={j.id} className={`tt-contract ${urgent ? "urgent" : ""} ${!isOffered ? "in-progress" : ""}`}>
+                      <div
+                        key={j.id}
+                        className={`tt-contract tt-mission-player ${urgent ? "urgent" : ""} ${!isOffered ? "in-progress" : ""}`}
+                        style={{
+                          borderLeft: `5px solid ${currentPaint.color}`,
+                          boxShadow: `inset 3px 0 0 ${currentPaint.color}33`,
+                        }}
+                      >
                         <div className="tt-c-row">
                           <span className="tt-c-icon">{isOffered ? "🙋" : "🚕"}</span>
                           <span className="tt-c-label">
