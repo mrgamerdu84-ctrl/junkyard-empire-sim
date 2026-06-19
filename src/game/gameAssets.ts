@@ -108,11 +108,28 @@ const civilAutoUrls: string[] = Object.keys(civilGlob)
   .map((k) => civilGlob[k].default);
 
 // --- Véhicules personnalisés uploadés via le panel admin ---
+export type CustomVehicleCategory =
+  | "civil"
+  | "taxi"
+  | "police"
+  | "ambulance"
+  | "firetruck"
+  | "service";
+
 export type CustomVehicle = {
   id: string;
   name: string;
   url: string;
-  category: "civil" | "taxi";
+  category: CustomVehicleCategory;
+};
+
+export const VEHICLE_CATEGORY_LABELS: Record<CustomVehicleCategory, string> = {
+  civil: "🚗 Voiture civile",
+  taxi: "🚕 Taxi (livrée joueur)",
+  police: "🚓 Police",
+  ambulance: "🚑 Ambulance",
+  firetruck: "🚒 Pompiers",
+  service: "🚛 Utilitaire (poubelle, livraison…)",
 };
 
 const CUSTOM_KEY = "jce.customVehicles";
@@ -125,6 +142,10 @@ export function listCustomVehicles(): CustomVehicle[] {
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter((v) => v && v.url && v.id) : [];
   } catch { return []; }
+}
+
+export function listCustomVehiclesByCategory(cat: CustomVehicleCategory): CustomVehicle[] {
+  return listCustomVehicles().filter((v) => v.category === cat);
 }
 
 export function addCustomVehicle(v: Omit<CustomVehicle, "id"> & { id?: string }): CustomVehicle {
@@ -146,8 +167,11 @@ export function removeCustomVehicle(id: string) {
   try { window.localStorage.setItem(CUSTOM_KEY, JSON.stringify(all)); } catch {}
 }
 
-const customCivilUrls = listCustomVehicles()
-  .filter((v) => v.category === "civil")
+// Toutes les catégories sauf "taxi" roulent dans la circulation civile
+const TRAFFIC_CATEGORIES: CustomVehicleCategory[] = ["civil", "police", "ambulance", "firetruck", "service"];
+
+const customTrafficUrls = listCustomVehicles()
+  .filter((v) => TRAFFIC_CATEGORIES.includes(v.category))
   .map((v) => v.url);
 
 /** Liste ordonnée des skins de voitures civiles (auto + custom + défauts). */
@@ -160,7 +184,7 @@ export const CIVIL_CAR_URLS: string[] = (() => {
         GAME_ASSETS["civil.car.3"],
         GAME_ASSETS["civil.car.4"],
       ];
-  return [...base, ...customCivilUrls];
+  return [...base, ...customTrafficUrls];
 })();
 
 /** Liste ordonnée des skins piétons photo. */
