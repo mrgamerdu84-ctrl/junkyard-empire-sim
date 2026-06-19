@@ -38,7 +38,7 @@ export default function AdminPanel() {
 
   const tryUnlock = async () => {
     const h = await sha256(pwd);
-    if (h === ADMIN_PASS_HASH) {
+    if (h === getCurrentHash()) {
       setUnlocked(true);
       setPwd("");
       setPwdErr("");
