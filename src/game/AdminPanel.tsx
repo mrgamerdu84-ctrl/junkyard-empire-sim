@@ -990,6 +990,16 @@ function CustomVehiclesSection() {
         ))}
       </select>
 
+      <label style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "#14171c", border: "1px solid #3a3f48", borderRadius: 4, marginBottom: 8, cursor: "pointer", fontSize: 11, color: "#e8edf2" }}>
+        <input
+          type="checkbox"
+          checked={alreadyTopDown}
+          onChange={(e) => setAlreadyTopDownPref(e.target.checked)}
+          style={{ accentColor: "#f5c542" }}
+        />
+        <span>🛸 Image déjà en <strong style={{ color: "#f5c542" }}>vue du ciel</strong> (ne pas tourner)</span>
+      </label>
+
       {!pendingSrc ? (
         <div style={{ display: "flex", gap: 6 }}>
           <label style={{ flex: 1, textAlign: "center", padding: "8px", background: "#14171c", border: "1px solid #f5c542", borderRadius: 4, cursor: "pointer", color: "#f5c542", fontSize: 11, fontWeight: 700 }}>
