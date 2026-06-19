@@ -600,33 +600,81 @@ function SkinsTab() {
   );
 }
 
+/** Charge une image (data URL ou URL distante) en HTMLImageElement. */
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
+/** Applique une rotation (0/90/180/270°) à une image et renvoie un data URL PNG.
+ *  Le jeu attend des sprites top-down "avant vers le haut" (nord). */
+async function rotateToDataUrl(src: string, deg: 0 | 90 | 180 | 270): Promise<string> {
+  const img = await loadImage(src);
+  const w = img.naturalWidth, h = img.naturalHeight;
+  const swap = deg === 90 || deg === 270;
+  const cw = swap ? h : w;
+  const ch = swap ? w : h;
+  const canvas = document.createElement("canvas");
+  canvas.width = cw;
+  canvas.height = ch;
+  const ctx = canvas.getContext("2d")!;
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate((deg * Math.PI) / 180);
+  ctx.drawImage(img, -w / 2, -h / 2);
+  return canvas.toDataURL("image/png");
+}
+
 function CustomVehiclesSection() {
   const [items, setItems] = useState<CustomVehicle[]>(() => listCustomVehicles());
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<"civil" | "taxi">("civil");
+  const [category, setCategory] = useState<CustomVehicleCategory>("civil");
+  const [pendingSrc, setPendingSrc] = useState<string | null>(null);
+  const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const refresh = () => setItems(listCustomVehicles());
 
-  const onPick = (f: File) => {
+  const onPickFile = (f: File) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const url = String(reader.result);
-      addCustomVehicle({ name: name.trim() || f.name.replace(/\.[^.]+$/, ""), url, category });
-      setName("");
+      setPendingSrc(String(reader.result));
+      setRotation(0);
       if (fileRef.current) fileRef.current.value = "";
-      refresh();
     };
     reader.readAsDataURL(f);
   };
 
-  const onUrl = () => {
-    const url = window.prompt("URL de l'image du véhicule (PNG vue de dessus) :", "");
+  const onPickUrl = () => {
+    const url = window.prompt("URL de l'image (PNG/JPG vue de dessus de préférence) :", "");
     if (!url) return;
-    addCustomVehicle({ name: name.trim() || "Véhicule custom", url: url.trim(), category });
-    setName("");
-    refresh();
+    setPendingSrc(url.trim());
+    setRotation(0);
   };
+
+  const confirmAdd = async () => {
+    if (!pendingSrc) return;
+    try {
+      const finalUrl = rotation === 0 ? pendingSrc : await rotateToDataUrl(pendingSrc, rotation);
+      addCustomVehicle({
+        name: name.trim() || VEHICLE_CATEGORY_LABELS[category].replace(/^\S+\s/, ""),
+        url: finalUrl,
+        category,
+      });
+      setName("");
+      setPendingSrc(null);
+      setRotation(0);
+      refresh();
+    } catch (e) {
+      window.alert("Impossible de charger l'image (CORS ou URL invalide). Essaie de la télécharger puis utilise 📁 Fichier.");
+    }
+  };
+
+  const cancelPending = () => { setPendingSrc(null); setRotation(0); };
 
   const onDel = (id: string) => {
     if (!window.confirm("Supprimer ce véhicule ?")) return;
@@ -640,7 +688,7 @@ function CustomVehiclesSection() {
         ➕ Ajouter un nouveau véhicule
       </div>
       <div style={{ fontSize: 11, color: "#8a8e94", lineHeight: 1.5, marginBottom: 8 }}>
-        Upload un PNG vue de dessus (avant vers le haut). Il sera ajouté au trafic civil.
+        Tout est vue du ciel ; après upload, fais tourner l'image pour que l'avant pointe <strong style={{ color: "#f5c542" }}>vers le haut ↑</strong> (sinon la voiture roule de travers).
       </div>
 
       <input
@@ -651,32 +699,64 @@ function CustomVehiclesSection() {
         style={{ width: "100%", padding: "6px 8px", borderRadius: 4, border: "1px solid #3a3f48", background: "#14171c", color: "#e8edf2", fontSize: 12, marginBottom: 6 }}
       />
 
-      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-        <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value as "civil" | "taxi")}
-          style={{ flex: 1, padding: "6px 8px", borderRadius: 4, border: "1px solid #3a3f48", background: "#14171c", color: "#e8edf2", fontSize: 12 }}
-        >
-          <option value="civil">Trafic civil</option>
-          <option value="taxi">Taxi (futur)</option>
-        </select>
-      </div>
+      <select
+        value={category}
+        onChange={(e) => setCategory(e.target.value as CustomVehicleCategory)}
+        style={{ width: "100%", padding: "6px 8px", borderRadius: 4, border: "1px solid #3a3f48", background: "#14171c", color: "#e8edf2", fontSize: 12, marginBottom: 8 }}
+      >
+        {(Object.keys(VEHICLE_CATEGORY_LABELS) as CustomVehicleCategory[]).map((k) => (
+          <option key={k} value={k}>{VEHICLE_CATEGORY_LABELS[k]}</option>
+        ))}
+      </select>
 
-      <div style={{ display: "flex", gap: 6 }}>
-        <label style={{ flex: 1, textAlign: "center", padding: "8px", background: "#14171c", border: "1px solid #f5c542", borderRadius: 4, cursor: "pointer", color: "#f5c542", fontSize: 11, fontWeight: 700 }}>
-          📁 Fichier
-          <input
-            ref={fileRef}
-            type="file"
-            accept="image/*"
-            style={{ display: "none" }}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) onPick(f); }}
-          />
-        </label>
-        <button onClick={onUrl} style={{ flex: 1, padding: "8px", background: "#14171c", border: "1px solid #3a3f48", borderRadius: 4, cursor: "pointer", color: "#e8edf2", fontSize: 11, fontWeight: 700 }}>
-          🔗 URL
-        </button>
-      </div>
+      {!pendingSrc ? (
+        <div style={{ display: "flex", gap: 6 }}>
+          <label style={{ flex: 1, textAlign: "center", padding: "8px", background: "#14171c", border: "1px solid #f5c542", borderRadius: 4, cursor: "pointer", color: "#f5c542", fontSize: 11, fontWeight: 700 }}>
+            📁 Fichier
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickFile(f); }}
+            />
+          </label>
+          <button onClick={onPickUrl} style={{ flex: 1, padding: "8px", background: "#14171c", border: "1px solid #3a3f48", borderRadius: 4, cursor: "pointer", color: "#e8edf2", fontSize: 11, fontWeight: 700 }}>
+            🔗 URL
+          </button>
+        </div>
+      ) : (
+        <div style={{ background: "#14171c", border: "1px solid #3a3f48", borderRadius: 6, padding: 10 }}>
+          <div style={{ fontSize: 10, color: "#8a8e94", marginBottom: 6, textAlign: "center" }}>
+            Aperçu — la flèche ↑ indique le sens de marche
+          </div>
+          <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto", background: "#0a0c10", borderRadius: 6, overflow: "hidden" }}>
+            {/* Repère du sens de marche */}
+            <div style={{ position: "absolute", top: 2, left: "50%", transform: "translateX(-50%)", color: "#22c55e", fontSize: 18, fontWeight: 900, lineHeight: 1, zIndex: 2 }}>↑</div>
+            <img
+              src={pendingSrc}
+              alt="aperçu"
+              style={{
+                position: "absolute", inset: 0, width: "100%", height: "100%",
+                objectFit: "contain", transform: `rotate(${rotation}deg)`, transition: "transform 0.15s",
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: 4, marginTop: 8, justifyContent: "center" }}>
+            <button onClick={() => setRotation(((rotation + 270) % 360) as 0 | 90 | 180 | 270)} style={btnMini}>↺ -90°</button>
+            <span style={{ fontSize: 11, color: "#f5c542", padding: "4px 8px", fontWeight: 700 }}>{rotation}°</span>
+            <button onClick={() => setRotation(((rotation + 90) % 360) as 0 | 90 | 180 | 270)} style={btnMini}>↻ +90°</button>
+          </div>
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <button onClick={cancelPending} style={{ flex: 1, padding: "8px", background: "#14171c", border: "1px solid #3a3f48", borderRadius: 4, cursor: "pointer", color: "#e8edf2", fontSize: 11, fontWeight: 700 }}>
+              Annuler
+            </button>
+            <button onClick={confirmAdd} style={{ flex: 2, padding: "8px", background: "#f5c542", border: "1px solid #f5c542", borderRadius: 4, cursor: "pointer", color: "#14171c", fontSize: 11, fontWeight: 800 }}>
+              ✓ Valider et ajouter
+            </button>
+          </div>
+        </div>
+      )}
 
       {items.length > 0 && (
         <div style={{ marginTop: 10, display: "grid", gap: 4 }}>
@@ -686,7 +766,7 @@ function CustomVehiclesSection() {
               <img src={v.url} alt="" style={{ width: 28, height: 28, objectFit: "contain", background: "#0a0c10", borderRadius: 3 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: "#e8edf2", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.name}</div>
-                <div style={{ fontSize: 9, color: "#6a6e74" }}>{v.category}</div>
+                <div style={{ fontSize: 9, color: "#6a6e74" }}>{VEHICLE_CATEGORY_LABELS[v.category as CustomVehicleCategory] ?? v.category}</div>
               </div>
               <button onClick={() => onDel(v.id)} style={{ ...btnMini, color: "#ff6b6b", borderColor: "#5a2a2a" }}>🗑</button>
             </div>
