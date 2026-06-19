@@ -526,7 +526,7 @@ export default function TaxiTycoon() {
   // === Véhicules d'urgence (ambulance / pompiers) ===
   type EmergencyVehicle = {
     id: number;
-    kind: "ambulance" | "firetruck";
+    kind: "ambulance" | "firetruck" | "police";
     pathIdx: number;
     pos: number;
     target: number;
