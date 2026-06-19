@@ -1058,11 +1058,30 @@ export default function TaxiTycoon() {
           }
         }
 
+        // 2-bis) Contrôle aléatoire de civils : toutes les ~20-45s, une
+        //        police libre s'arrête sur le bas-côté pendant ~6s avec
+        //        gyrophares allumés pour "contrôler les papiers" d'un civil.
+        if (
+          !wantedRival && !wantedPlayer &&
+          nowMs - lastCivilControlRef.current > 20000 + Math.random() * 25000
+        ) {
+          const freePatrol = policeCarsRef.current.filter(p => p.mode === "patrol");
+          if (freePatrol.length > 0) {
+            const pc = freePatrol[Math.floor(Math.random() * freePatrol.length)];
+            pc.mode = "control_wait";
+            pc.controlUntil = nowMs + CIVIL_CONTROL_DURATION_MS;
+            pc.controlStoppedPos = pc.pos;
+            showToast("🚓 Contrôle de police en cours…");
+          }
+          lastCivilControlRef.current = nowMs;
+        }
+
         // 3) MAJ chaque police
         for (const pc of policeCarsRef.current) {
           // Priorité chase : si quelqu'un est wanted et police libre -> chase
           const isStakeout = pc.mode === "stakeout_drive" || pc.mode === "stakeout_wait";
-          if (wantedRival && !isStakeout && pc.mode !== "chase") {
+          const isControl = pc.mode === "control_drive" || pc.mode === "control_wait";
+          if (wantedRival && !isStakeout && !isControl && pc.mode !== "chase") {
             pc.mode = "chase";
             pc.chaseRivalId = wantedRival.id;
             pc.chasePlayerTaxiId = null;
