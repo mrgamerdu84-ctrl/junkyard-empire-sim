@@ -1,6 +1,6 @@
 {
-  "version": "1.5.2",
-  "buildId": "2026-06-19T13:00:00.000Z",
-  "builtAt": 1781874000000,
-  "changelog": "Auto-orientation renforcée des véhicules ajoutés (symétrie + portrait + masse) : le nez se remet vers le haut tout seul à chaque import."
+  "version": "1.0.0",
+  "buildId": "2026-06-19T10:06:40.980Z",
+  "builtAt": 1781863600980,
+  "changelog": "Mise à jour automatique active"
 }
