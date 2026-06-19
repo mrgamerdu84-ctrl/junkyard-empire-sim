@@ -2850,6 +2850,31 @@ export default function TaxiTycoon() {
         }
         .tt-garage-fab:hover { transform: translateX(-50%) scale(1.08); }
 
+        .tt-special-fab {
+          position: absolute; bottom: 12px; right: 60px;
+          width: 58px; height: 58px; border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, #fef3c7, #a855f7 70%, #4c1d95);
+          border: 2px solid #1a1d22; color: #fff;
+          cursor: pointer; pointer-events: auto;
+          box-shadow: 0 4px 14px rgba(168,85,247,0.55), inset 0 1px 0 rgba(255,255,255,0.3);
+          display: flex; align-items: center; justify-content: center; flex-direction: column;
+          padding: 0; overflow: hidden;
+        }
+        .tt-special-fab.ready { animation: ttSpecialPulse 1.8s ease-in-out infinite; }
+        .tt-special-fab:disabled { cursor: not-allowed; opacity: 0.85; animation: none; }
+        .tt-special-ring {
+          position: absolute; inset: 3px; border-radius: 50%;
+          -webkit-mask: radial-gradient(circle, transparent 60%, #000 62%);
+                  mask: radial-gradient(circle, transparent 60%, #000 62%);
+          pointer-events: none;
+        }
+        .tt-special-core { font-size: 20px; line-height: 1; z-index: 1; font-weight: 900; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+        .tt-special-lbl { font-size: 8px; font-weight: 800; letter-spacing: 0.5px; z-index: 1; margin-top: 2px; color: #fde047; }
+        @keyframes ttSpecialPulse {
+          0%, 100% { box-shadow: 0 4px 14px rgba(168,85,247,0.55), inset 0 1px 0 rgba(255,255,255,0.3); }
+          50% { box-shadow: 0 4px 22px rgba(253,224,71,0.85), inset 0 1px 0 rgba(255,255,255,0.5); }
+        }
+
         .tt-music-fab {
           position: absolute; bottom: 14px; right: 12px;
           width: 38px; height: 38px; border-radius: 50%;
