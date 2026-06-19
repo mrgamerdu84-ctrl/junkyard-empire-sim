@@ -1,6 +1,6 @@
 {
-  "version": "1.3.8",
-  "buildId": "2026-06-19T10:00:00.000Z",
-  "builtAt": 1781863200000,
-  "changelog": "Vrais gyrophares sur le toit des véhicules d'urgence"
+  "version": "1.4.0",
+  "buildId": "2026-06-19T10:30:00.000Z",
+  "builtAt": 1781865000000,
+  "changelog": "Radio du taxi (Pop/Electro/Rock) + couleur des taxis joueur appliquée à toute la flotte"
 }
