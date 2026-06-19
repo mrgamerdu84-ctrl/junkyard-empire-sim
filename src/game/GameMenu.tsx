@@ -99,6 +99,11 @@ export default function GameMenu({ onHome }: { onHome: () => void }) {
             <button className="gm-btn" onClick={() => { setShowLeaderboard(true); close(); }}>
               🏆 Classement
             </button>
+            {user && (
+              <button className="gm-btn gm-blue" onClick={() => { close(); navigate({ to: "/defis" }); }}>
+                ⚔️ Défis 1v1
+              </button>
+            )}
             <button className="gm-btn" onClick={() => { resetTutorial(); setShowTutorial(true); close(); }}>
               📖 Tuto
             </button>
