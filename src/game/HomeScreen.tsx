@@ -4,13 +4,15 @@ import bgAsset from "@/assets/home-bg.png.asset.json";
 import { UpdateNotification } from "@/components/UpdateNotification";
 import TutorialDialog from "@/components/TutorialDialog";
 import LeaderboardPanel from "@/components/LeaderboardPanel";
+import ProfileCard, { resolveAvatarSrc } from "@/components/ProfileCard";
 import { hasSeenTutorial, resetTutorial, getPlayerName, setPlayerName, pushLocalScoresToCloud } from "@/lib/leaderboard";
 import { useAuth, signOut } from "@/lib/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
 export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const navigate = useNavigate();
-  const { user, pseudo: cloudPseudo } = useAuth();
+  const { user, pseudo: cloudPseudo, avatarKind, avatarUrl } = useAuth();
+  const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
@@ -259,9 +261,16 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
 
       <div className="hs-btns">
         {effectiveName !== "Chauffeur" && (
-          <div className="hs-name-badge">
-            {user ? "🔒" : "👤"} {effectiveName}
-            {user && <span style={{ fontSize: 11, opacity: 0.7, marginLeft: 6 }}>(compte en ligne)</span>}
+          <div className="hs-name-badge" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {user && (
+              <img
+                src={resolveAvatarSrc(avatarKind, avatarUrl)}
+                alt="avatar"
+                style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid #f5c542", background: "#fff", objectFit: "cover" }}
+              />
+            )}
+            <span>{user ? "🔒" : "👤"} {effectiveName}</span>
+            {user && <span style={{ fontSize: 11, opacity: 0.7 }}>(en ligne)</span>}
           </div>
         )}
         {user && (
@@ -286,6 +295,11 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         >
           ✏️ Pseudo {!user && (trialExpired ? "🔒" : `(${daysLeft}j)`)}
         </button>
+        {user && (
+          <button className="hs-btn" style={{ background: "linear-gradient(180deg,#3b82f6,#1d4ed8)", color: "#fff", boxShadow: "0 6px 0 #1e3a8a, 0 12px 20px rgba(0,0,0,0.5)", border: "2px solid #60a5fa", textShadow: "0 1px 0 rgba(0,0,0,0.3)" }} onClick={() => setShowProfile(true)}>
+            🪪 Mon profil
+          </button>
+        )}
         {user ? (
           <button className="hs-btn" style={{ background: "linear-gradient(180deg,#6b7280,#374151)", color: "#fff", boxShadow: "0 6px 0 #1f2937, 0 12px 20px rgba(0,0,0,0.5)", border: "2px solid #6b7280", textShadow: "0 1px 0 rgba(0,0,0,0.3)" }} onClick={() => signOut()}>
             🚪 Déconnexion
@@ -305,6 +319,7 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
 
       {showTutorial && <TutorialDialog onClose={() => setShowTutorial(false)} />}
       {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}
+      {showProfile && <ProfileCard onClose={() => setShowProfile(false)} />}
 
       {showPseudo && (
         <div className="hs-pseudo-overlay">

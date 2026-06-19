@@ -15,11 +15,15 @@ function AuthPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [pseudo, setPseudo] = useState("");
+  const [remember, setRemember] = useState(() => {
+    try { return localStorage.getItem("auth.remember") !== "0"; } catch { return true; }
+  });
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showReset, setShowReset] = useState(false);
 
+  // Auto-login silencieux : si une session valide existe déjà, on file au jeu.
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/" });
@@ -31,6 +35,7 @@ function AuthPage() {
     setErr(null);
     setLoading(true);
     try {
+      try { localStorage.setItem("auth.remember", remember ? "1" : "0"); } catch {}
       if (mode === "signup") {
         const { error } = await supabase.auth.signUp({
           email,
@@ -45,6 +50,17 @@ function AuthPage() {
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        // Si l'utilisateur a décoché "Se souvenir", on purge la session au
+        // prochain fermeture d'onglet en passant le stockage en sessionStorage.
+        if (!remember) {
+          try {
+            const keys = Object.keys(localStorage).filter(k => k.startsWith("sb-") && k.endsWith("-auth-token"));
+            for (const k of keys) {
+              const v = localStorage.getItem(k);
+              if (v) { sessionStorage.setItem(k, v); localStorage.removeItem(k); }
+            }
+          } catch {}
+        }
         navigate({ to: "/" });
       }
     } catch (e: any) {
@@ -110,6 +126,17 @@ function AuthPage() {
           )}
           <input className="auth-input" type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
           <input className="auth-input" type="password" placeholder="Mot de passe" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+          {mode === "signin" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#9ca3af", fontSize: 13, margin: "4px 0 10px", cursor: "pointer", userSelect: "none" }}>
+              <input
+                type="checkbox"
+                checked={remember}
+                onChange={(e) => setRemember(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: "#f5c542", cursor: "pointer" }}
+              />
+              Se souvenir de moi (rester connecté)
+            </label>
+          )}
           <button className="auth-btn" type="submit" disabled={loading}>
             {loading ? "..." : mode === "signup" ? "Créer mon compte" : "Se connecter"}
           </button>
