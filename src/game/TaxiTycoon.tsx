@@ -116,6 +116,25 @@ export const LIVERIES: Livery[] = [
   { id: "sport",    name: "Sport Cab",     city: "Coupé rouge",  roofLabel: "TAXI",     roofBg: "#1a1d22", roofFg: "#ffffff", stripe: "none",    stripeColor: "#1a1d22", image: TAXI_RED_URL,    faceRight: false },
 ];
 
+/** Liste complète des livrées : base + skins uploadés via le panel admin. */
+export function getAllLiveries(): Livery[] {
+  const customTaxis = listCustomVehicles()
+    .filter((v) => v.category === "taxi")
+    .map<Livery>((v) => ({
+      id: `custom_${v.id}`,
+      name: v.name,
+      city: "Custom (admin)",
+      roofLabel: "TAXI",
+      roofBg: "#1a1d22",
+      roofFg: "#fde047",
+      stripe: "none",
+      stripeColor: "#1a1d22",
+      image: v.url,
+      faceRight: true,
+    }));
+  return [...LIVERIES, ...customTaxis];
+}
+
 type SaveData = {
   money: number;
   customersServed: number;
