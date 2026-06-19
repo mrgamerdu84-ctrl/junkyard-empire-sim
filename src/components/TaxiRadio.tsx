@@ -693,6 +693,12 @@ export default function TaxiRadio() {
             ) : (
               <span style={{ opacity: 0.7 }}>météo…</span>
             )}
+            {newsHour && (
+              <>
+                <span style={{ opacity: 0.55 }}>•</span>
+                <span style={{ color: "#fde047" }}>📰 INFOS</span>
+              </>
+            )}
           </div>
         );
       })()}
