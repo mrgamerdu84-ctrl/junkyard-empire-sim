@@ -35,6 +35,7 @@ function getCurrentHash(): string {
 function savePasswordHash(hash: string): boolean {
   let saved = false;
   try {
+    localStorage.removeItem(PWD_HASH_KEY);
     localStorage.setItem(PWD_HASH_KEY, hash);
     saved = localStorage.getItem(PWD_HASH_KEY) === hash;
   } catch {}
