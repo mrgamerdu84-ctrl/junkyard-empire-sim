@@ -1869,6 +1869,35 @@ export default function TaxiTycoon() {
           );
         })}
 
+        {/* Véhicules d'urgence : ambulance + pompiers (sirène en intervention) */}
+        {emergencyRef.current.map((ev) => {
+          const movingForward = ev.target >= ev.pos;
+          const p = ev.lane ?? getLaneXY(ev.pathIdx, ev.pos, movingForward);
+          const alerting = ev.alertUntil > 0;
+          const t = Math.floor(performance.now() / 200) % 2;
+          const href = ev.kind === "ambulance" ? AMBULANCE_URL : FIRETRUCK_URL;
+          const W = ev.kind === "firetruck" ? 46 : 42;
+          return (
+            <g key={ev.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
+              {alerting && (
+                <circle r="26" fill={t === 0 ? "#3b82f6" : "#ef4444"} opacity="0.3">
+                  <animate attributeName="r" values="22;30;22" dur="0.5s" repeatCount="indefinite" />
+                </circle>
+              )}
+              <g transform="rotate(90)">
+                <image href={href} x={-W / 2} y={-W / 2} width={W} height={W} preserveAspectRatio="xMidYMid meet" />
+              </g>
+              {alerting && (
+                <text x="0" y="32" textAnchor="middle" fontSize="3.6" fontWeight="900" fill="#fbbf24" stroke="#0b0d10" strokeWidth="0.8" paintOrder="stroke">
+                  {ev.kind === "ambulance" ? "URGENCE" : "POMPIERS"}
+                </text>
+              )}
+            </g>
+          );
+        })}
+
+
+
 
         {(() => {
           // Calcule les positions monde des places de parking du QG
