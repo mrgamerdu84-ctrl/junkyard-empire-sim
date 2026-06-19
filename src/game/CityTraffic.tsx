@@ -217,8 +217,8 @@ function Vehicle({
 }) {
   // Tous les uploads admin sont sauvegardés en vue du ciel, avant vers ↑.
   // Le parent tourne sur l'angle de la route (+x), donc +90° = roule droit.
-  const W = 40;
-  const H = 40;
+  const W = VEHICLE_SIZE;
+  const H = VEHICLE_SIZE;
   const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
   return (
     <g>

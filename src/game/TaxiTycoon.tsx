@@ -21,6 +21,9 @@ const FIRETRUCK_URL = GAME_ASSETS["emergency.firetruck"];
 
 const MUSIC_URL = GAME_ASSETS["audio.music"];
 
+// Taille unifiée de tous les véhicules (taxi joueur, police, urgences, civils, customs)
+export const VEHICLE_SIZE = 36;
+
 /* ============================================================
  * TAXI TYCOON — entreprise de taxis idle
  * Le neveu hérite d'un entrepôt délabré. Les taxis sortent du dépôt,
@@ -236,7 +239,7 @@ function TaxiSprite({
   faceRight,
   paintFilter = "none",
   markerColor,
-  size = 36,
+  size = VEHICLE_SIZE,
 }: {
   withClient: boolean;
   moving: boolean;
@@ -274,7 +277,7 @@ function TaxiSprite({
 
 function RoadAlignedVehicleSprite({
   image,
-  size = 40,
+  size = VEHICLE_SIZE,
   opacity = 1,
   children,
 }: {
@@ -2354,7 +2357,7 @@ export default function TaxiTycoon() {
           const alerting = ev.mode === "respond" || ev.mode === "onsite";
           const t = Math.floor(performance.now() / 200) % 2;
           const href = ev.kind === "ambulance" ? AMBULANCE_URL : ev.kind === "firetruck" ? FIRETRUCK_URL : POLICE_CAR_URL;
-          const W = 40; // même taille que la police pour rester aligné sur les voies
+          const W = VEHICLE_SIZE; // même taille que tous les autres véhicules
           const blueOn = t === 0;
           return (
             <g key={ev.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
