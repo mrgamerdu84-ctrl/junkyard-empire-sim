@@ -4,13 +4,20 @@ import { useAdminConfig, setAdmin, resetAdmin, type AdminConfig } from "./adminC
 import { useVersionCheck, formatBuildDate } from "@/lib/version-check";
 import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey, listCustomVehicles, addCustomVehicle, removeCustomVehicle, type CustomVehicle, type CustomVehicleCategory, VEHICLE_CATEGORY_LABELS } from "./gameAssets";
 
-// SHA-256 du mot de passe admin. Modifie ce hash pour changer le mot de passe.
-const ADMIN_PASS_HASH = "7d473072673d5b86575304cb2a23b92a51e0cde043856919249b3df582a8625d";
+// SHA-256 du mot de passe admin par défaut. Peut être remplacé via localStorage (PWD_HASH_KEY).
+const ADMIN_PASS_HASH_DEFAULT = "7d473072673d5b86575304cb2a23b92a51e0cde043856919249b3df582a8625d";
 const UNLOCK_KEY = "tt-admin-unlocked";
+const PWD_HASH_KEY = "tt-admin-pwd-hash";
+const RESET_PHRASE = "RESET";
 
 async function sha256(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getCurrentHash(): string {
+  try { return localStorage.getItem(PWD_HASH_KEY) || ADMIN_PASS_HASH_DEFAULT; }
+  catch { return ADMIN_PASS_HASH_DEFAULT; }
 }
 
 /* Floating gear button + slide-in admin panel. */
@@ -19,6 +26,11 @@ export default function AdminPanel() {
   const [unlocked, setUnlocked] = useState(false);
   const [pwd, setPwd] = useState("");
   const [pwdErr, setPwdErr] = useState("");
+  const [resetMode, setResetMode] = useState(false);
+  const [resetPhrase, setResetPhrase] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [newPwd2, setNewPwd2] = useState("");
+  const [resetMsg, setResetMsg] = useState("");
   const [tab, setTab] = useState<"trafic" | "hq" | "missions" | "rival" | "circuit" | "skins" | "export">("trafic");
   const [placeMode, setPlaceMode] = useState(false);
   const [drawMode, setDrawMode] = useState(false);
@@ -31,7 +43,7 @@ export default function AdminPanel() {
 
   const tryUnlock = async () => {
     const h = await sha256(pwd);
-    if (h === ADMIN_PASS_HASH) {
+    if (h === getCurrentHash()) {
       setUnlocked(true);
       setPwd("");
       setPwdErr("");
@@ -40,6 +52,18 @@ export default function AdminPanel() {
       setPwdErr("Mot de passe incorrect");
       setPwd("");
     }
+  };
+
+  const doReset = async () => {
+    setResetMsg("");
+    if (resetPhrase.trim() !== RESET_PHRASE) { setResetMsg(`Tape exactement "${RESET_PHRASE}" pour confirmer.`); return; }
+    if (newPwd.length < 4) { setResetMsg("Le nouveau mot de passe doit faire au moins 4 caractères."); return; }
+    if (newPwd !== newPwd2) { setResetMsg("Les deux mots de passe ne correspondent pas."); return; }
+    const h = await sha256(newPwd);
+    try { localStorage.setItem(PWD_HASH_KEY, h); } catch {}
+    setResetMsg("✅ Mot de passe réinitialisé. Tu peux te connecter.");
+    setNewPwd(""); setNewPwd2(""); setResetPhrase("");
+    setTimeout(() => { setResetMode(false); setResetMsg(""); }, 1200);
   };
 
 
@@ -254,23 +278,68 @@ export default function AdminPanel() {
               <h2>🔒 Accès admin</h2>
               <button className="adm-close" onClick={() => { setOpen(false); setPwd(""); setPwdErr(""); }} aria-label="Fermer">×</button>
             </div>
-            <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
-              <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Entre le mot de passe pour accéder au panneau.</p>
-              <input
-                type="password"
-                autoFocus
-                value={pwd}
-                onChange={(e) => setPwd(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") void tryUnlock(); }}
-                placeholder="Mot de passe"
-                style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
-              />
-              {pwdErr && <div style={{ color: "#ff6b6b", fontSize: 13 }}>{pwdErr}</div>}
-              <button
-                onClick={() => void tryUnlock()}
-                style={{ padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
-              >Déverrouiller</button>
-            </div>
+            {!resetMode ? (
+              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ margin: 0, fontSize: 13, opacity: 0.8 }}>Entre le mot de passe pour accéder au panneau.</p>
+                <input
+                  type="password"
+                  autoFocus
+                  value={pwd}
+                  onChange={(e) => setPwd(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") void tryUnlock(); }}
+                  placeholder="Mot de passe"
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                {pwdErr && <div style={{ color: "#ff6b6b", fontSize: 13 }}>{pwdErr}</div>}
+                <button
+                  onClick={() => void tryUnlock()}
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
+                >Déverrouiller</button>
+                <button
+                  onClick={() => { setResetMode(true); setPwdErr(""); }}
+                  style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid #555", background: "transparent", color: "#facc15", fontSize: 13, cursor: "pointer" }}
+                >Mot de passe oublié ?</button>
+              </div>
+            ) : (
+              <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 10 }}>
+                <p style={{ margin: 0, fontSize: 13, opacity: 0.85 }}>
+                  Réinitialise ton mot de passe admin. Pour confirmer, tape <b>{RESET_PHRASE}</b> dans le champ ci-dessous.
+                </p>
+                <input
+                  type="text"
+                  value={resetPhrase}
+                  onChange={(e) => setResetPhrase(e.target.value)}
+                  placeholder={`Tape ${RESET_PHRASE}`}
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                <input
+                  type="password"
+                  value={newPwd}
+                  onChange={(e) => setNewPwd(e.target.value)}
+                  placeholder="Nouveau mot de passe"
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                <input
+                  type="password"
+                  value={newPwd2}
+                  onChange={(e) => setNewPwd2(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") void doReset(); }}
+                  placeholder="Confirme le mot de passe"
+                  style={{ padding: "10px 12px", borderRadius: 8, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 14 }}
+                />
+                {resetMsg && <div style={{ color: resetMsg.startsWith("✅") ? "#4ade80" : "#ff6b6b", fontSize: 13 }}>{resetMsg}</div>}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    onClick={() => { setResetMode(false); setResetMsg(""); setNewPwd(""); setNewPwd2(""); setResetPhrase(""); }}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #555", background: "transparent", color: "#fff", cursor: "pointer" }}
+                  >Annuler</button>
+                  <button
+                    onClick={() => void doReset()}
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "none", background: "#facc15", color: "#111", fontWeight: 700, cursor: "pointer" }}
+                  >Réinitialiser</button>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
