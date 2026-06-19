@@ -4,6 +4,7 @@ import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
 import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
+import { pushNews } from "@/lib/radioNews";
 
 
 // Skins centralisés — pour changer un taxi / la voiture de police,
