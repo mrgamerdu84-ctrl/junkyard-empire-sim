@@ -6,6 +6,7 @@ import { getAdmin, useAdminConfig } from "./adminConfig";
 import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
 import { pushNews } from "@/lib/radioNews";
 import { getLicense, addLicenseXp, rollClientTier, tierFareMult, tierXp } from "@/lib/license";
+import { pickSpecialMission, SPECIAL_COOLDOWN_MS } from "@/lib/specialMissions";
 
 
 
@@ -96,8 +97,12 @@ type Job = {
   sidePickup: 1 | -1;
   sideDrop: 1 | -1;
   acceptedAt?: number;
-  tier?: "normal" | "vip" | "star";
+  tier?: "normal" | "vip" | "star" | "special";
+  specialMissionId?: string;
+  specialFareMult?: number;
+  specialXp?: number;
 };
+
 
 
 const DEFAULT_DEPOT_POS = 0.78; // fallback si mode "suit le circuit" (legacy)
