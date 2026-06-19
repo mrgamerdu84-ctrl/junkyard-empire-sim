@@ -11,7 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 
 export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
   const navigate = useNavigate();
-  const { user, pseudo: cloudPseudo } = useAuth();
+  const { user, pseudo: cloudPseudo, avatarKind, avatarUrl } = useAuth();
+  const [showProfile, setShowProfile] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [showTutorial, setShowTutorial] = useState(false);
