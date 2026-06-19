@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth, type AvatarKind } from "@/lib/useAuth";
+import { tierFor } from "@/lib/license";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
 import { getAllLiveries, TAXI_PAINTS } from "@/game/TaxiTycoon";
@@ -17,13 +18,22 @@ export function resolveAvatarSrc(kind: AvatarKind, url: string | null): string {
 }
 
 export default function ProfileCard({ onClose }: { onClose: () => void }) {
-  const { user, pseudo, avatarKind, avatarUrl, refresh } = useAuth();
+  const { user, pseudo, driverName, avatarKind, avatarUrl, licenseLevel, licenseXp, refresh } = useAuth();
   const [pseudoInput, setPseudoInput] = useState(pseudo);
+  const [driverNameInput, setDriverNameInput] = useState(driverName);
   const [kind, setKind] = useState<AvatarKind>(avatarKind);
   const [localPhoto, setLocalPhoto] = useState<string | null>(avatarUrl);
   const [saving, setSaving] = useState(false);
+  const [savedMsg, setSavedMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // re-sync si useAuth charge après le mount
+  useEffect(() => { setPseudoInput(pseudo); }, [pseudo]);
+  useEffect(() => { setDriverNameInput(driverName); }, [driverName]);
+  useEffect(() => { setKind(avatarKind); }, [avatarKind]);
+  useEffect(() => { setLocalPhoto(avatarUrl); }, [avatarUrl]);
+
 
   // Personnalisation taxi — lue/écrite dans la save locale du jeu
   const liveries = getAllLiveries();
@@ -85,22 +95,34 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
 
   const save = async () => {
     setErr(null);
+    setSavedMsg(null);
     setSaving(true);
     try {
-      const newPseudo = pseudoInput.trim() || "Chauffeur";
-      const updates: { pseudo: string; avatar_kind: AvatarKind; avatar_url?: string | null } =
-        { pseudo: newPseudo, avatar_kind: kind };
+      if (!user) throw new Error("Pas connecté");
+      const newPseudo = pseudoInput.trim().slice(0, 16) || "Chauffeur";
+      const newDriver = driverNameInput.trim().slice(0, 40) || null;
+      const updates: any = {
+        id: user.id,
+        pseudo: newPseudo,
+        driver_name: newDriver,
+        avatar_kind: kind,
+      };
       if (kind !== "photo") updates.avatar_url = null;
-      const { error } = await supabase.from("profiles").update(updates).eq("id", user.id);
+      // upsert : marche même si la ligne profiles n'existe pas encore
+      const { error } = await supabase
+        .from("profiles")
+        .upsert(updates, { onConflict: "id" });
       if (error) throw error;
       await refresh();
-      onClose();
+      setSavedMsg("✅ Profil enregistré");
+      setTimeout(() => setSavedMsg(null), 1800);
     } catch (e: any) {
       setErr(e?.message ?? "Erreur");
     } finally {
       setSaving(false);
     }
   };
+
 
   const previewSrc = kind === "photo" ? (localPhoto ?? avatarUrl ?? avatarMan) : (kind === "woman" ? avatarWoman : avatarMan);
 
