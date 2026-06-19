@@ -1421,15 +1421,30 @@ export default function TaxiTycoon() {
             if (pt) {
               const id = ++accidentIdRef.current;
               const kind: "vehicle" | "pedestrian" = Math.random() < 0.7 ? "vehicle" : "pedestrian";
+              const severity: "minor" | "serious" = kind === "vehicle" ? "serious" : "minor";
+              const interventionMs = severity === "serious"
+                ? ACCIDENT_BLOCK_MIN_MS + 4000 + Math.random() * 6000  // 13–19s
+                : ACCIDENT_BLOCK_MIN_MS;                                 // 9s
               const acc: Accident = {
                 id, pathIdx: pIdx, s: sPos, x: pt.x, y: pt.y, kind,
                 startedAt: tMs, clearAt: null, responders: new Set(),
+                severity, interventionMs,
               };
               accidentsRef.current.push(acc);
               registerAccident({ id, pathIdx: pIdx, s: sPos, x: pt.x, y: pt.y, kind });
-              showToast(kind === "vehicle" ? "💥 Accident signalé ! Secours en route…" : "🚑 Piéton renversé ! Ambulance en route…");
-              pushNews(kind === "vehicle"
-                ? { fr: "Flash info : accident de la circulation signalé en ville, les secours sont en route.", en: "News flash: a traffic accident has been reported downtown, emergency services are on the way." }
+              // Délais de réponse aléatoires (plus longs si accident grave)
+              const delayRanges = severity === "serious"
+                ? { police: [1000, 5000], ambulance: [2000, 6000], firetruck: [3000, 8000] }
+                : { police: [0, 1500], ambulance: [0, 1500], firetruck: [0, 1500] };
+              for (const ev of emergencyRef.current) {
+                const r = delayRanges[ev.kind];
+                ev.respondAfter = tMs + r[0] + Math.random() * (r[1] - r[0]);
+              }
+              showToast(severity === "serious"
+                ? "💥 Accident GRAVE ! Secours dépêchés…"
+                : "🚑 Piéton renversé ! Ambulance en route…");
+              pushNews(severity === "serious"
+                ? { fr: "Flash info : accident grave de la circulation, pompiers, ambulance et police sont mobilisés.", en: "News flash: a serious traffic accident, firefighters, ambulance and police have been dispatched." }
                 : { fr: "Flash info : un piéton vient d'être renversé, l'ambulance est en chemin.", en: "News flash: a pedestrian has just been hit, an ambulance is on its way." }
               );
             }
@@ -1439,7 +1454,7 @@ export default function TaxiTycoon() {
 
         // Dispatch : tous les EV (même en respond/onsite d'un ancien) -> respond vers l'accident courant
         for (const ev of emergencyRef.current) {
-          if (accidentsRef.current.length > 0) {
+          if (accidentsRef.current.length > 0 && tMs >= ev.respondAfter) {
             const acc = accidentsRef.current[0];
             if (ev.mode === "patrol" || (ev.mode !== "onsite" && ev.accidentId !== acc.id)) {
               ev.mode = "respond";
