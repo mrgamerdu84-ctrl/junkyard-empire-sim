@@ -2668,6 +2668,27 @@ export default function TaxiTycoon() {
           🏁
         </button>
 
+        {/* Bouton MISSION SPÉCIALE — déclenche un client doré */}
+        {(() => {
+          const now = nowTick;
+          const remaining = Math.max(0, specialCooldownUntil - now);
+          const cooling = remaining > 0;
+          const sec = Math.ceil(remaining / 1000);
+          const pct = cooling ? 1 - remaining / SPECIAL_COOLDOWN_MS : 1;
+          return (
+            <button
+              className={`tt-special-fab ${cooling ? "cooling" : "ready"}`}
+              onClick={triggerSpecialMission}
+              disabled={cooling}
+              title={cooling ? `Cooldown ${sec}s` : "Déclencher une mission spéciale"}
+            >
+              <span className="tt-special-ring" style={{ background: `conic-gradient(#fde047 ${pct * 360}deg, rgba(255,255,255,0.15) 0deg)` }} />
+              <span className="tt-special-core">{cooling ? `${sec}s` : "👑"}</span>
+              <span className="tt-special-lbl">Mission</span>
+            </button>
+          );
+        })()}
+
         {/* Musique de fond : gérée globalement par <BackgroundMusic /> dans __root.tsx */}
 
         {garageOpen && (
