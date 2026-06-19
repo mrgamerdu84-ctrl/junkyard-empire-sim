@@ -502,6 +502,22 @@ export default function TaxiTycoon() {
   const wantedPlayerUntilRef = useRef<number>(0);
   const lastStakeoutTriggerRef = useRef<number>(performance.now());
 
+  // === Véhicules d'urgence (ambulance / pompiers) ===
+  type EmergencyVehicle = {
+    id: number;
+    kind: "ambulance" | "firetruck";
+    pathIdx: number;
+    pos: number;
+    target: number;
+    lane?: LanePosition;
+    alertUntil: number;     // ms — si > now: sirène + vitesse rapide
+    nextAlertAt: number;    // ms — prochain déclenchement aléatoire
+  };
+  const emergencyRef = useRef<EmergencyVehicle[]>([]);
+  const EMERGENCY_SPEED = 70;      // px/s normal
+  const EMERGENCY_RUSH_SPEED = 165;// px/s en intervention
+
+
 
 
   // === Circuit personnalisé (dessiné par le joueur) ===
@@ -730,6 +746,40 @@ export default function TaxiTycoon() {
     while (policeCarsRef.current.length > target) policeCarsRef.current.pop();
     forceRender((n) => n + 1);
   }, [pathsReady, admin.policeCarCount]);
+
+  // Spawn ambulance + camion pompiers (1 de chaque) qui patrouillent
+  useEffect(() => {
+    if (!pathsReady) return;
+    const N = pathLensRef.current.length;
+    if (N === 0) return;
+    const allowed: number[] = [];
+    for (let i = 0; i < N; i++) if (!VILLAGE_PATHS.has(i)) allowed.push(i);
+    if (allowed.length < 1) return;
+    if (emergencyRef.current.length === 0) {
+      const now = performance.now();
+      const mkVeh = (kind: "ambulance" | "firetruck", i: number): EmergencyVehicle => {
+        const pIdx = allowed[i % allowed.length];
+        const plen = pathLensRef.current[pIdx] ?? 0;
+        const v: EmergencyVehicle = {
+          id: 40000 + i,
+          kind,
+          pathIdx: pIdx,
+          pos: (i / 2) * plen,
+          target: plen - 1,
+          alertUntil: 0,
+          nextAlertAt: now + 25000 + Math.random() * 35000,
+        };
+        syncVehicleLane(v);
+        return v;
+      };
+      emergencyRef.current.push(mkVeh("ambulance", 0));
+      emergencyRef.current.push(mkVeh("firetruck", 1));
+    }
+    forceRender((n) => n + 1);
+  }, [pathsReady]);
+
+
+
 
 
 
