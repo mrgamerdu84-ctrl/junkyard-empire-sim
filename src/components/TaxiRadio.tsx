@@ -67,6 +67,14 @@ export default function TaxiRadio() {
   const pausedRef = useRef<boolean>(false);
   const weatherRef = useRef<{ tempC: number; code: number; city: string } | null>(null);
   const weatherFetchedAtRef = useRef<number>(0);
+  const [weatherState, setWeatherState] = useState<{ tempC: number; code: number; city: string } | null>(null);
+  const [nowTick, setNowTick] = useState<number>(() => Date.now());
+
+  // Tick toutes les 30s pour rafraîchir l'horloge + fetch météo au montage et toutes les 30 min
+  useEffect(() => {
+    const t = window.setInterval(() => setNowTick(Date.now()), 30 * 1000);
+    return () => window.clearInterval(t);
+  }, []);
 
   useEffect(() => { langRef.current = lang; }, [lang]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
