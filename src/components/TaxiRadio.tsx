@@ -59,6 +59,8 @@ export default function TaxiRadio() {
   const ambientIdxRef = useRef<number>(0);
   const tickerTimerRef = useRef<number | null>(null);
   const ttsUnlockedRef = useRef<boolean>(false);
+  const djTimerRef = useRef<number | null>(null);
+  const djRestoreRef = useRef<number | null>(null);
 
   useEffect(() => { langRef.current = lang; }, [lang]);
 
