@@ -143,9 +143,39 @@ export function shouldStopAhead(
       return false;
     }
   }
+  // Accidents bloquants : stoppe sur 80 px en amont
+  for (const a of accidents) {
+    if (a.pathIdx !== pathIdx) continue;
+    const ahead = forward ? a.s - s : s - a.s;
+    if (ahead > 0 && ahead < ACCIDENT_STOP_RADIUS) return true;
+  }
   return false;
 }
 
 export function nowSeconds(): number {
   return performance.now() / 1000;
 }
+
+// ====== Accidents bloquants (collisions) ======
+export type AccidentZone = {
+  id: number;
+  pathIdx: number;
+  s: number;        // position le long du path
+  x: number;
+  y: number;
+  kind: "vehicle" | "pedestrian";
+};
+const accidents: AccidentZone[] = [];
+const ACCIDENT_STOP_RADIUS = 85;
+
+export function registerAccident(a: AccidentZone) {
+  if (!accidents.find(x => x.id === a.id)) accidents.push(a);
+}
+export function clearAccident(id: number) {
+  const i = accidents.findIndex(a => a.id === id);
+  if (i >= 0) accidents.splice(i, 1);
+}
+export function getAccidents(): AccidentZone[] {
+  return accidents;
+}
+
