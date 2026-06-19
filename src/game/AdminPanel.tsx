@@ -4,13 +4,20 @@ import { useAdminConfig, setAdmin, resetAdmin, type AdminConfig } from "./adminC
 import { useVersionCheck, formatBuildDate } from "@/lib/version-check";
 import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey, listCustomVehicles, addCustomVehicle, removeCustomVehicle, type CustomVehicle, type CustomVehicleCategory, VEHICLE_CATEGORY_LABELS } from "./gameAssets";
 
-// SHA-256 du mot de passe admin. Modifie ce hash pour changer le mot de passe.
-const ADMIN_PASS_HASH = "7d473072673d5b86575304cb2a23b92a51e0cde043856919249b3df582a8625d";
+// SHA-256 du mot de passe admin par défaut. Peut être remplacé via localStorage (PWD_HASH_KEY).
+const ADMIN_PASS_HASH_DEFAULT = "7d473072673d5b86575304cb2a23b92a51e0cde043856919249b3df582a8625d";
 const UNLOCK_KEY = "tt-admin-unlocked";
+const PWD_HASH_KEY = "tt-admin-pwd-hash";
+const RESET_PHRASE = "RESET";
 
 async function sha256(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function getCurrentHash(): string {
+  try { return localStorage.getItem(PWD_HASH_KEY) || ADMIN_PASS_HASH_DEFAULT; }
+  catch { return ADMIN_PASS_HASH_DEFAULT; }
 }
 
 /* Floating gear button + slide-in admin panel. */
