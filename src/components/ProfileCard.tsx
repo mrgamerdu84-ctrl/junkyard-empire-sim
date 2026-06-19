@@ -31,6 +31,29 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
+  // Suppression de compte
+  const deleteAccountFn = useServerFn(deleteOwnAccount);
+  const [showDelete, setShowDelete] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const [deleteErr, setDeleteErr] = useState<string | null>(null);
+
+  const handleDeleteAccount = async () => {
+    setDeleteErr(null);
+    setDeleting(true);
+    try {
+      await deleteAccountFn({});
+      try { await supabase.auth.signOut(); } catch {}
+      try { localStorage.removeItem("taxi-tycoon-v4"); } catch {}
+      window.location.href = "/";
+    } catch (e: any) {
+      setDeleteErr(e?.message ?? "Erreur lors de la suppression");
+      setDeleting(false);
+    }
+  };
+
+
+
   // re-sync si useAuth charge après le mount
   useEffect(() => { setPseudoInput(pseudo); }, [pseudo]);
   useEffect(() => { setDriverNameInput(driverName); }, [driverName]);
