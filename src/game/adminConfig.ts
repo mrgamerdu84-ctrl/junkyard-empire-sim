@@ -56,11 +56,12 @@ export const DEFAULT_ADMIN: AdminConfig = {
   maxActiveTaxis: 6,
   taxiSpawnCooldown: 1.5,
 
-  // QG ancré dans le décor du haut, juste au nord du rond-point.
+  // QG compact ancré en bas-gauche (parking + petit bâtiment).
+  // Grossit visuellement via les upgrades (capLvl/revLvl/prodLvl).
   hqUseFreePos: true,
-  hqX: 960,
-  hqY: 195,
-  hqScale: 1.45,
+  hqX: 230,
+  hqY: 900,
+  hqScale: 0.75,
   hqRotation: 0,
 
   fuelConsumption: 0.6,
@@ -70,8 +71,8 @@ export const DEFAULT_ADMIN: AdminConfig = {
   rivalEnabled: true,
   rivalHQX: 1650,
   rivalHQY: 220,
-  rivalTaxiCount: 2,
-  rivalReactionTime: 5,
+  rivalTaxiCount: 3,
+  rivalReactionTime: 4,
   rivalSpeedMult: 1,
 
   policeCarCount: 2,
