@@ -124,7 +124,7 @@ export default function TaxiRadio() {
   useEffect(() => {
     fetchWeather();
     const t = window.setInterval(() => fetchWeather(), 30 * 60 * 1000);
-    return () => window.setInterval(t);
+    return () => window.clearInterval(t);
   }, []);
 
   useEffect(() => { langRef.current = lang; }, [lang]);
@@ -454,4 +454,4 @@ export default function TaxiRadio() {
             </div>
             <button
               onClick={() => setPaused(!paused)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow fl
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow 
