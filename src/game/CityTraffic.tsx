@@ -68,51 +68,12 @@ type CarSpec = {
 // - Les `delay` sont calculés pour répartir les phases (k / N) le long du path
 //   => aucune grappe au démarrage, aucun bouchon artificiel.
 // - Les camions / vans roulent un poil plus lentement (gabarit lourd).
-const CARS: CarSpec[] = [
-  // Path 0 — sens normal
-  { kind: "sedan", color: "#d83a2a", accent: "#7c1c10", duration: 42, delay:   0, pathIdx: 0, scale: 0.64, variant: "red" },
-  { kind: "sedan", color: "#e8edf2", accent: "#8a8e94", duration: 38, delay:  -8, pathIdx: 0, scale: 0.62 },
-  { kind: "van",   color: "#2f7a4a", accent: "#163b22", duration: 46, delay: -18, pathIdx: 0, scale: 0.7 },
-  { kind: "hatch", color: "#facc15", accent: "#7a5a08", duration: 40, delay: -38, pathIdx: 0, scale: 0.58, variant: "red" },
-  // Path 0 — même sens que les taxis
-  { kind: "sedan", color: "#2b6ed8", accent: "#143f7c", duration: 40, delay:   0, pathIdx: 0, scale: 0.65 },
-  { kind: "van",   color: "#ffffff", accent: "#8a8e94", duration: 44, delay: -22, pathIdx: 0, scale: 0.7 },
-  { kind: "hatch", color: "#7c3aed", accent: "#3b1d72", duration: 41, delay: -32, pathIdx: 0, scale: 0.58, variant: "red" },
-  // Path 1 — voie courte
-  { kind: "hatch", color: "#12151a", accent: "#050607", duration: 19, delay:  -2, pathIdx: 1, scale: 0.58 },
-  { kind: "sedan", color: "#3a8a48", accent: "#1c4a22", duration: 22, delay:  -8, pathIdx: 1, scale: 0.6, variant: "red" },
-  { kind: "van",   color: "#e11d48", accent: "#6b0f25", duration: 24, delay: -14, pathIdx: 1, scale: 0.66 },
-  // Path 2 — même sens que les taxis
-  { kind: "van",   color: "#d97a2a", accent: "#7a3a10", duration: 44, delay:   0, pathIdx: 2, scale: 0.68 },
-  { kind: "sedan", color: "#b81c4a", accent: "#5c0a20", duration: 40, delay:  -9, pathIdx: 2, scale: 0.62, variant: "red" },
-  { kind: "hatch", color: "#4ed6c5", accent: "#187266", duration: 46, delay: -30, pathIdx: 2, scale: 0.58 },
-  { kind: "sedan", color: "#f5f5f5", accent: "#7a7a7a", duration: 42, delay: -38, pathIdx: 2, scale: 0.62 },
-  // Path 2 — complément même sens
-  { kind: "hatch", color: "#1a3a6a", accent: "#0a1c40", duration: 42, delay:   0, pathIdx: 2, scale: 0.6 },
-  { kind: "van",   color: "#16a34a", accent: "#0a4a22", duration: 48, delay: -26, pathIdx: 2, scale: 0.7 },
-  { kind: "sedan", color: "#ea580c", accent: "#7a2a06", duration: 44, delay: -36, pathIdx: 2, scale: 0.62, variant: "red" },
-  // Trafic supplémentaire
-  { kind: "sedan", color: "#7c3aed", accent: "#3b1d72", duration: 46, delay: -50, pathIdx: 0, scale: 0.62 },
-  { kind: "hatch", color: "#22c55e", accent: "#0f5132", duration: 24, delay: -10, pathIdx: 1, scale: 0.6, variant: "red" },
-  { kind: "sedan", color: "#0ea5e9", accent: "#075985", duration: 48, delay: -48, pathIdx: 2, scale: 0.62 },
-  // Trafic dense supplémentaire (path 0)
-  { kind: "hatch", color: "#f43f5e", accent: "#7a1024", duration: 39, delay: -12, pathIdx: 0, scale: 0.58, variant: "red" },
-  { kind: "van",   color: "#0891b2", accent: "#053848", duration: 47, delay: -28, pathIdx: 0, scale: 0.68 },
-  { kind: "sedan", color: "#a3e635", accent: "#3f6212", duration: 41, delay: -44, pathIdx: 0, scale: 0.62 },
-  { kind: "truck", color: "#f59e0b", accent: "#78350f", duration: 52, delay: -16, pathIdx: 0, scale: 0.72 },
-  // Trafic dense supplémentaire (path 2)
-  { kind: "hatch", color: "#ec4899", accent: "#831843", duration: 43, delay: -18, pathIdx: 2, scale: 0.58 },
-  { kind: "sedan", color: "#64748b", accent: "#1e293b", duration: 40, delay: -34, pathIdx: 2, scale: 0.62, variant: "red" },
-  { kind: "van",   color: "#84cc16", accent: "#3f6212", duration: 46, delay: -52, pathIdx: 2, scale: 0.68 },
-  { kind: "truck", color: "#9333ea", accent: "#4c1d95", duration: 54, delay: -6,  pathIdx: 2, scale: 0.72 },
-  // Path 1 — voie courte (renforcée)
-  { kind: "sedan", color: "#06b6d4", accent: "#0e7490", duration: 21, delay: -16, pathIdx: 1, scale: 0.6 },
-  { kind: "hatch", color: "#fbbf24", accent: "#78350f", duration: 23, delay: -4,  pathIdx: 1, scale: 0.58, variant: "red" },
-  // Véhicules spéciaux (police, transport de fonds, GIGN)
-  { kind: "police", color: "#fff", accent: "#0b1d3a", duration: 36, delay: -22, pathIdx: 0, scale: 0.6 },
-  { kind: "money",  color: "#3a4756", accent: "#2a3340", duration: 50, delay: -40, pathIdx: 2, scale: 0.7 },
-  { kind: "gign",   color: "#1a1d22", accent: "#000000", duration: 48, delay: -60, pathIdx: 0, scale: 0.72 },
-];
+// Liste vidée à la demande du joueur : aucun véhicule civil ni véhicule
+// spécial (police, transport de fonds, GIGN) n'est généré par défaut.
+// Pour réinjecter du trafic, ajouter ici des entrées { kind, color, accent,
+// duration, delay, pathIdx, scale, variant? }.
+const CARS: CarSpec[] = [];
+
 
 
 // Anciennes voitures basées sur des photos remplacées par des SVG vectoriels
