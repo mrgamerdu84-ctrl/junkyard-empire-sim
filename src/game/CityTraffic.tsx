@@ -699,6 +699,28 @@ export default function CityTraffic() {
 
       {/* Plus aucun piéton ne marche/traverse sur la chaussée — exigence joueur. */}
 
+      {/* 📸 Radars de vitesse */}
+      {radars.map((r, i) => (
+        <g key={`radar-${i}`} transform={`translate(${r.x},${r.y}) scale(1.4)`} pointerEvents="none">
+          <RadarSvg />
+        </g>
+      ))}
+
+      {/* Flash radar (200ms) */}
+      {flashes.map((f) => (
+        <circle key={f.id} cx={f.x} cy={f.y} r={70} fill="#ffffff" opacity={0.85} pointerEvents="none" />
+      ))}
+
+      {/* HUD amendes radar */}
+      {totalFines > 0 && (
+        <g transform="translate(960, 40)" pointerEvents="none">
+          <rect x={-100} y={-22} width={200} height={36} rx={8} fill="#0b1018" opacity="0.82" stroke="#facc15" strokeWidth="1.5" />
+          <text x={0} y={4} textAnchor="middle" fontSize="18" fontWeight="bold" fill="#facc15">
+            📸 Amendes : €{totalFines.toLocaleString("fr-FR")}
+          </text>
+        </g>
+      )}
+
       <rect width="1920" height="1080" fill="#0a1530" opacity={Math.max(0, (night - 0.15)) * 0.55} pointerEvents="none" />
     </svg>
   );
