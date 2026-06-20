@@ -1037,6 +1037,59 @@ function CustomVehiclesSection() {
         <span>🛸 Image déjà en <strong style={{ color: "#f5c542" }}>vue du ciel</strong> (ne pas tourner)</span>
       </label>
 
+      {/* === Zone d'import en LOT === */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const files = Array.from(e.dataTransfer.files || []);
+          if (files.length) void importBatch(files);
+        }}
+        onClick={() => batchRef.current?.click()}
+        style={{
+          marginBottom: 8,
+          padding: 14,
+          background: dragOver ? "#1a2030" : "#14171c",
+          border: `2px dashed ${dragOver ? "#22c55e" : "#f5c542"}`,
+          borderRadius: 8,
+          cursor: batchBusy ? "wait" : "pointer",
+          textAlign: "center",
+          color: "#e8edf2",
+          opacity: batchBusy ? 0.7 : 1,
+          transition: "background 0.15s, border-color 0.15s",
+        }}
+      >
+        <div style={{ fontSize: 20, marginBottom: 4 }}>📦⬇️</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#f5c542", marginBottom: 2 }}>
+          Importer plusieurs voitures d'un coup
+        </div>
+        <div style={{ fontSize: 10, color: "#8a8e94", lineHeight: 1.4 }}>
+          Glisse-dépose ou clique — rotation auto, catégorie : <strong style={{ color: "#e8edf2" }}>{VEHICLE_CATEGORY_LABELS[category]}</strong>
+        </div>
+        {batchProgress && (
+          <div style={{ fontSize: 11, color: "#22c55e", marginTop: 6, fontWeight: 700 }}>
+            {batchBusy ? `Import… ${batchProgress.done}/${batchProgress.total}` : `✓ ${batchProgress.done} véhicule(s) ajouté(s)`}
+          </div>
+        )}
+        <input
+          ref={batchRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length) void importBatch(files);
+          }}
+        />
+      </div>
+
+      <div style={{ fontSize: 10, color: "#6a6e74", textAlign: "center", marginBottom: 6 }}>
+        — ou ajoute une voiture une par une (avec aperçu et rotation manuelle) —
+      </div>
+
       {!pendingSrc ? (
         <div style={{ display: "flex", gap: 6 }}>
           <label style={{ flex: 1, textAlign: "center", padding: "8px", background: "#14171c", border: "1px solid #f5c542", borderRadius: 4, cursor: "pointer", color: "#f5c542", fontSize: 11, fontWeight: 700 }}>
