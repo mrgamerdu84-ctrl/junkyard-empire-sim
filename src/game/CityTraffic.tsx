@@ -64,7 +64,7 @@ type CarSpec = {
 // Trafic civil par défaut VIDE — toutes les voitures qui roulent sont
 // celles ajoutées par le joueur via le panel admin (📦⬇️ Import en lot).
 // Voir buildCarsFromCustom() dans le composant ci-dessous.
-const CARS: CarSpec[] = [];
+
 
 
 
