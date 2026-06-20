@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
-import { CIVIL_CAR_URLS, PEDESTRIAN_PHOTO_URLS } from "./gameAssets";
+import { PEDESTRIAN_PHOTO_URLS } from "./gameAssets";
+import { VehicleSvg, RadarSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
 import {
   initTrafficLights,
   getTrafficLights,
@@ -10,15 +11,19 @@ import {
   type TrafficLight,
 } from "./trafficLights";
 
-// Skins centralisés — pour remplacer un véhicule civil, édite
-// `src/game/gameAssets.ts` (clés "civil.car.*"). Aucun import direct ici.
-const CHARGER_IMAGES = CIVIL_CAR_URLS;
 const PED_PHOTO_IMAGES = PEDESTRIAN_PHOTO_URLS;
 
 // Paths "village" (haut de la map) : aucune voiture/piéton civil
 // ni course taxi ne doit s'y générer. On garde l'index pour ne pas casser
 // les autres références numériques.
 export const VILLAGE_PATHS = new Set<number>([1]);
+
+// === SÉPARATION DES VOIES (code de la route) ===
+// Demi-largeur d'une route ≈ 23 px. On place chaque véhicule à LANE_HALF px
+// du centre, à DROITE de son sens de marche. Les véhicules en sens inverse
+// se retrouvent donc de l'autre côté du centre → voies séparées strictes,
+// plus aucun contre-sens visuel.
+const LANE_HALF = 11;
 
 /* eslint-disable prettier/prettier */
 
@@ -39,7 +44,7 @@ export const ROADS = [
   "M 1898.0 1078.0 C 1896.3 1077.6 1892.9 1076.8 1887.8 1075.5 C 1882.6 1074.2 1874.1 1072.2 1867.2 1070.5 C 1860.4 1068.8 1853.6 1067.2 1846.8 1065.5 C 1839.9 1063.8 1833.1 1062.1 1826.2 1060.5 C 1819.4 1058.9 1812.5 1057.3 1805.5 1055.8 C 1798.5 1054.2 1791.4 1052.9 1784.5 1051.2 C 1777.6 1049.6 1770.8 1047.8 1764.0 1045.8 C 1757.2 1043.8 1750.5 1041.8 1744.0 1039.2 C 1737.5 1036.7 1731.2 1033.8 1725.0 1030.5 C 1718.8 1027.2 1713.0 1023.2 1707.0 1019.5 C 1701.0 1015.8 1695.0 1012.0 1689.0 1008.2 C 1683.0 1004.5 1677.0 1000.6 1671.0 996.8 C 1665.0 992.9 1659.0 989.1 1653.0 985.2 C 1647.0 981.4 1641.0 977.5 1635.0 973.8 C 1629.0 970.0 1623.0 966.2 1617.0 962.5 C 1611.0 958.8 1605.0 955.2 1599.0 951.5 C 1593.0 947.8 1587.0 944.2 1581.0 940.5 C 1575.0 936.8 1569.0 933.2 1563.0 929.5 C 1557.0 925.8 1550.9 922.2 1544.8 918.5 C 1538.6 914.8 1532.3 911.2 1526.2 907.5 C 1520.2 903.8 1514.2 900.2 1508.2 896.5 C 1502.3 892.8 1496.6 889.2 1490.8 885.5 C 1484.9 881.8 1479.0 878.0 1473.0 874.2 C 1467.0 870.5 1461.0 866.5 1455.0 862.8 C 1449.0 859.0 1442.9 855.2 1436.8 851.5 C 1430.6 847.8 1424.4 844.2 1418.2 840.5 C 1412.1 836.8 1406.0 833.2 1400.0 829.5 C 1394.0 825.8 1388.0 822.2 1382.0 818.5 C 1376.0 814.8 1369.9 811.2 1363.8 807.5 C 1357.6 803.8 1351.3 800.1 1345.2 796.5 C 1339.2 792.9 1333.2 789.3 1327.2 785.8 C 1321.3 782.2 1315.5 778.9 1309.8 775.2 C 1304.0 771.6 1298.5 767.8 1293.0 763.8 C 1287.5 759.8 1282.6 755.1 1277.0 751.2 C 1271.4 747.4 1265.6 743.9 1259.5 740.8 C 1253.4 737.6 1246.8 735.3 1240.5 732.2 C 1234.2 729.2 1228.1 725.8 1222.0 722.2 C 1215.9 718.7 1210.0 714.5 1204.0 710.8 C 1198.0 707.0 1192.0 703.3 1186.0 699.8 C 1180.0 696.2 1174.1 692.5 1168.0 689.2 C 1161.9 686.0 1155.6 683.1 1149.2 680.5 C 1142.9 677.9 1136.4 675.2 1129.8 673.5 C 1123.1 671.8 1116.4 670.8 1109.5 670.5 C 1102.6 670.2 1095.2 672.3 1088.5 671.5 C 1081.8 670.7 1075.5 668.8 1069.5 665.8 C 1063.5 662.7 1058.2 657.2 1052.5 653.2 C 1046.8 649.3 1040.9 645.5 1035.0 642.0 C 1029.1 638.5 1023.3 634.4 1017.0 632.0 C 1010.7 629.6 1004.1 628.2 997.2 627.8 C 990.4 627.3 983.0 629.0 975.8 629.2 C 968.5 629.5 961.3 629.5 954.0 629.2 C 946.7 629.0 939.3 628.3 932.0 627.8 C 924.7 627.2 917.3 626.6 910.0 626.0 C 902.7 625.4 895.3 624.7 888.0 624.0 C 880.7 623.3 873.5 622.7 866.2 622.0 C 859.0 621.3 851.6 619.4 844.8 620.0 C 837.9 620.6 831.4 622.4 825.2 625.5 C 819.1 628.6 813.6 634.7 807.8 638.5 C 801.9 642.3 796.0 645.5 790.0 648.2 C 784.0 651.0 778.1 652.4 772.0 654.8 C 765.9 657.1 759.8 659.6 753.5 662.2 C 747.2 664.9 740.8 667.8 734.5 670.8 C 728.2 673.7 721.8 676.7 715.5 679.8 C 709.2 682.8 702.8 686.1 696.5 689.2 C 690.2 692.4 683.8 695.6 677.5 698.8 C 671.2 701.9 664.8 705.0 658.5 708.2 C 652.2 711.5 646.0 714.7 639.8 718.0 C 633.5 721.3 627.4 724.7 621.2 728.0 C 615.1 731.3 608.9 734.7 602.8 738.0 C 596.6 741.3 590.5 744.7 584.2 748.0 C 578.0 751.3 571.8 754.5 565.5 757.8 C 559.2 761.0 553.1 764.7 546.5 767.2 C 539.9 769.8 533.1 771.7 526.0 773.0 C 518.9 774.3 510.9 773.5 504.0 775.0 C 497.1 776.5 490.7 779.0 484.8 782.2 C 478.8 785.5 473.8 790.8 468.2 794.8 C 462.7 798.8 457.0 802.6 451.2 806.2 C 445.5 809.9 439.6 813.2 433.8 816.8 C 427.9 820.2 422.0 823.8 416.0 827.2 C 410.0 830.8 404.0 834.3 398.0 837.8 C 392.0 841.2 385.9 844.6 379.8 848.0 C 373.6 851.4 367.5 854.7 361.2 858.0 C 355.0 861.3 348.8 864.7 342.5 868.0 C 336.2 871.3 329.8 874.7 323.5 878.0 C 317.2 881.3 310.8 884.5 304.5 887.8 C 298.2 891.0 291.9 894.3 285.5 897.2 C 279.1 900.2 272.6 903.0 266.0 905.5 C 259.4 908.0 252.4 909.7 246.0 912.5 C 239.6 915.3 233.5 918.5 227.8 922.2 C 222.0 926.0 217.0 930.8 211.2 934.8 C 205.5 938.7 199.6 942.3 193.5 945.8 C 187.4 949.2 180.8 952.0 174.5 955.2 C 168.2 958.5 162.0 961.7 155.8 965.0 C 149.5 968.3 143.5 971.7 137.2 975.0 C 131.0 978.3 124.8 981.5 118.5 984.8 C 112.2 988.0 105.8 991.0 99.5 994.2 C 93.2 997.5 87.0 1000.8 80.8 1004.2 C 74.5 1007.7 68.3 1011.2 62.2 1014.8 C 56.2 1018.3 50.2 1022.0 44.2 1025.8 C 38.3 1029.5 31.8 1033.0 26.8 1037.2 C 21.8 1041.5 17.6 1046.0 14.2 1051.0 C 10.9 1056.0 8.6 1063.0 6.8 1067.0 C 4.9 1071.0 3.6 1073.7 3.0 1075.0",
 ];
 
-type VehicleKind = "sedan" | "van" | "truck" | "hatch";
+type VehicleKind = VehicleSvgKind;
 type VehicleVariant = "black" | "red";
 
 type CarSpec = {
@@ -103,110 +108,24 @@ const CARS: CarSpec[] = [
   // Path 1 — voie courte (renforcée)
   { kind: "sedan", color: "#06b6d4", accent: "#0e7490", duration: 21, delay: -16, pathIdx: 1, scale: 0.6 },
   { kind: "hatch", color: "#fbbf24", accent: "#78350f", duration: 23, delay: -4,  pathIdx: 1, scale: 0.58, variant: "red" },
+  // Véhicules spéciaux (police, transport de fonds, GIGN)
+  { kind: "police", color: "#fff", accent: "#0b1d3a", duration: 36, delay: -22, pathIdx: 0, scale: 0.6 },
+  { kind: "money",  color: "#3a4756", accent: "#2a3340", duration: 50, delay: -40, pathIdx: 2, scale: 0.7 },
+  { kind: "gign",   color: "#1a1d22", accent: "#000000", duration: 48, delay: -60, pathIdx: 0, scale: 0.72 },
 ];
 
 
-function CarSVG({ color, accent, scale = 1 }: { color: string; accent: string; scale?: number }) {
-  return (
-    <g transform={`scale(${scale})`}>
-      <ellipse cx="0" cy="8" rx="31" ry="14" fill="rgba(0,0,0,0.42)" />
-      <path d="M -30 -10 C -24 -18 18 -18 28 -8 L 34 0 L 27 10 C 12 18 -20 17 -31 9 L -36 0 Z" fill={accent} opacity="0.95" />
-      <path d="M -28 -12 C -18 -19 16 -18 28 -8 L 33 0 L 26 9 C 11 15 -18 15 -30 8 L -35 0 Z" fill={color} />
-      <path d="M -10 -12 L 13 -11 C 19 -8 22 -4 23 0 C 20 5 16 8 10 10 L -12 10 C -18 7 -20 4 -21 0 C -20 -5 -17 -9 -10 -12 Z" fill="#101b2b" opacity="0.94" />
-      <path d="M 12 -10 C 20 -8 25 -4 27 0 C 24 3 20 6 12 8 L 8 2 L 8 -6 Z" fill="#d8f2ff" opacity="0.34" />
-      <path d="M -13 -10 C -20 -8 -24 -4 -25 0 C -23 4 -19 7 -13 8 L -9 3 L -9 -6 Z" fill="#d8f2ff" opacity="0.22" />
-      <rect x="10" y="-18" width="12" height="5" rx="2" fill="#08090b" />
-      <rect x="10" y="13" width="12" height="5" rx="2" fill="#08090b" />
-      <rect x="-24" y="-17" width="12" height="5" rx="2" fill="#08090b" />
-      <rect x="-24" y="12" width="12" height="5" rx="2" fill="#08090b" />
-      <circle cx="33" cy="-5" r="2.2" fill="#fff7c0" />
-      <circle cx="33" cy="5" r="2.2" fill="#fff7c0" />
-      <circle cx="-32" cy="-5" r="2" fill="#ff3028" />
-      <circle cx="-32" cy="5" r="2" fill="#ff3028" />
-      <path d="M -3 -9 C 7 -10 17 -7 23 -2" stroke="#fff" strokeWidth="2" strokeLinecap="round" opacity="0.22" />
-    </g>
-  );
-}
-
-function VanSVG({ color, accent, scale = 1 }: { color: string; accent: string; scale?: number }) {
-  return (
-    <g transform={`scale(${scale})`}>
-      <ellipse cx="0" cy="9" rx="34" ry="14" fill="rgba(0,0,0,0.42)" />
-      {/* caisse arrière haute */}
-      <path d="M -32 -14 L 10 -14 L 14 -12 L 14 11 L -32 11 Z" fill={accent} opacity="0.95" />
-      <path d="M -31 -13 L 9 -13 L 13 -11 L 13 10 L -31 10 Z" fill={color} />
-      {/* cabine avant */}
-      <path d="M 10 -11 L 22 -8 L 28 0 L 22 9 L 10 10 Z" fill={accent} opacity="0.95" />
-      <path d="M 11 -10 L 21 -7 L 26 0 L 21 8 L 11 9 Z" fill={color} />
-      {/* pare-brise cabine */}
-      <path d="M 13 -7 L 20 -5 L 24 0 L 20 5 L 13 7 Z" fill="#0b1320" opacity="0.9" />
-      {/* portes arrière */}
-      <line x1="-10" y1="-13" x2="-10" y2="10" stroke="#0b0d10" strokeWidth="0.8" opacity="0.6" />
-      <line x1="-22" y1="-13" x2="-22" y2="10" stroke="#0b0d10" strokeWidth="0.8" opacity="0.4" />
-      {/* logo livraison */}
-      <rect x="-26" y="-6" width="14" height="9" rx="1" fill="#ffffff" opacity="0.85" />
-      <rect x="-25" y="-4" width="12" height="2" fill={accent} opacity="0.6" />
-      <rect x="-25" y="-1" width="9" height="1.4" fill={accent} opacity="0.4" />
-      {/* roues */}
-      <rect x="6" y="-17" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="6" y="12" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-26" y="-17" width="11" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-26" y="12" width="11" height="4.5" rx="1.5" fill="#08090b" />
-      {/* phares */}
-      <circle cx="27" cy="-4" r="1.8" fill="#fff7c0" />
-      <circle cx="27" cy="4" r="1.8" fill="#fff7c0" />
-    </g>
-  );
-}
-
-function TruckSVG({ color, accent, scale = 1 }: { color: string; accent: string; scale?: number }) {
-  return (
-    <g transform={`scale(${scale})`}>
-      <ellipse cx="0" cy="10" rx="40" ry="15" fill="rgba(0,0,0,0.45)" />
-      {/* remorque */}
-      <rect x="-38" y="-14" width="36" height="26" rx="1.5" fill={accent} opacity="0.95" />
-      <rect x="-37" y="-13" width="34" height="24" rx="1.2" fill={color} />
-      <line x1="-26" y1="-13" x2="-26" y2="11" stroke="#0b0d10" strokeWidth="0.8" opacity="0.45" />
-      <line x1="-15" y1="-13" x2="-15" y2="11" stroke="#0b0d10" strokeWidth="0.8" opacity="0.45" />
-      {/* attelage */}
-      <rect x="-2" y="-2" width="4" height="4" fill="#1a1d22" />
-      {/* cabine tracteur */}
-      <path d="M 2 -11 L 18 -11 L 26 -7 L 28 0 L 26 7 L 18 11 L 2 11 Z" fill={accent} opacity="0.95" />
-      <path d="M 3 -10 L 17 -10 L 25 -6 L 27 0 L 25 6 L 17 10 L 3 10 Z" fill={color} />
-      <path d="M 14 -8 L 22 -5 L 24 0 L 22 5 L 14 8 Z" fill="#0b1320" opacity="0.9" />
-      {/* roues */}
-      <rect x="-35" y="-18" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-35" y="13" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-20" y="-18" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-20" y="13" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="10" y="-15" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="10" y="11" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      {/* phares */}
-      <circle cx="27" cy="-4" r="2" fill="#fff7c0" />
-      <circle cx="27" cy="4" r="2" fill="#fff7c0" />
-    </g>
-  );
-}
-
-function HatchSVG({ color, accent, scale = 1 }: { color: string; accent: string; scale?: number }) {
-  return (
-    <g transform={`scale(${scale})`}>
-      <ellipse cx="0" cy="7" rx="26" ry="12" fill="rgba(0,0,0,0.4)" />
-      <path d="M -24 -9 C -18 -15 14 -15 22 -6 L 26 0 L 22 8 C 10 14 -16 14 -25 8 L -29 0 Z" fill={accent} opacity="0.95" />
-      <path d="M -23 -10 C -16 -15 13 -14 22 -6 L 25 0 L 21 7 C 9 12 -15 12 -24 7 L -28 0 Z" fill={color} />
-      <path d="M -8 -11 L 12 -10 C 16 -7 18 -3 18 0 C 16 4 12 7 8 8 L -10 8 C -14 6 -16 3 -17 0 C -16 -4 -13 -8 -8 -11 Z" fill="#0d1626" opacity="0.94" />
-      <rect x="8" y="-15" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="8" y="11" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-20" y="-14" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <rect x="-20" y="10" width="10" height="4.5" rx="1.5" fill="#08090b" />
-      <circle cx="25" cy="-4" r="1.8" fill="#fff7c0" />
-      <circle cx="25" cy="4" r="1.8" fill="#fff7c0" />
-    </g>
-  );
-}
+// Anciennes voitures basées sur des photos remplacées par des SVG vectoriels
+// vus du dessus (avant pointant vers le haut). Voir src/game/vehicles/VehicleSvgs.tsx.
+// La taille effective des véhicules civils en viewBox 1920×1080 :
+//   spec.scale (~0.6) × CIVIL_SCALE = ~36px (= taille du taxi joueur).
+const CIVIL_SCALE = 1.5;
 
 function Vehicle({
-  photoIdx = 0,
+  kind,
+  color,
+  accent,
+  scale = 1,
 }: {
   kind: VehicleKind;
   color: string;
@@ -215,33 +134,10 @@ function Vehicle({
   variant?: VehicleVariant;
   photoIdx?: number;
 }) {
-  // Tous les uploads admin sont sauvegardés en vue du ciel, avant vers ↑.
-  // Le parent tourne sur l'angle de la route (+x), donc +90° = roule droit.
-  const W = 36; // VEHICLE_SIZE — aligné sur la taille du taxi joueur
-  const H = 36;
-  const href = CHARGER_IMAGES[photoIdx % CHARGER_IMAGES.length];
-  return (
-    <g>
-      <ellipse cx="0" cy="4" rx="15" ry="6" fill="rgba(0,0,0,0.42)" />
-      <g transform="rotate(90)">
-        <image
-          href={href}
-          x={-W / 2}
-          y={-H / 2}
-          width={W}
-          height={H}
-          preserveAspectRatio="xMidYMid meet"
-        />
-      </g>
-    </g>
-  );
+  return <VehicleSvg kind={kind} color={color} accent={accent} scale={scale * CIVIL_SCALE} />;
 }
 
 
-
-
-// Composants SVG conservés pour référence/legacy (non utilisés depuis l'image PNG).
-void CarSVG; void VanSVG; void TruckSVG; void HatchSVG;
 
 
 
@@ -471,6 +367,20 @@ export default function CityTraffic() {
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const [lights, setLights] = useState<TrafficLight[]>([]);
 
+  // 📸 Radars de vitesse — positions sur les paths (fraction 0..1).
+  // Chaque radar mémorise sa position xy une fois les paths mesurés.
+  const RADAR_SPECS = [
+    { pathIdx: 0, sFrac: 0.18 },
+    { pathIdx: 0, sFrac: 0.55 },
+    { pathIdx: 0, sFrac: 0.82 },
+    { pathIdx: 2, sFrac: 0.28 },
+    { pathIdx: 2, sFrac: 0.66 },
+  ];
+  const [radars, setRadars] = useState<{ x: number; y: number }[]>([]);
+  const [flashes, setFlashes] = useState<{ id: number; x: number; y: number; t: number }[]>([]);
+  const [totalFines, setTotalFines] = useState(0);
+  const flashIdRef = useRef(0);
+
   // Cycle jour/nuit 300s (5 minutes). Démarre en plein jour.
   useEffect(() => {
     let raf = 0;
@@ -544,6 +454,39 @@ export default function CityTraffic() {
       return m;
     };
     let lanes = rebuildLanes();
+
+    // 📸 Init radars : calcul des positions xy + abscisses sur le path
+    const radarPoints = RADAR_SPECS.map((r) => {
+      const path = pathRefs.current[r.pathIdx];
+      if (!path) return null;
+      const sAbs = r.sFrac * lens[r.pathIdx];
+      const pt = path.getPointAtLength(sAbs);
+      return { ...r, sAbs, x: pt.x, y: pt.y, lastFlashAt: 0 };
+    }).filter((r): r is NonNullable<typeof r> => r !== null);
+    setRadars(radarPoints.map((r) => ({ x: r.x, y: r.y })));
+
+    const checkRadars = (st: CarState, prev: number) => {
+      // Une voiture franchit un radar si sa position s' a traversé radar.sAbs
+      // pendant ce frame. Le radar n'agit que sur le path correspondant.
+      const nowMs = performance.now();
+      for (const r of radarPoints) {
+        if (r.pathIdx !== st.spec.pathIdx) continue;
+        const crossed = prev < r.sAbs && st.s >= r.sAbs;
+        if (!crossed) continue;
+        // Vitesse au-dessus de 92% de baseSpeed → potentiellement en excès.
+        if (st.speed < st.baseSpeed * 0.92) continue;
+        // Cooldown 4s par radar pour éviter spam visuel
+        if (nowMs - r.lastFlashAt < 4000) continue;
+        // ~15% des passages déclenchent un flash
+        if (Math.random() > 0.15) continue;
+        r.lastFlashAt = nowMs;
+        const fine = 45 + Math.floor(Math.random() * 90); // 45-135€
+        const id = ++flashIdRef.current;
+        setFlashes((arr) => [...arr, { id, x: r.x, y: r.y, t: nowMs }]);
+        setTotalFines((v) => v + fine);
+        setTimeout(() => setFlashes((arr) => arr.filter((f) => f.id !== id)), 200);
+      }
+    };
 
     let last = performance.now();
     let raf = 0;
@@ -621,8 +564,18 @@ export default function CityTraffic() {
         const lenForward = st.spec.flip ? st.pathLen - st.s : st.s;
         const p = path.getPointAtLength(lenForward);
         const p2 = path.getPointAtLength(Math.min(st.pathLen, lenForward + (st.spec.flip ? -1 : 1)));
-        const ang = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
-        node.setAttribute("transform", `translate(${p.x.toFixed(2)},${p.y.toFixed(2)}) rotate(${ang.toFixed(2)})`);
+        const tdx = p2.x - p.x, tdy = p2.y - p.y;
+        const L = Math.hypot(tdx, tdy) || 1;
+        const ang = (Math.atan2(tdy, tdx) * 180) / Math.PI;
+        // 🚦 Séparation des voies : décalage perpendiculaire à DROITE du sens
+        // de marche. En coordonnées écran (y vers le bas), la "droite" du
+        // vecteur tangent (tdx, tdy) est (-tdy, tdx)/L.
+        const ox = (-tdy / L) * LANE_HALF;
+        const oy = (tdx / L) * LANE_HALF;
+        node.setAttribute("transform", `translate(${(p.x + ox).toFixed(2)},${(p.y + oy).toFixed(2)}) rotate(${ang.toFixed(2)})`);
+
+        // 📸 Radars : détection de passage + flash si vitesse > limite
+        checkRadars(st, prev);
       }
       if (needsRebuild) lanes = rebuildLanes();
 
@@ -745,6 +698,28 @@ export default function CityTraffic() {
       })}
 
       {/* Plus aucun piéton ne marche/traverse sur la chaussée — exigence joueur. */}
+
+      {/* 📸 Radars de vitesse */}
+      {radars.map((r, i) => (
+        <g key={`radar-${i}`} transform={`translate(${r.x},${r.y}) scale(1.4)`} pointerEvents="none">
+          <RadarSvg />
+        </g>
+      ))}
+
+      {/* Flash radar (200ms) */}
+      {flashes.map((f) => (
+        <circle key={f.id} cx={f.x} cy={f.y} r={70} fill="#ffffff" opacity={0.85} pointerEvents="none" />
+      ))}
+
+      {/* HUD amendes radar */}
+      {totalFines > 0 && (
+        <g transform="translate(960, 40)" pointerEvents="none">
+          <rect x={-100} y={-22} width={200} height={36} rx={8} fill="#0b1018" opacity="0.82" stroke="#facc15" strokeWidth="1.5" />
+          <text x={0} y={4} textAnchor="middle" fontSize="18" fontWeight="bold" fill="#facc15">
+            📸 Amendes : €{totalFines.toLocaleString("fr-FR")}
+          </text>
+        </g>
+      )}
 
       <rect width="1920" height="1080" fill="#0a1530" opacity={Math.max(0, (night - 0.15)) * 0.55} pointerEvents="none" />
     </svg>
