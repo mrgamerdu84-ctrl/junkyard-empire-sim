@@ -177,11 +177,27 @@ export function removeCustomVehicle(id: string) {
 // Toutes les catégories sauf "taxi" roulent dans la circulation civile
 const TRAFFIC_CATEGORIES: CustomVehicleCategory[] = ["civil", "police", "ambulance", "firetruck", "service"];
 
-const customTrafficUrls = listCustomVehicles()
-  .filter((v) => TRAFFIC_CATEGORIES.includes(v.category))
-  .map((v) => v.url);
+/** 🔧 DYNAMIC - Se met à jour chaque fois qu'on l'appelle */
+function getCustomTrafficUrls(): string[] {
+  return listCustomVehicles()
+    .filter((v) => TRAFFIC_CATEGORIES.includes(v.category))
+    .map((v) => v.url);
+}
 
-/** Liste ordonnée des skins de voitures civiles (auto + custom + défauts). */
+/** 🔧 DYNAMIC - Se met à jour via getCivilCarUrls() */
+export function getCivilCarUrls(): string[] {
+  const base = civilAutoUrls.length > 0
+    ? civilAutoUrls
+    : [
+        GAME_ASSETS["civil.car.1"],
+        GAME_ASSETS["civil.car.2"],
+        GAME_ASSETS["civil.car.3"],
+        GAME_ASSETS["civil.car.4"],
+      ];
+  return [...base, ...getCustomTrafficUrls()];
+}
+
+/** DEPRECATED - Utilisez getCivilCarUrls() à la place (dynamic) */
 export const CIVIL_CAR_URLS: string[] = (() => {
   const base = civilAutoUrls.length > 0
     ? civilAutoUrls
@@ -191,7 +207,7 @@ export const CIVIL_CAR_URLS: string[] = (() => {
         GAME_ASSETS["civil.car.3"],
         GAME_ASSETS["civil.car.4"],
       ];
-  return [...base, ...customTrafficUrls];
+  return [...base, ...getCustomTrafficUrls()];
 })();
 
 /** Liste ordonnée des skins piétons photo. */
