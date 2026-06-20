@@ -1,4 +1,4 @@
-Import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GAME_ASSETS } from "@/game/gameAssets";
 import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, type RadioNews } from "@/lib/radioNews";
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3.asset.json";
@@ -29,8 +29,6 @@ const STATIONS: Station[] = [
 const STORAGE_KEY = "mttw.taxiRadio";
 const LANG_KEY = "mttw.lang";
 const DJ_FIRST_DELAY_MS = 1200;
-// Référencé pour ne pas perdre l'utilitaire de duck/restore historique, mais
-// la nouvelle séquence radio enchaîne DJ→musique au lieu de jouer en parallèle.
 void undefined;
 
 function readPref(): string {
@@ -70,13 +68,10 @@ export default function TaxiRadio() {
   const weatherFetchedAtRef = useRef<number>(0);
   const [weatherState, setWeatherState] = useState<{ tempC: number; code: number; city: string } | null>(null);
   const [nowTick, setNowTick] = useState<number | null>(null);
-  // "Heure des infos" : à chaque xx:00, toutes les radios passent aux infos pendant 10 min
   const [newsHour, setNewsHour] = useState<boolean>(false);
   const newsHourRef = useRef<boolean>(false);
   useEffect(() => { newsHourRef.current = newsHour; }, [newsHour]);
-  // Bascule alignée précisément sur l'horloge murale réelle :
-  // tous les clients basculent au même moment (xx:00 → infos, xx:10 → musique),
-  // y compris après rechargement de la page ou changement d'onglet.
+
   useEffect(() => {
     const apply = () => {
       const active = new Date().getMinutes() < 10;
@@ -86,13 +81,10 @@ export default function TaxiRadio() {
     const scheduleAligned = () => {
       apply();
       const now = new Date();
-      // ms restants jusqu'à la prochaine minute pile + petite marge
-      const msToNextMinute =
-        60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
+      const msToNextMinute = 60000 - (now.getSeconds() * 1000 + now.getMilliseconds());
       timer = window.setTimeout(scheduleAligned, msToNextMinute + 50);
     };
     scheduleAligned();
-    // Re-synchronise immédiatement quand l'onglet redevient visible / reprend le focus
     const onVis = () => {
       apply();
       if (timer) { window.clearTimeout(timer); timer = null; }
@@ -106,6 +98,7 @@ export default function TaxiRadio() {
       window.removeEventListener("focus", onVis);
     };
   }, []);
+
   const interludeRef = useRef<HTMLAudioElement | null>(null);
   const playMusicInterlude = (url: string, ms: number = 15000) => {
     try {
@@ -121,43 +114,33 @@ export default function TaxiRadio() {
     } catch {}
   };
 
-  // Tick toutes les 30s pour rafraîchir l'horloge + fetch météo au montage et toutes les 30 min
   useEffect(() => {
     setNowTick(Date.now());
     const t = window.setInterval(() => setNowTick(Date.now()), 30 * 1000);
     return () => window.clearInterval(t);
   }, []);
 
-  // Fetch météo initial + rafraîchissement toutes les 30 min
   useEffect(() => {
     fetchWeather();
     const t = window.setInterval(() => fetchWeather(), 30 * 60 * 1000);
     return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { langRef.current = lang; }, [lang]);
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
-  // ====== Météo réelle (Open-Meteo, sans clé) ======
   const weatherCodeText = (code: number, l: "fr" | "en"): string => {
     const fr: Record<number, string> = {
       0: "ciel dégagé", 1: "plutôt ensoleillé", 2: "partiellement nuageux", 3: "couvert",
-      45: "brouillard", 48: "brouillard givrant",
-      51: "bruine légère", 53: "bruine", 55: "forte bruine",
-      61: "pluie faible", 63: "pluie", 65: "forte pluie",
-      71: "neige faible", 73: "neige", 75: "forte neige",
-      80: "averses", 81: "averses", 82: "violentes averses",
-      95: "orage", 96: "orage avec grêle", 99: "violent orage",
+      45: "brouillard", 48: "brouillard givrant", 51: "bruine légère", 53: "bruine", 55: "forte bruine",
+      61: "pluie faible", 63: "pluie", 65: "forte pluie", 71: "neige faible", 73: "neige", 75: "forte neige",
+      80: "averses", 81: "averses", 82: "violentes averses", 95: "orage", 96: "orage avec grêle", 99: "violent orage",
     };
     const en: Record<number, string> = {
       0: "clear sky", 1: "mostly sunny", 2: "partly cloudy", 3: "overcast",
-      45: "foggy", 48: "freezing fog",
-      51: "light drizzle", 53: "drizzle", 55: "heavy drizzle",
-      61: "light rain", 63: "rain", 65: "heavy rain",
-      71: "light snow", 73: "snow", 75: "heavy snow",
-      80: "showers", 81: "showers", 82: "violent showers",
-      95: "thunderstorm", 96: "thunderstorm with hail", 99: "violent thunderstorm",
+      45: "foggy", 48: "freezing fog", 51: "light drizzle", 53: "drizzle", 55: "heavy drizzle",
+      61: "light rain", 63: "rain", 65: "heavy rain", 71: "light snow", 73: "snow", 75: "heavy snow",
+      80: "showers", 81: "showers", 82: "violent showers", 95: "thunderstorm", 96: "thunderstorm with hail", 99: "violent thunderstorm",
     };
     return (l === "fr" ? fr : en)[code] ?? (l === "fr" ? "temps changeant" : "changing weather");
   };
@@ -176,7 +159,6 @@ export default function TaxiRadio() {
         weatherFetchedAtRef.current = Date.now();
       } catch {}
     };
-    // Météo strictement locale : si la géoloc est refusée/indisponible, pas de fallback Paris.
     const noGeo = () => {
       weatherRef.current = null;
       setWeatherState(null);
@@ -204,9 +186,6 @@ export default function TaxiRadio() {
     }
   };
 
-
-
-  // Débloque la synthèse vocale au premier geste utilisateur (requis sur mobile)
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
     const unlock = () => {
@@ -250,14 +229,8 @@ export default function TaxiRadio() {
   };
 
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
-  // Jeton de session radio : incrémenté à chaque changement de station / pause.
-  // Toute séquence DJ→musique en cours vérifie ce jeton avant de continuer,
-  // pour ne pas démarrer la musique d'une station déjà quittée.
   const radioSessionRef = useRef<number>(0);
 
-  // Lit une brève via le serveur (Lovable AI) → audio mp3 réel (marche partout, incl. WebView Android)
-  // Si `onComplete` est fourni, il est appelé EXACTEMENT une fois quand la TTS se termine
-  // (fin naturelle, erreur, ou indisponibilité). Garantit l'enchaînement séquentiel DJ→musique.
   const speak = async (news: RadioNews, onComplete?: () => void) => {
     const l = langRef.current;
     const text = l === "en" ? news.en : news.fr;
@@ -268,7 +241,6 @@ export default function TaxiRadio() {
       completed = true;
       if (onComplete) { try { onComplete(); } catch {} }
     };
-    // Fallback de sécurité : si rien ne se passe sous 20s, on libère la séquence
     const failsafe = window.setTimeout(done, 20000);
     const wrapDone = () => { window.clearTimeout(failsafe); done(); };
     try {
@@ -280,18 +252,25 @@ export default function TaxiRadio() {
       const { supabase } = await import("@/integrations/supabase/client");
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
+      
       const speakBrowser = () => {
         if (typeof window === "undefined" || !("speechSynthesis" in window)) { wrapDone(); return; }
         try {
+          if (window.speechSynthesis.speaking) {
+            window.speechSynthesis.cancel();
+          }
           const u = new SpeechSynthesisUtterance(text);
           u.lang = l === "en" ? "en-US" : "fr-FR";
           const v = pickVoice(l); if (v) u.voice = v;
           u.onend = () => wrapDone();
           u.onerror = () => wrapDone();
-          window.speechSynthesis.cancel();
           window.speechSynthesis.speak(u);
-        } catch { wrapDone(); }
+        } catch (err) {
+          console.warn("[Radio] speakBrowser error:", err);
+          wrapDone();
+        }
       };
+
       if (!accessToken) { speakBrowser(); return; }
       const res = await fetch("/api/public/radio-tts", {
         method: "POST",
@@ -305,7 +284,6 @@ export default function TaxiRadio() {
       }
       const ct = res.headers.get("Content-Type") || "";
       if (ct.includes("application/json")) {
-        // Réponse de fallback (gateway upstream indisponible)
         speakBrowser();
         return;
       }
@@ -333,7 +311,6 @@ export default function TaxiRadio() {
     }
   };
 
-  // ====== Animateur radio (DJ) ======
   const djLine = (stationName: string): RadioNews => {
     const l = langRef.current;
     const now = new Date();
@@ -363,17 +340,12 @@ export default function TaxiRadio() {
     return intros[Math.floor(Math.random() * intros.length)];
   };
 
-
-  // Utilitaire historique conservé (legacy : DJ par-dessus la musique, plus utilisé
-  // depuis le passage à la séquence DJ→musique). Référencé via `void` pour rester
-  // exporté/sans warning d'unused.
   const playDjLine = (stationName: string) => {
     fetchWeather();
     speak(djLine(stationName));
   };
   void playDjLine;
 
-  // Stations
   useEffect(() => {
     if (!ready) return;
     const a = audioRef.current;
@@ -391,20 +363,17 @@ export default function TaxiRadio() {
     if (!a) return;
     if (!st || st.id === "off") { a.pause(); return; }
 
-    // Musique d'intermède (utilisée pour Junky Infos et pendant l'heure des infos sur les radios musicales)
     const defaultMusicUrl = STATIONS.find((s) => s.id === "main")?.url;
 
     if (st.tts) {
       a.pause();
       speak(WELCOME_JINGLE);
       let cycle = 0;
-      // première brève rapidement (météo / événement / trafic)
       window.setTimeout(() => {
         const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
         speak(AMBIENT_NEWS[idx]);
       }, 6000);
-      // puis enchaîne toutes les ~18s, avec un intermède musical tous les 3 brèves
       ambientTimerRef.current = window.setInterval(() => {
         cycle++;
         if (cycle % 3 === 0 && defaultMusicUrl) {
@@ -419,8 +388,6 @@ export default function TaxiRadio() {
     }
 
     if (st.url) {
-      // Heure des infos : pendant les 10 premières minutes de chaque heure,
-      // les radios musicales basculent sur les brèves (avec courts intermèdes musicaux).
       if (newsHour) {
         a.pause();
         speak(WELCOME_JINGLE);
@@ -440,3 +407,11 @@ export default function TaxiRadio() {
           ambientIdxRef.current++;
           speak(AMBIENT_NEWS[idx]);
         }, 18000);
+        return;
+      }
+    }
+  }, [stationId, ready, newsHour]);
+
+  return null;
+    }
+    
