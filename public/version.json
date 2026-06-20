@@ -1,6 +1,6 @@
 {
-  "version": "1.0.0",
-  "buildId": "2026-06-20T16:30:00.000Z",
-  "builtAt": 1781973000000,
-  "changelog": "Lot 3 : 4 compagnies rivales sur la carte (faillite si joueur ×3 trésorerie). Voitures recentrées sur la voie."
+  "version": "1.1.0",
+  "buildId": "2026-06-20T16:45:00.000Z",
+  "builtAt": 1781973900000,
+  "changelog": "Lot 4 : horloge interne (5 min = 24 h), heures de pointe & week-end, événements scriptés (braquages, accidents, contrôles) avec marqueurs sur la carte et journal des incidents."
 }

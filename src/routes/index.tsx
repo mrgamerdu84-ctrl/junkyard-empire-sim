@@ -4,6 +4,8 @@ import citymap from "@/assets/citymap2.jpg";
 import TaxiTycoon from "@/game/TaxiTycoon";
 import CityTraffic from "@/game/CityTraffic";
 import CityCompetitors from "@/game/CityCompetitors";
+import CityHud from "@/game/CityHud";
+import CrimeEvents from "@/game/CrimeEvents";
 import AdminPanel from "@/game/AdminPanel";
 import RulesPanel from "@/game/RulesPanel";
 import VersionBanner from "@/game/VersionBanner";
@@ -66,7 +68,9 @@ function TaxiTycoonPage() {
       <div className="tt-vignette" />
       <CityTraffic />
       <CityCompetitors />
+      <CrimeEvents />
       <TaxiTycoon />
+      <CityHud />
       <AdminPanel />
       <RulesPanel />
       <VersionBanner />
