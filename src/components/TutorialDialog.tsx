@@ -63,7 +63,7 @@ export default function TutorialDialog({ onClose }: { onClose: () => void }) {
     window.speechSynthesis.getVoices();
     window.speechSynthesis.addEventListener?.("voiceschanged", handler);
     return () => {
-      window.speechSynthesis.addEventListener && window.speechSynthesis.removeEventListener?.("voiceschanged", handler);
+      window.speechSynthesis.removeEventListener?.("voiceschanged", handler);
       try { window.speechSynthesis.cancel(); } catch {}
     };
   }, []);
