@@ -892,6 +892,43 @@ function CustomVehiclesSection() {
     try { return localStorage.getItem(TOPDOWN_PREF_KEY) === "1"; } catch { return false; }
   });
   const fileRef = useRef<HTMLInputElement>(null);
+  const batchRef = useRef<HTMLInputElement>(null);
+  const [batchBusy, setBatchBusy] = useState(false);
+  const [batchProgress, setBatchProgress] = useState<{ done: number; total: number } | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+
+  const readFileAsDataUrl = (f: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(f);
+    });
+
+  const importBatch = async (files: File[]) => {
+    const imgs = files.filter((f) => f.type.startsWith("image/"));
+    if (imgs.length === 0) return;
+    setBatchBusy(true);
+    setBatchProgress({ done: 0, total: imgs.length });
+    for (let i = 0; i < imgs.length; i++) {
+      const f = imgs[i];
+      try {
+        const src = await readFileAsDataUrl(f);
+        let deg: 0 | 90 | 180 | 270 = 0;
+        if (!alreadyTopDown) {
+          try { deg = await guessVehicleRotation(src); } catch {}
+        }
+        const finalUrl = await rotateToDataUrl(src, deg);
+        const baseName = f.name.replace(/\.[^.]+$/, "") || VEHICLE_CATEGORY_LABELS[category];
+        addCustomVehicle({ name: baseName, url: finalUrl, category });
+      } catch {}
+      setBatchProgress({ done: i + 1, total: imgs.length });
+    }
+    setBatchBusy(false);
+    setTimeout(() => setBatchProgress(null), 1500);
+    if (batchRef.current) batchRef.current.value = "";
+    refresh();
+  };
 
   const refresh = () => setItems(listCustomVehicles());
 
@@ -999,6 +1036,59 @@ function CustomVehiclesSection() {
         />
         <span>🛸 Image déjà en <strong style={{ color: "#f5c542" }}>vue du ciel</strong> (ne pas tourner)</span>
       </label>
+
+      {/* === Zone d'import en LOT === */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragOver(false);
+          const files = Array.from(e.dataTransfer.files || []);
+          if (files.length) void importBatch(files);
+        }}
+        onClick={() => batchRef.current?.click()}
+        style={{
+          marginBottom: 8,
+          padding: 14,
+          background: dragOver ? "#1a2030" : "#14171c",
+          border: `2px dashed ${dragOver ? "#22c55e" : "#f5c542"}`,
+          borderRadius: 8,
+          cursor: batchBusy ? "wait" : "pointer",
+          textAlign: "center",
+          color: "#e8edf2",
+          opacity: batchBusy ? 0.7 : 1,
+          transition: "background 0.15s, border-color 0.15s",
+        }}
+      >
+        <div style={{ fontSize: 20, marginBottom: 4 }}>📦⬇️</div>
+        <div style={{ fontSize: 12, fontWeight: 700, color: "#f5c542", marginBottom: 2 }}>
+          Importer plusieurs voitures d'un coup
+        </div>
+        <div style={{ fontSize: 10, color: "#8a8e94", lineHeight: 1.4 }}>
+          Glisse-dépose ou clique — rotation auto, catégorie : <strong style={{ color: "#e8edf2" }}>{VEHICLE_CATEGORY_LABELS[category]}</strong>
+        </div>
+        {batchProgress && (
+          <div style={{ fontSize: 11, color: "#22c55e", marginTop: 6, fontWeight: 700 }}>
+            {batchBusy ? `Import… ${batchProgress.done}/${batchProgress.total}` : `✓ ${batchProgress.done} véhicule(s) ajouté(s)`}
+          </div>
+        )}
+        <input
+          ref={batchRef}
+          type="file"
+          accept="image/*"
+          multiple
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const files = Array.from(e.target.files || []);
+            if (files.length) void importBatch(files);
+          }}
+        />
+      </div>
+
+      <div style={{ fontSize: 10, color: "#6a6e74", textAlign: "center", marginBottom: 6 }}>
+        — ou ajoute une voiture une par une (avec aperçu et rotation manuelle) —
+      </div>
 
       {!pendingSrc ? (
         <div style={{ display: "flex", gap: 6 }}>
