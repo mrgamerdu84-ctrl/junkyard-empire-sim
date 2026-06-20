@@ -1,4 +1,4 @@
-Import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GAME_ASSETS } from "@/game/gameAssets";
 import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, type RadioNews } from "@/lib/radioNews";
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3.asset.json";
@@ -70,6 +70,7 @@ export default function TaxiRadio() {
   const [nowTick, setNowTick] = useState<number | null>(null);
   const [newsHour, setNewsHour] = useState<boolean>(false);
   const newsHourRef = useRef<boolean>(false);
+  
   useEffect(() => { newsHourRef.current = newsHour; }, [newsHour]);
 
   useEffect(() => {
@@ -346,6 +347,20 @@ export default function TaxiRadio() {
   };
   void playDjLine;
 
+  const nextStation = () => {
+    const idx = STATIONS.findIndex((s) => s.id === stationId);
+    const nextIdx = (idx + 1) % STATIONS.length;
+    setStationId(STATIONS[nextIdx].id);
+    try { localStorage.setItem(STORAGE_KEY, STATIONS[nextIdx].id); } catch {}
+  };
+
+  const prevStation = () => {
+    const idx = STATIONS.findIndex((s) => s.id === stationId);
+    const prevIdx = (idx - 1 + STATIONS.length) % STATIONS.length;
+    setStationId(STATIONS[prevIdx].id);
+    try { localStorage.setItem(STORAGE_KEY, STATIONS[prevIdx].id); } catch {}
+  };
+
   useEffect(() => {
     if (!ready) return;
     const a = audioRef.current;
@@ -361,7 +376,7 @@ export default function TaxiRadio() {
     if (interludeRef.current) { try { interludeRef.current.pause(); } catch {} interludeRef.current = null; }
 
     if (!a) return;
-    if (!st || st.id === "off") { a.pause(); return; }
+    if (!st || st.id === "off" || paused) { a.pause(); return; }
 
     const defaultMusicUrl = STATIONS.find((s) => s.id === "main")?.url;
 
@@ -409,8 +424,37 @@ export default function TaxiRadio() {
         }, 18000);
         return;
       }
-    }
-  }, [stationId, ready, newsHour]);
 
-  return null;
-}
+      a.src = st.url;
+      a.volume = st.volume ?? 0.5;
+      a.loop = st.loop ?? true;
+      a.play().catch((err) => console.warn("[Radio] play music failed:", err));
+    }
+  }, [stationId, ready, newsHour, paused]);
+
+  const currentStation = STATIONS.find((s) => s.id === stationId) || STATIONS[0];
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+      <audio ref={audioRef} />
+      
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-14 h-14 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-400 text-slate-900 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-transform active:scale-95"
+      >
+        {currentStation.emoji}
+      </button>
+
+      {open && (
+        <div className="w-72 bg-slate-900/95 backdrop-blur border-2 border-slate-700 text-white rounded-2xl shadow-2xl p-4 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex flex-col">
+              <span className="text-xs text-yellow-500 font-bold tracking-wider uppercase">Autoradio</span>
+              <span className="text-sm font-semibold truncate max-w-[140px]">{currentStation.name}</span>
+            </div>
+            <button
+              onClick={() => setPaused(!paused)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors shadow flex items-center gap-1 ${paused ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"}`}
+            >
+              {paused ? "▶️ ALLUMER" : "🔇 COUPER"}
+            </button>
