@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { GAME_ASSETS } from "@/game/gameAssets";
-import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, type RadioNews } from "@/lib/radioNews";
+import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, getHoroscopeNews, getTvProgramNews, type RadioNews } from "@/lib/radioNews";
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3.asset.json";
 import ironToothAsset from "@/assets/iron_tooth.mp3.asset.json";
 
@@ -249,6 +249,16 @@ export default function TaxiRadio() {
     tickerTimerRef.current = window.setTimeout(() => setTicker(""), 9000);
   };
 
+  // Pioche la prochaine brève en mêlant brèves d'ambiance, horoscope (1x/5)
+  // et programme TV (1x/7), pour varier davantage la radio infos.
+  const pickNextBreve = (): RadioNews => {
+    const i = ambientIdxRef.current;
+    if (i > 0 && i % 5 === 0) return getHoroscopeNews();
+    if (i > 0 && i % 7 === 0) return getTvProgramNews();
+    return AMBIENT_NEWS[i % AMBIENT_NEWS.length];
+  };
+
+
   const ttsAudioRef = useRef<HTMLAudioElement | null>(null);
   // Jeton de session radio : incrémenté à chaque changement de station / pause.
   // Toute séquence DJ→musique en cours vérifie ce jeton avant de continuer,
@@ -394,9 +404,8 @@ export default function TaxiRadio() {
       let cycle = 0;
       // première brève rapidement (météo / événement / trafic)
       window.setTimeout(() => {
-        const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
-        speak(AMBIENT_NEWS[idx]);
+        speak(pickNextBreve());
       }, 6000);
       // puis enchaîne toutes les ~18s, avec un intermède musical tous les 3 brèves
       ambientTimerRef.current = window.setInterval(() => {
@@ -405,9 +414,8 @@ export default function TaxiRadio() {
           playMusicInterlude(defaultMusicUrl, 15000);
           return;
         }
-        const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
         ambientIdxRef.current++;
-        speak(AMBIENT_NEWS[idx]);
+        speak(pickNextBreve());
       }, 18000);
       return;
     }
@@ -420,9 +428,8 @@ export default function TaxiRadio() {
         speak(WELCOME_JINGLE);
         let cycle = 0;
         window.setTimeout(() => {
-          const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
           ambientIdxRef.current++;
-          speak(AMBIENT_NEWS[idx]);
+          speak(pickNextBreve());
         }, 4000);
         ambientTimerRef.current = window.setInterval(() => {
           cycle++;
@@ -430,9 +437,8 @@ export default function TaxiRadio() {
             playMusicInterlude(st.url, 12000);
             return;
           }
-          const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
           ambientIdxRef.current++;
-          speak(AMBIENT_NEWS[idx]);
+          speak(pickNextBreve());
         }, 18000);
         return;
       }

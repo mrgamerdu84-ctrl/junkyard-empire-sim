@@ -97,3 +97,72 @@ export const AMBIENT_NEWS: RadioNews[] = [
     en: "Did you know? La Jungle de l'Arcade is packed with retro gems, available to download right now.",
   },
 ];
+
+// ===================== Horoscope dynamique =====================
+// 12 signes × textes pseudo-aléatoires seedés sur la date du jour :
+// tous les joueurs entendent le même horoscope pour un jour donné,
+// mais ça change automatiquement chaque jour.
+const SIGNS_FR = [
+  "Bélier", "Taureau", "Gémeaux", "Cancer", "Lion", "Vierge",
+  "Balance", "Scorpion", "Sagittaire", "Capricorne", "Verseau", "Poissons",
+];
+const SIGNS_EN = [
+  "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+  "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+];
+
+const HOROSCOPE_TEMPLATES: RadioNews[] = [
+  { fr: "journée pleine d'énergie, foncez sur les opportunités au volant.", en: "an energetic day, grab every opportunity behind the wheel." },
+  { fr: "chance financière côté pourboires, restez aimable avec vos clients.", en: "lucky tips coming your way, stay friendly with riders." },
+  { fr: "patience recommandée dans le trafic, le calme paiera ce soir.", en: "patience in traffic today, calm will pay off tonight." },
+  { fr: "rencontre marquante prévue lors d'une course, ouvrez l'œil.", en: "an interesting encounter during a ride, keep your eyes open." },
+  { fr: "petit coup de fatigue en milieu d'après-midi, pensez à la pause café.", en: "a small slump mid-afternoon, time for a coffee break." },
+  { fr: "intuition au top, faites confiance à votre GPS intérieur.", en: "sharp intuition today, trust your inner GPS." },
+  { fr: "soirée propice aux grosses courses, restez disponible après 22 h.", en: "evening favors big fares, stay available after 10 pm." },
+  { fr: "attention aux radars sur votre route habituelle.", en: "watch out for speed cameras on your usual route." },
+];
+
+function dateSeed(): number {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+function seededPick<T>(arr: T[], seed: number): T {
+  return arr[Math.abs(seed) % arr.length];
+}
+
+export function getHoroscopeNews(): RadioNews {
+  const seed = dateSeed();
+  const idx = seed % 12;
+  const signFr = SIGNS_FR[idx];
+  const signEn = SIGNS_EN[idx];
+  const tpl = seededPick(HOROSCOPE_TEMPLATES, Math.floor(seed / 12));
+  return {
+    fr: `Horoscope du jour, ${signFr} : ${tpl.fr}`,
+    en: `Today's horoscope, ${signEn}: ${tpl.en}`,
+  };
+}
+
+// ===================== Programme TV simulé =====================
+const TV_SHOWS_FR = [
+  "le grand débat politique", "un thriller américain", "une comédie romantique",
+  "un documentaire animalier", "le match de la soirée", "une série policière inédite",
+  "un télé-crochet musical", "un film d'action culte", "un magazine d'investigation",
+];
+const TV_SHOWS_EN = [
+  "the big political debate", "an American thriller", "a romantic comedy",
+  "a wildlife documentary", "tonight's big match", "a brand new crime series",
+  "a musical talent show", "a cult action movie", "an investigative magazine",
+];
+const TV_CHANNELS = ["Canal Junky", "JCE One", "Empire TV", "Junky 24", "Arcade Channel"];
+
+export function getTvProgramNews(): RadioNews {
+  const seed = dateSeed();
+  const showIdx = Math.floor(seed / 7) % TV_SHOWS_FR.length;
+  const chanIdx = Math.floor(seed / 13) % TV_CHANNELS.length;
+  const hour = 20 + (seed % 2); // 20h ou 21h
+  return {
+    fr: `Ce soir à la télé, à ${hour} heures sur ${TV_CHANNELS[chanIdx]} : ${TV_SHOWS_FR[showIdx]}. À ne pas manquer entre deux courses !`,
+    en: `On TV tonight at ${hour}:00 on ${TV_CHANNELS[chanIdx]}: ${TV_SHOWS_EN[showIdx]}. Don't miss it between two rides!`,
+  };
+}
+
