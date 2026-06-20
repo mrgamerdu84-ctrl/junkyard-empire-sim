@@ -139,7 +139,8 @@ export function shouldStopAhead(
       if (ahead <= 0 || ahead > STOP_RADIUS) continue;
       const state = stateFor(l, tSeconds);
       if (state === "red") return true;
-      if (state === "orange" && ahead > 30) return true;
+      // Orange : arrêt si on est encore assez loin pour freiner sereinement (sinon on passe).
+      if (state === "orange" && ahead > 45) return true;
       return false;
     }
   }
