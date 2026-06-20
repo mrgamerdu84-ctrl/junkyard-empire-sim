@@ -1,58 +1,63 @@
-// ====== PARTIE QUE TU AS DÉJÀ (je la laisse ici pour le contexte) ======
-let l = 'fr'; // tes radios mettent 'fr' ou 'en'
-let text = ''; // le texte à lire
-function wrapDone() {
-  // ton code actuel quand la lecture finit
-  console.log('[Radio] fini');
-}
+import { useState, useEffect, useRef } from 'react';
 
-// ====== PICK VOICE - version safe ======
-function pickVoice(lang) {
-  if (typeof window === 'undefined' ||!window.speechSynthesis) return null;
-  try {
-    const voices = window.speechSynthesis.getVoices() || [];
-    const target = lang === 'en'? 'en' : 'fr';
-    // 1. voix exacte, 2. fallback langue
-    return voices.find(v => v.lang.toLowerCase() === (target === 'fr'? 'fr-fr' : 'en-us'))
-        || voices.find(v => v.lang.toLowerCase().startsWith(target))
-        || null;
-  } catch { return null; }
-}
+export default function TaxiRadio() {
+  const [l, setL] = useState<'fr' | 'en'>('fr');
+  const [text, setText] = useState('Bienvenue au Taxi Radio');
+  const synthRef = useRef<SpeechSynthesis | null>(null);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-// ====== SPEAK BROWSER - version qui ne crashe plus ======
-const speakBrowser = () => {
-  try {
-    if (typeof window === 'undefined' ||!window.speechSynthesis) {
-      wrapDone && wrapDone();
-      return;
+  // init safe, uniquement côté client
+  useEffect(() => {
+    if (typeof window!== 'undefined' && 'speechSynthesis' in window) {
+      synthRef.current = window.speechSynthesis;
+      try { synthRef.current.getVoices(); } catch {}
     }
-    const synth = window.speechSynthesis;
+  }, []);
+
+  const pickVoice = (lang: string) => {
+    const synth = synthRef.current;
+    if (!synth) return null;
+    const voices = synth.getVoices() || [];
+    const target = lang === 'en'? 'en' : 'fr';
+    return (
+      voices.find(v => v.lang.toLowerCase() === (target === 'fr'? 'fr-fr' : 'en-us')) ||
+      voices.find(v => v.lang.toLowerCase().startsWith(target)) ||
+      null
+    );
+  };
+
+  const wrapDone = () => {
+    console.log('[Radio] fini');
+    utteranceRef.current = null;
+  };
+
+  const speakBrowser = () => {
+    const synth = synthRef.current;
+    if (!synth) { wrapDone(); return; }
+
     try { if (synth.speaking || synth.pending) synth.cancel(); } catch {}
 
-    const u = new SpeechSynthesisUtterance(String(text || ''));
+    const u = new SpeechSynthesisUtterance(text || '');
     u.lang = l === 'en'? 'en-US' : 'fr-FR';
     u.rate = 1; u.pitch = 1; u.volume = 1;
-
-    u.onend = () => { try { wrapDone && wrapDone(); } catch {} };
-    u.onerror = (e) => { console.warn('[Radio] TTS Error', e); try { wrapDone && wrapDone(); } catch {} };
+    u.onend = wrapDone;
+    u.onerror = (e) => { console.warn('[Radio] TTS Error', e); wrapDone(); };
+    utteranceRef.current = u;
 
     const doSpeak = () => {
       const v = pickVoice(l);
       if (v) u.voice = v;
-      // délai après cancel, obligatoire sur iOS
+      // délai obligatoire après cancel sur iOS
       setTimeout(() => {
         try {
           synth.speak(u);
           if (synth.paused) synth.resume();
-          // garde référence pour Safari
-          window._currentTTS = u;
-        } catch (e) { console.warn(e); wrapDone && wrapDone(); }
+        } catch (e) { console.warn(e); wrapDone(); }
       }, 70);
     };
 
-    const voices = synth.getVoices? synth.getVoices() : [];
+    const voices = synth.getVoices?.() || [];
     if (!voices.length) {
-      // pas de {once:true} car ça plante sur certaines webviews
       synth.onvoiceschanged = () => {
         synth.onvoiceschanged = null;
         doSpeak();
@@ -61,22 +66,21 @@ const speakBrowser = () => {
     } else {
       doSpeak();
     }
-  } catch (err) {
-    console.error('[Radio] crash speakBrowser', err);
-    try { wrapDone && wrapDone(); } catch {}
-  }
-};
+  };
 
-// ====== BRANCHEMENT DE TES RADIOS (si tu ne l'as pas déjà) ======
-if (typeof document!== 'undefined') {
-  document.querySelectorAll('input[name="lang"]').forEach(radio => {
-    radio.addEventListener('change', (e) => {
-      l = e.target.value; // 'fr' ou 'en'
-    });
-  });
-}
+  return (
+    <div>
+      {/* tes radios, inchangés visuellement */}
+      <label>
+        <input type="radio" name="lang" value="fr" checked={l === 'fr'} onChange={() => setL('fr')} /> FR
+      </label>
+      <label>
+        <input type="radio" name="lang" value="en" checked={l === 'en'} onChange={() => setL('en')} /> EN
+      </label>
 
-// Précharge les voix une fois, sans bloquer
-if (typeof window!== 'undefined') {
-  try { window.speechSynthesis.getVoices(); } catch {}
+      <textarea value={text} onChange={e => setText(e.target.value)} rows={3} />
+
+      <button onClick={speakBrowser}>Parler</button>
+    </div>
+  );
 }
