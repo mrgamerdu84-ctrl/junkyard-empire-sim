@@ -96,6 +96,15 @@ export default function RulesPanel() {
             </ul>
             <p>Tu peux aussi <b>déplacer, agrandir et faire pivoter</b> ton QG depuis le Panel Admin → onglet <b>QG</b>.</p>
 
+            <h3>🚨 Missions d'urgence & concurrence</h3>
+            <p>La ville est envahie par les <b>QG rivaux de Junky City</b>. Leurs taxis sombres deviennent plus rapides à chaque niveau que tu gagnes — ils chassent les mêmes clients et les mêmes missions que toi.</p>
+            <ul>
+              <li>Quand une icône d'urgence apparaît (🚓 🚑 🚒), clique-la <b>avant l'IA</b> pour envoyer un véhicule.</li>
+              <li><b>Tu cliques en premier</b> et ton véhicule arrive : <span style={{ color: "#34d399" }}>+500 $ de bonus</span>.</li>
+              <li><b>L'IA est plus rapide</b> que toi : <span style={{ color: "#f87171" }}>−200 $ de pénalité</span> et la mission t'échappe.</li>
+              <li>Plus ton QG monte de niveau, plus l'IA accélère : la pression croît avec ton empire.</li>
+            </ul>
+
             <h3>📜 Les contrats</h3>
             <ul>
               <li>Missions optionnelles avec un objectif (servir X clients, gagner Y $, etc.) avant un délai.</li>
