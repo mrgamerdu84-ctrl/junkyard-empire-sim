@@ -108,6 +108,10 @@ const CARS: CarSpec[] = [
   // Path 1 — voie courte (renforcée)
   { kind: "sedan", color: "#06b6d4", accent: "#0e7490", duration: 21, delay: -16, pathIdx: 1, scale: 0.6 },
   { kind: "hatch", color: "#fbbf24", accent: "#78350f", duration: 23, delay: -4,  pathIdx: 1, scale: 0.58, variant: "red" },
+  // Véhicules spéciaux (police, transport de fonds, GIGN)
+  { kind: "police", color: "#fff", accent: "#0b1d3a", duration: 36, delay: -22, pathIdx: 0, scale: 0.6 },
+  { kind: "money",  color: "#3a4756", accent: "#2a3340", duration: 50, delay: -40, pathIdx: 2, scale: 0.7 },
+  { kind: "gign",   color: "#1a1d22", accent: "#000000", duration: 48, delay: -60, pathIdx: 0, scale: 0.72 },
 ];
 
 
