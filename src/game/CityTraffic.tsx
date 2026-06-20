@@ -303,6 +303,20 @@ const ACCEL = 0.6;       // px/s² lissage vers la vitesse cible (réaccélérat
 const BRAKE = 1.8;       // px/s² lissage en freinage (plus mordant que l'accélération)
 const MIN_SPEED_RATIO = 0.35; // plancher anti-figeage (% de baseSpeed)
 
+type Mission = {
+  eventId: number;
+  phase: "going" | "staying" | "returning";
+  startedAt: number;
+  fromX: number; fromY: number;
+  toX: number; toY: number;
+  travelMs: number;
+  arriveAt: number;
+  stayUntil: number;
+  returnUntil: number;
+  returnFromX: number; returnFromY: number;  // snapshot au départ du retour
+  pausedS: number;                            // st.s gelé pendant la mission
+};
+
 type CarState = {
   spec: CarSpec;
   pathLen: number;
@@ -311,6 +325,7 @@ type CarState = {
   speed: number;       // px/s instantanée
   laneKey: string;     // pathIdx + sens -> regroupe les véhicules qui peuvent se gêner
   node: SVGGElement | null;
+  mission?: Mission;
 };
 
 // Toutes les catégories sauf "taxi" peuvent rouler dans la circulation.
