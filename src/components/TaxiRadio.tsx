@@ -192,6 +192,7 @@ export default function TaxiRadio() {
     const unlock = () => {
       if (ttsUnlockedRef.current) return;
       try {
+        window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(" ");
         u.volume = 0;
         window.speechSynthesis.speak(u);
@@ -257,7 +258,7 @@ export default function TaxiRadio() {
       const speakBrowser = () => {
         if (typeof window === "undefined" || !("speechSynthesis" in window)) { wrapDone(); return; }
         try {
-          if (window.speechSynthesis.speaking) {
+          if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
             window.speechSynthesis.cancel();
           }
           const u = new SpeechSynthesisUtterance(text);
@@ -266,6 +267,11 @@ export default function TaxiRadio() {
           u.onend = () => wrapDone();
           u.onerror = () => wrapDone();
           window.speechSynthesis.speak(u);
+          
+          // Force la reprise si Android s'est mis en pause tout seul
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
         } catch (err) {
           console.warn("[Radio] speakBrowser error:", err);
           wrapDone();
@@ -347,6 +353,20 @@ export default function TaxiRadio() {
   };
   void playDjLine;
 
+  const nextStation = () => {
+    const idx = STATIONS.findIndex((s) => s.id === stationId);
+    const nextIdx = (idx + 1) % STATIONS.length;
+    setStationId(STATIONS[nextIdx].id);
+    try { localStorage.setItem(STORAGE_KEY, STATIONS[nextIdx].id); } catch {}
+  };
+
+  const prevStation = () => {
+    const idx = STATIONS.findIndex((s) => s.id === stationId);
+    const prevIdx = (idx - 1 + STATIONS.length) % STATIONS.length;
+    setStationId(STATIONS[prevIdx].id);
+    try { localStorage.setItem(STORAGE_KEY, STATIONS[prevIdx].id); } catch {}
+  };
+
   useEffect(() => {
     if (!ready) return;
     const a = audioRef.current;
@@ -362,7 +382,7 @@ export default function TaxiRadio() {
     if (interludeRef.current) { try { interludeRef.current.pause(); } catch {} interludeRef.current = null; }
 
     if (!a) return;
-    if (!st || st.id === "off") { a.pause(); return; }
+    if (!st || st.id === "off" || paused) { a.pause(); return; }
 
     const defaultMusicUrl = STATIONS.find((s) => s.id === "main")?.url;
 
@@ -410,9 +430,34 @@ export default function TaxiRadio() {
         }, 18000);
         return;
       }
-    }
-  }, [stationId, ready, newsHour]);
 
-  // Si Lovable a généré le visuel juste en dessous, il va reprendre le relais ici.
-  // Une fois publié, demande à Lovable de recréer son design de boutons exact.
-}
+      a.src = st.url;
+      a.volume = st.volume ?? 0.5;
+      a.loop = st.loop ?? true;
+      a.play().catch((err) => console.warn("[Radio] play music failed:", err));
+    }
+  }, [stationId, ready, newsHour, paused]);
+
+  const currentStation = STATIONS.find((s) => s.id === stationId) || STATIONS[0];
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
+      <audio ref={audioRef} />
+      
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-14 h-14 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-400 text-slate-900 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-transform active:scale-95"
+      >
+        {currentStation.emoji}
+      </button>
+
+      {open && (
+        <div className="w-72 bg-slate-900/95 backdrop-blur border-2 border-slate-700 text-white rounded-2xl shadow-2xl p-4 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <div className="flex flex-col">
+              <span className="text-xs text-yellow-500 font-bold tracking-wider uppercase">Autoradio</span>
+              <span className="text-sm font-semibold truncate max-w-[140px]">{currentStation.name}</span>
+            </div>
+            <button
+              onClick={() => setPaused(!paused)}
+              className={`px-3 py-1.5 rounded-xl t
