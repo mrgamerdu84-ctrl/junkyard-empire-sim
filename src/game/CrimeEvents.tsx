@@ -125,12 +125,31 @@ export default function CrimeEvents() {
     return () => cancelAnimationFrame(raf);
   }, []);
 
-  // Expiration + résolution
+  // Expiration + résolution + AI qui rafle les missions trop lentes
   useEffect(() => {
     const id = window.setInterval(() => {
       const now = performance.now();
-      setEvents(es => es.filter(e => now - e.startedAt < e.ttl));
-    }, 500);
+      setEvents(es => {
+        // AI rafle les missions où le joueur n'a pas cliqué à temps
+        const stolen: CrimeEvent[] = [];
+        const next: CrimeEvent[] = [];
+        for (const e of es) {
+          if (now - e.startedAt >= e.ttl) continue; // expiré
+          if (!e.dispatched && !e.stolenByAI && now >= e.aiClaimAt) {
+            stolen.push(e);
+            next.push({ ...e, stolenByAI: true, ttl: Math.min(e.ttl, now - e.startedAt + 2200) });
+          } else {
+            next.push(e);
+          }
+        }
+        for (const s of stolen) {
+          window.dispatchEvent(new CustomEvent("jce.intervention.ai-stole", {
+            detail: { id: s.id, kind: s.kind, label: KIND_META[s.kind].label, category: KIND_META[s.kind].category },
+          }));
+        }
+        return next;
+      });
+    }, 300);
     const onResolved = (ev: Event) => {
       const detail = (ev as CustomEvent<{ id: number }>).detail;
       if (!detail) return;
