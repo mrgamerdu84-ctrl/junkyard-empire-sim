@@ -517,8 +517,18 @@ export default function CityTraffic() {
         const lenForward = st.spec.flip ? st.pathLen - st.s : st.s;
         const p = path.getPointAtLength(lenForward);
         const p2 = path.getPointAtLength(Math.min(st.pathLen, lenForward + (st.spec.flip ? -1 : 1)));
-        const ang = (Math.atan2(p2.y - p.y, p2.x - p.x) * 180) / Math.PI;
-        node.setAttribute("transform", `translate(${p.x.toFixed(2)},${p.y.toFixed(2)}) rotate(${ang.toFixed(2)})`);
+        const tdx = p2.x - p.x, tdy = p2.y - p.y;
+        const L = Math.hypot(tdx, tdy) || 1;
+        const ang = (Math.atan2(tdy, tdx) * 180) / Math.PI;
+        // 🚦 Séparation des voies : décalage perpendiculaire à DROITE du sens
+        // de marche. En coordonnées écran (y vers le bas), la "droite" du
+        // vecteur tangent (tdx, tdy) est (-tdy, tdx)/L.
+        const ox = (-tdy / L) * LANE_HALF;
+        const oy = (tdx / L) * LANE_HALF;
+        node.setAttribute("transform", `translate(${(p.x + ox).toFixed(2)},${(p.y + oy).toFixed(2)}) rotate(${ang.toFixed(2)})`);
+
+        // 📸 Radars : détection de passage + flash si vitesse > limite
+        checkRadars(st, prev);
       }
       if (needsRebuild) lanes = rebuildLanes();
 
