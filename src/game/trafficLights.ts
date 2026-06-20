@@ -23,7 +23,7 @@ type Computed = {
 let computed: Computed | null = null;
 const PHASE = 10; // sec vert, puis 2 sec orange, puis 12 sec rouge (axe opposé vert)
 const CYCLE = (PHASE + 2 + PHASE + 2) ; // = 24s par cycle complet
-const STOP_RADIUS = 70; // distance à laquelle on arrête le véhicule en amont du feu
+const STOP_RADIUS = 95; // distance d'arrêt en amont du feu (renforcé pour respect du code de la route)
 
 function stateFor(l: TrafficLight, t: number): LightState {
   const c = ((t % CYCLE) + CYCLE) % CYCLE;
@@ -139,7 +139,8 @@ export function shouldStopAhead(
       if (ahead <= 0 || ahead > STOP_RADIUS) continue;
       const state = stateFor(l, tSeconds);
       if (state === "red") return true;
-      if (state === "orange" && ahead > 30) return true;
+      // Orange : arrêt si on est encore assez loin pour freiner sereinement (sinon on passe).
+      if (state === "orange" && ahead > 45) return true;
       return false;
     }
   }
