@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
 import { PEDESTRIAN_PHOTO_URLS } from "./gameAssets";
-import { VehicleSvg, RadarSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
+import { VehicleSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
 import {
   initTrafficLights,
   getTrafficLights,
@@ -68,51 +68,12 @@ type CarSpec = {
 // - Les `delay` sont calculés pour répartir les phases (k / N) le long du path
 //   => aucune grappe au démarrage, aucun bouchon artificiel.
 // - Les camions / vans roulent un poil plus lentement (gabarit lourd).
-const CARS: CarSpec[] = [
-  // Path 0 — sens normal
-  { kind: "sedan", color: "#d83a2a", accent: "#7c1c10", duration: 42, delay:   0, pathIdx: 0, scale: 0.64, variant: "red" },
-  { kind: "sedan", color: "#e8edf2", accent: "#8a8e94", duration: 38, delay:  -8, pathIdx: 0, scale: 0.62 },
-  { kind: "van",   color: "#2f7a4a", accent: "#163b22", duration: 46, delay: -18, pathIdx: 0, scale: 0.7 },
-  { kind: "hatch", color: "#facc15", accent: "#7a5a08", duration: 40, delay: -38, pathIdx: 0, scale: 0.58, variant: "red" },
-  // Path 0 — même sens que les taxis
-  { kind: "sedan", color: "#2b6ed8", accent: "#143f7c", duration: 40, delay:   0, pathIdx: 0, scale: 0.65 },
-  { kind: "van",   color: "#ffffff", accent: "#8a8e94", duration: 44, delay: -22, pathIdx: 0, scale: 0.7 },
-  { kind: "hatch", color: "#7c3aed", accent: "#3b1d72", duration: 41, delay: -32, pathIdx: 0, scale: 0.58, variant: "red" },
-  // Path 1 — voie courte
-  { kind: "hatch", color: "#12151a", accent: "#050607", duration: 19, delay:  -2, pathIdx: 1, scale: 0.58 },
-  { kind: "sedan", color: "#3a8a48", accent: "#1c4a22", duration: 22, delay:  -8, pathIdx: 1, scale: 0.6, variant: "red" },
-  { kind: "van",   color: "#e11d48", accent: "#6b0f25", duration: 24, delay: -14, pathIdx: 1, scale: 0.66 },
-  // Path 2 — même sens que les taxis
-  { kind: "van",   color: "#d97a2a", accent: "#7a3a10", duration: 44, delay:   0, pathIdx: 2, scale: 0.68 },
-  { kind: "sedan", color: "#b81c4a", accent: "#5c0a20", duration: 40, delay:  -9, pathIdx: 2, scale: 0.62, variant: "red" },
-  { kind: "hatch", color: "#4ed6c5", accent: "#187266", duration: 46, delay: -30, pathIdx: 2, scale: 0.58 },
-  { kind: "sedan", color: "#f5f5f5", accent: "#7a7a7a", duration: 42, delay: -38, pathIdx: 2, scale: 0.62 },
-  // Path 2 — complément même sens
-  { kind: "hatch", color: "#1a3a6a", accent: "#0a1c40", duration: 42, delay:   0, pathIdx: 2, scale: 0.6 },
-  { kind: "van",   color: "#16a34a", accent: "#0a4a22", duration: 48, delay: -26, pathIdx: 2, scale: 0.7 },
-  { kind: "sedan", color: "#ea580c", accent: "#7a2a06", duration: 44, delay: -36, pathIdx: 2, scale: 0.62, variant: "red" },
-  // Trafic supplémentaire
-  { kind: "sedan", color: "#7c3aed", accent: "#3b1d72", duration: 46, delay: -50, pathIdx: 0, scale: 0.62 },
-  { kind: "hatch", color: "#22c55e", accent: "#0f5132", duration: 24, delay: -10, pathIdx: 1, scale: 0.6, variant: "red" },
-  { kind: "sedan", color: "#0ea5e9", accent: "#075985", duration: 48, delay: -48, pathIdx: 2, scale: 0.62 },
-  // Trafic dense supplémentaire (path 0)
-  { kind: "hatch", color: "#f43f5e", accent: "#7a1024", duration: 39, delay: -12, pathIdx: 0, scale: 0.58, variant: "red" },
-  { kind: "van",   color: "#0891b2", accent: "#053848", duration: 47, delay: -28, pathIdx: 0, scale: 0.68 },
-  { kind: "sedan", color: "#a3e635", accent: "#3f6212", duration: 41, delay: -44, pathIdx: 0, scale: 0.62 },
-  { kind: "truck", color: "#f59e0b", accent: "#78350f", duration: 52, delay: -16, pathIdx: 0, scale: 0.72 },
-  // Trafic dense supplémentaire (path 2)
-  { kind: "hatch", color: "#ec4899", accent: "#831843", duration: 43, delay: -18, pathIdx: 2, scale: 0.58 },
-  { kind: "sedan", color: "#64748b", accent: "#1e293b", duration: 40, delay: -34, pathIdx: 2, scale: 0.62, variant: "red" },
-  { kind: "van",   color: "#84cc16", accent: "#3f6212", duration: 46, delay: -52, pathIdx: 2, scale: 0.68 },
-  { kind: "truck", color: "#9333ea", accent: "#4c1d95", duration: 54, delay: -6,  pathIdx: 2, scale: 0.72 },
-  // Path 1 — voie courte (renforcée)
-  { kind: "sedan", color: "#06b6d4", accent: "#0e7490", duration: 21, delay: -16, pathIdx: 1, scale: 0.6 },
-  { kind: "hatch", color: "#fbbf24", accent: "#78350f", duration: 23, delay: -4,  pathIdx: 1, scale: 0.58, variant: "red" },
-  // Véhicules spéciaux (police, transport de fonds, GIGN)
-  { kind: "police", color: "#fff", accent: "#0b1d3a", duration: 36, delay: -22, pathIdx: 0, scale: 0.6 },
-  { kind: "money",  color: "#3a4756", accent: "#2a3340", duration: 50, delay: -40, pathIdx: 2, scale: 0.7 },
-  { kind: "gign",   color: "#1a1d22", accent: "#000000", duration: 48, delay: -60, pathIdx: 0, scale: 0.72 },
-];
+// Liste vidée à la demande du joueur : aucun véhicule civil ni véhicule
+// spécial (police, transport de fonds, GIGN) n'est généré par défaut.
+// Pour réinjecter du trafic, ajouter ici des entrées { kind, color, accent,
+// duration, delay, pathIdx, scale, variant? }.
+const CARS: CarSpec[] = [];
+
 
 
 // Anciennes voitures basées sur des photos remplacées par des SVG vectoriels
@@ -367,19 +328,8 @@ export default function CityTraffic() {
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const [lights, setLights] = useState<TrafficLight[]>([]);
 
-  // 📸 Radars de vitesse — positions sur les paths (fraction 0..1).
-  // Chaque radar mémorise sa position xy une fois les paths mesurés.
-  const RADAR_SPECS = [
-    { pathIdx: 0, sFrac: 0.18 },
-    { pathIdx: 0, sFrac: 0.55 },
-    { pathIdx: 0, sFrac: 0.82 },
-    { pathIdx: 2, sFrac: 0.28 },
-    { pathIdx: 2, sFrac: 0.66 },
-  ];
-  const [radars, setRadars] = useState<{ x: number; y: number }[]>([]);
-  const [flashes, setFlashes] = useState<{ id: number; x: number; y: number; t: number }[]>([]);
-  const [totalFines, setTotalFines] = useState(0);
-  const flashIdRef = useRef(0);
+  // Radars retirés à la demande du joueur.
+
 
   // Cycle jour/nuit 300s (5 minutes). Démarre en plein jour.
   useEffect(() => {
@@ -455,38 +405,9 @@ export default function CityTraffic() {
     };
     let lanes = rebuildLanes();
 
-    // 📸 Init radars : calcul des positions xy + abscisses sur le path
-    const radarPoints = RADAR_SPECS.map((r) => {
-      const path = pathRefs.current[r.pathIdx];
-      if (!path) return null;
-      const sAbs = r.sFrac * lens[r.pathIdx];
-      const pt = path.getPointAtLength(sAbs);
-      return { ...r, sAbs, x: pt.x, y: pt.y, lastFlashAt: 0 };
-    }).filter((r): r is NonNullable<typeof r> => r !== null);
-    setRadars(radarPoints.map((r) => ({ x: r.x, y: r.y })));
+    // Radars retirés : noop pour préserver l'API d'appel dans la boucle.
+    const checkRadars = (_st: CarState, _prev: number) => {};
 
-    const checkRadars = (st: CarState, prev: number) => {
-      // Une voiture franchit un radar si sa position s' a traversé radar.sAbs
-      // pendant ce frame. Le radar n'agit que sur le path correspondant.
-      const nowMs = performance.now();
-      for (const r of radarPoints) {
-        if (r.pathIdx !== st.spec.pathIdx) continue;
-        const crossed = prev < r.sAbs && st.s >= r.sAbs;
-        if (!crossed) continue;
-        // Vitesse au-dessus de 92% de baseSpeed → potentiellement en excès.
-        if (st.speed < st.baseSpeed * 0.92) continue;
-        // Cooldown 4s par radar pour éviter spam visuel
-        if (nowMs - r.lastFlashAt < 4000) continue;
-        // ~15% des passages déclenchent un flash
-        if (Math.random() > 0.15) continue;
-        r.lastFlashAt = nowMs;
-        const fine = 45 + Math.floor(Math.random() * 90); // 45-135€
-        const id = ++flashIdRef.current;
-        setFlashes((arr) => [...arr, { id, x: r.x, y: r.y, t: nowMs }]);
-        setTotalFines((v) => v + fine);
-        setTimeout(() => setFlashes((arr) => arr.filter((f) => f.id !== id)), 200);
-      }
-    };
 
     let last = performance.now();
     let raf = 0;
@@ -699,27 +620,8 @@ export default function CityTraffic() {
 
       {/* Plus aucun piéton ne marche/traverse sur la chaussée — exigence joueur. */}
 
-      {/* 📸 Radars de vitesse */}
-      {radars.map((r, i) => (
-        <g key={`radar-${i}`} transform={`translate(${r.x},${r.y}) scale(1.4)`} pointerEvents="none">
-          <RadarSvg />
-        </g>
-      ))}
+      {/* Radars retirés à la demande du joueur. */}
 
-      {/* Flash radar (200ms) */}
-      {flashes.map((f) => (
-        <circle key={f.id} cx={f.x} cy={f.y} r={70} fill="#ffffff" opacity={0.85} pointerEvents="none" />
-      ))}
-
-      {/* HUD amendes radar */}
-      {totalFines > 0 && (
-        <g transform="translate(960, 40)" pointerEvents="none">
-          <rect x={-100} y={-22} width={200} height={36} rx={8} fill="#0b1018" opacity="0.82" stroke="#facc15" strokeWidth="1.5" />
-          <text x={0} y={4} textAnchor="middle" fontSize="18" fontWeight="bold" fill="#facc15">
-            📸 Amendes : €{totalFines.toLocaleString("fr-FR")}
-          </text>
-        </g>
-      )}
 
       <rect width="1920" height="1080" fill="#0a1530" opacity={Math.max(0, (night - 0.15)) * 0.55} pointerEvents="none" />
     </svg>
