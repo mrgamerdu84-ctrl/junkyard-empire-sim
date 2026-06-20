@@ -192,7 +192,7 @@ export default function TaxiRadio() {
     const unlock = () => {
       if (ttsUnlockedRef.current) return;
       try {
-        window.speechSynthesis.cancel();
+        if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(" ");
         u.volume = 0;
         window.speechSynthesis.speak(u);
@@ -267,8 +267,6 @@ export default function TaxiRadio() {
           u.onend = () => wrapDone();
           u.onerror = () => wrapDone();
           window.speechSynthesis.speak(u);
-          
-          // Force la reprise si Android s'est mis en pause tout seul
           if (window.speechSynthesis.paused) {
             window.speechSynthesis.resume();
           }
@@ -399,16 +397,13 @@ export default function TaxiRadio() {
         cycle++;
         if (cycle % 3 === 0 && defaultMusicUrl) {
           playMusicInterlude(defaultMusicUrl, 15000);
-          return;
+        } else {
+          const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
+          ambientIdxRef.current++;
+          speak(AMBIENT_NEWS[idx]);
         }
-        const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
-        ambientIdxRef.current++;
-        speak(AMBIENT_NEWS[idx]);
       }, 18000);
-      return;
-    }
-
-    if (st.url) {
+    } else if (st.url) {
       if (newsHour) {
         a.pause();
         speak(WELCOME_JINGLE);
@@ -422,42 +417,19 @@ export default function TaxiRadio() {
           cycle++;
           if (cycle % 4 === 0 && st.url) {
             playMusicInterlude(st.url, 12000);
-            return;
+          } else {
+            const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
+            ambientIdxRef.current++;
+            speak(AMBIENT_NEWS[idx]);
           }
-          const idx = ambientIdxRef.current % AMBIENT_NEWS.length;
-          ambientIdxRef.current++;
-          speak(AMBIENT_NEWS[idx]);
         }, 18000);
-        return;
+      } else {
+        a.src = st.url;
+        a.volume = st.volume ?? 0.5;
+        a.loop = st.loop ?? true;
+        a.play().catch((err) => console.warn("[Radio] play music failed:", err));
       }
-
-      a.src = st.url;
-      a.volume = st.volume ?? 0.5;
-      a.loop = st.loop ?? true;
-      a.play().catch((err) => console.warn("[Radio] play music failed:", err));
     }
   }, [stationId, ready, newsHour, paused]);
 
   const currentStation = STATIONS.find((s) => s.id === stationId) || STATIONS[0];
-
-  return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2">
-      <audio ref={audioRef} />
-      
-      <button
-        onClick={() => setOpen(!open)}
-        className="w-14 h-14 bg-yellow-500 hover:bg-yellow-600 border-2 border-yellow-400 text-slate-900 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-transform active:scale-95"
-      >
-        {currentStation.emoji}
-      </button>
-
-      {open && (
-        <div className="w-72 bg-slate-900/95 backdrop-blur border-2 border-slate-700 text-white rounded-2xl shadow-2xl p-4 flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-4 duration-200">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-            <div className="flex flex-col">
-              <span className="text-xs text-yellow-500 font-bold tracking-wider uppercase">Autoradio</span>
-              <span className="text-sm font-semibold truncate max-w-[140px]">{currentStation.name}</span>
-            </div>
-            <button
-              onClick={() => setPaused(!paused)}
-              className={`px-3 py-1.5 rounded-xl t
