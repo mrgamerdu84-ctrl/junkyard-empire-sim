@@ -478,6 +478,28 @@ export default function AdminPanel() {
                     onChange={(e) => setAdmin({ rivalEnabled: e.target.checked })} />
                   Activer l'entreprise concurrente (IA)
                 </label>
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ font: "600 11px/1.3 ui-sans-serif", color: "#cbd5e1", marginBottom: 4 }}>
+                    Difficulté IA (vol de missions d'urgence)
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {(["easy","normal","hard"] as const).map(d => (
+                      <button key={d}
+                        onClick={() => setAdmin({ aiDifficulty: d })}
+                        style={{
+                          flex: 1, padding: "6px 8px", borderRadius: 8,
+                          border: `1px solid ${cfg.aiDifficulty === d ? "#22e36a" : "#334155"}`,
+                          background: cfg.aiDifficulty === d ? "#0f3d24" : "#0f172a",
+                          color: "#e8edf5", font: "600 11px ui-sans-serif", cursor: "pointer",
+                        }}>
+                        {d === "easy" ? "😌 Facile" : d === "normal" ? "⚖️ Normal" : "🔥 Coriace"}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="adm-hint" style={{ marginTop: 4 }}>
+                    Facile = l'IA met ~80% plus de temps à voler une mission. Coriace = ~35% plus rapide.
+                  </div>
+                </div>
                 <Slider label="Taxis IA" value={cfg.rivalTaxiCount} min={1} max={6} step={1}
                   format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalTaxiCount: v })} />
                 <Slider label="Temps de réaction" hint="Délai avant que l'IA ne vole une course"
