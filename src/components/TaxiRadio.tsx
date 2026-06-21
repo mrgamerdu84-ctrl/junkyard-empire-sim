@@ -596,7 +596,7 @@ const djLine = (stationName: string): RadioNews => {
 <audio
   ref={audioRef}
   preload="auto"
-  onEnded={(e) => {
+onEnded={(e) => {
   const a = e.currentTarget;
   const st = STATIONS.find((s) => s.id === stationId);
 
@@ -607,7 +607,6 @@ const djLine = (stationName: string): RadioNews => {
   a.load();
   a.play().catch(() => {});
 }}
-
 />
 
 {ticker && (
