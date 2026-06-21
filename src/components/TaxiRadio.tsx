@@ -336,7 +336,13 @@ export default function TaxiRadio() {
         wrapDone();
       };
       try { await a.play(); ttsUnlockedRef.current = true; }
-      catch (err) { console.warn("[Radio] play() bloqué:", err); wrapDone(); }
+      catch (err) {
+        console.warn("[Radio] play() bloqué, fallback navigateur:", err);
+        try { URL.revokeObjectURL(url); } catch {}
+        if (ttsAudioRef.current === a) ttsAudioRef.current = null;
+        a.onended = null; a.onerror = null;
+        speakBrowser();
+      }
     } catch (err) {
       console.warn("[Radio] speak error:", err);
       wrapDone();
