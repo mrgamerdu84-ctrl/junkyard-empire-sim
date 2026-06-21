@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { GAME_ASSETS } from '@/game/gameAssets';
 
+// Importation directe et propre de tes musiques personnalisées
+import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3";
+import ironToothAsset from "@/assets/paperplanerecords-automatic-high-512175.mp3";
+import rockMusicAsset from "@/assets/nastelbom-rock-rock-music-813418.mp3";
+import popMusicAsset from "@/assets/jonasblakewood-pop-524182.mp3";
+
 export type RadioNews = {
   id: string;
   title: string;
@@ -26,12 +32,12 @@ type Station = {
 
 const STATIONS: Station[] = [
   { id: "main",      name: "Junky Empire Taxi",  emoji: "🚖", url: GAME_ASSETS["audio.music"], loop: true, volume: 0.4 },
-  { id: "jce",       name: "Junky City Empire",  emoji: "🎵", url: "/src/assets/nastelbom-summer-pop-871351.mp3", loop: true, volume: 0.6 },
-  { id: "iron",      name: "Iron Tooth",         emoji: "🦷", url: "/src/assets/paperplanerecords-automatic-high-512175.mp3", loop: true, volume: 0.6 },
+  { id: "jce",       name: "Junky City Empire",  emoji: "🎵", url: junkyCityEmpireAsset, loop: true, volume: 0.6 },
+  { id: "iron",      name: "Iron Tooth",         emoji: "🦷", url: ironToothAsset, loop: true, volume: 0.6 },
   { id: "infos",     name: "Junky Infos",        emoji: "📰", url: "", tts: true },
-  { id: "pop",       name: "Radio Pop",          emoji: "🎤", url: "/src/assets/jonasblakewood-pop-524182.mp3", volume: 0.5 },
+  { id: "pop",       name: "Radio Pop",          emoji: "🎤", url: popMusicAsset, volume: 0.5 },
   { id: "electro",   name: "Radio Electro",      emoji: "🎧", url: "https://ice1.somafm.com/groovesalad-128-mp3", volume: 0.5 }, 
-  { id: "rock",      name: "Radio Rock",         emoji: "🎸", url: "/src/assets/nastelbom-rock-rock-music-813418.mp3", volume: 0.5 }, 
+  { id: "rock",      name: "Radio Rock",         emoji: "🎸", url: rockMusicAsset, volume: 0.5 }, 
   { id: "emotions",  name: "Radio Émotions",     emoji: "💖", url: "https://ice1.somafm.com/lush-128-mp3", volume: 0.5 },
   { id: "kids",      name: "Radio Kids",         emoji: "🧸", url: "https://ice1.somafm.com/fluid-128-mp3", volume: 0.5 },
 ];
