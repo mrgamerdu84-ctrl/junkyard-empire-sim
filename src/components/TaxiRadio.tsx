@@ -593,27 +593,21 @@ const djLine = (stationName: string): RadioNews => {
 
   return (
     <>
-      <audio
-        ref={audioRef}
-        preload="auto"
-        
-         onEnded={(e) => {
-  const a = e.currentTarget;
-  const st = STATIONS.find((s) => s.id === stationId);
+<audio
+  ref={audioRef}
+  preload="auto"
+  onEnded={(e) => {
+    const a = e.currentTarget;
+    const st = STATIONS.find((s) => s.id === stationId);
 
-  if (!st?.url || pausedRef.current) return;
+    if (!st?.url || pausedRef.current) return;
 
-  a.currentTime = 0;
-  a.play().catch(() => {});
-}}
-          speak(djLine(st.name), () => {
-            if (session !== radioSessionRef.current) return;
-            startSong();
-          });
-        }}
-      />
+    a.currentTime = 0;
+    a.play().catch(() => {});
+  }}
+/>
 
-      {ticker && (
+{ticker && (
         <div
           style={{
             position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)",
