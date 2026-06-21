@@ -3,15 +3,7 @@ import { GAME_ASSETS } from "@/game/gameAssets";
 import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, getHoroscopeNews, getTvProgramNews, type RadioNews } from "@/lib/radioNews";
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3.asset.json";
 import ironToothAsset from "@/assets/iron_tooth.mp3.asset.json";
-import rockMusic1 from "@/assets/alex-morgan-rock-rock-music-545492.mp3";
-import rockMusic2 from "@/assets/alex-morgan-rock-rock-music-545498.mp3";
-import rockMusic3 from "@/assets/nastelbom-rock-rock-music-513418.mp3";
 
-const ROCK_TRACKS = [
-  rockMusic1,
-  rockMusic2,
-  rockMusic3,
-];
 type Station = {
   id: string;
   name: string;
@@ -29,7 +21,7 @@ const STATIONS: Station[] = [
   { id: "infos", name: "Junky Infos", emoji: "📰", tts: true },
   { id: "pop", name: "Radio Pop", emoji: "🎤", url: "https://ice1.somafm.com/poptron-128-mp3", volume: 0.5 },
   { id: "electro", name: "Radio Electro", emoji: "🎧", url: "https://ice1.somafm.com/groovesalad-128-mp3", volume: 0.5 },
- { id: "rock", name: "Radio Rock", emoji: "🎸", url: rockMusic1, loop: true, volume: 0.5 },
+  { id: "rock", name: "Radio Rock", emoji: "🎸", url: "https://ice6.somafm.com/thetrip-128-mp3", volume: 0.5 },
   { id: "emotions", name: "Radio Émotions", emoji: "💖", url: "https://ice1.somafm.com/lush-128-mp3", volume: 0.5 },
   { id: "kids", name: "Radio Kids", emoji: "🧸", url: "https://ice1.somafm.com/fluid-128-mp3", volume: 0.5 },
 ];
@@ -288,10 +280,11 @@ export default function TaxiRadio() {
     // Fallback de sécurité : si rien ne se passe sous 20s, on libère la séquence
     const failsafe = window.setTimeout(done, 20000);
     const wrapDone = () => { window.clearTimeout(failsafe); done(); };
-   try { window.speechSynthesis.cancel(); } catch {}
-try { window.speechSynthesis.resume(); } catch {}
-ttsUnlockedRef.current = true;
-window.speechSynthesis.speak(u);
+    try {
+      if (ttsAudioRef.current) {
+        try { ttsAudioRef.current.pause(); } catch {}
+        ttsAudioRef.current.src = "";
+        ttsAudioRef.current = null;
       }
       const { supabase } = await import("@/integrations/supabase/client");
       const { data: sessionData } = await supabase.auth.getSession();
@@ -592,23 +585,30 @@ const djLine = (stationName: string): RadioNews => {
 
   return (
     <>
-<audio
-  ref={audioRef}
-  preload="auto"
-onEnded={(e) => {
-  const a = e.currentTarget;
-  const st = STATIONS.find((s) => s.id === stationId);
+      <audio
+        ref={audioRef}
+        preload="auto"
+        onEnded={(e) => {
+          const a = e.currentTarget;
+          const st = STATIONS.find((s) => s.id === stationId);
+          // Fin d'une "chanson" → on relance la séquence : DJ d'abord, PUIS la chanson.
+          // (Ne s'applique qu'aux stations locales en loop ; les flux ne déclenchent pas onEnded.)
+          if (!st?.loop || !st.url || pausedRef.current) return;
+          radioSessionRef.current++;
+          const session = radioSessionRef.current;
+          const startSong = () => {
+            if (session !== radioSessionRef.current || pausedRef.current) return;
+            a.currentTime = 0;
+            a.play().catch(() => {});
+          };
+          speak(djLine(st.name), () => {
+            if (session !== radioSessionRef.current) return;
+            startSong();
+          });
+        }}
+      />
 
-  if (!st?.url || pausedRef.current) return;
-
-  a.src = st.url;
-  a.currentTime = 0;
-  a.load();
-  a.play().catch(() => {});
-}}
-/>
-
-{ticker && (
+      {ticker && (
         <div
           style={{
             position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)",
