@@ -1,22 +1,20 @@
-import { useEffect, useRef, useState } from "react";
-import { GAME_ASSETS } from "@/game/gameAssets";
-import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, getHoroscopeNews, getTvProgramNews, type RadioNews } from "@/lib/radioNews";
+import { useEffect, useRef, useState } from 'react';
+import { GAME_ASSETS } from '@/game/gameAssets';
+import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, getHoroscopeNews, getTvProgramNews, type RadioNews } from '@/lib/radio';
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3.asset.json";
-import rockMusic1 from "@/assets/alex-morgan-rock-rock-music-545492.mp3";
+import rockMusic1 from "@/assets/alex-morgan-rock-rock-music-342492.mp3";
 
 const ROCK_TRACKS = [rockMusic1];
- 
-];
+
 type Station = {
   id: string;
   name: string;
   emoji: string;
-  url?: string;
+  url: string;
   loop?: boolean;
   volume?: number;
   tts?: boolean;
 };
-
 const STATIONS: Station[] = [
   { id: "main",     name: "Junky Empire Taxi",  emoji: "🚖", url: GAME_ASSETS["audio.music"], loop: true, volume: 0.4 },
   { id: "jce",      name: "Junky City Empire",  emoji: "🎵", url: junkyCityEmpireAsset.url, loop: true, volume: 0.6 },
