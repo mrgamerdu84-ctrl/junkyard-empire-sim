@@ -333,34 +333,47 @@ const TRAFFIC_CATEGORIES: CustomVehicleCategory[] = [
   "civil", "police", "ambulance", "firetruck", "service",
 ];
 
-function buildCarsFromCustom(): CarSpec[] {
+function buildCarsFromCustom(count?: number): CarSpec[] {
   const customs = listCustomVehicles().filter(v => TRAFFIC_CATEGORIES.includes(v.category));
-  if (customs.length === 0) return [];
   // Paths autorisés : tout sauf "village".
   const allowedPaths: number[] = [];
-  // ROADS.length connu : 0..N-1 ; filtre les pathIdx village.
   for (let i = 0; i < ROADS.length; i++) if (!VILLAGE_PATHS.has(i)) allowedPaths.push(i);
-  return customs.map((v, i): CarSpec => {
+
+  // Pool d'URLs disponibles : assets civils par défaut + customs roulants.
+  // Permet d'avoir du trafic même sans uploads, et boucle modulo si N > pool.length.
+  const civilUrls = getCivilCarUrls();
+  type Entry = { url: string; category: CustomVehicleCategory };
+  const pool: Entry[] = [
+    ...civilUrls.map((url): Entry => ({ url, category: "civil" })),
+    ...customs.map((v): Entry => ({ url: v.url, category: v.category })),
+  ];
+  if (pool.length === 0) return [];
+
+  const N = Math.max(0, count ?? pool.length);
+  const out: CarSpec[] = [];
+  for (let i = 0; i < N; i++) {
+    const entry = pool[i % pool.length];
     const pathIdx = allowedPaths[i % allowedPaths.length];
-    const flip = (i % 2) === 1; // alterne les sens → voies des deux côtés
-    // Durée plus longue pour les gros gabarits
-    const isHeavy = v.category === "firetruck" || v.category === "service" || v.category === "ambulance";
-    const baseDur = isHeavy ? 96 : 78;
-    const duration = baseDur + (i % 5) * 2;
-    return {
+    const flip = (i % 2) === 1;
+    const isHeavy = entry.category === "firetruck" || entry.category === "service" || entry.category === "ambulance";
+    const baseDur = isHeavy ? 18 : 14;
+    const duration = baseDur + (i % 5) * 0.6;
+    out.push({
       kind: "sedan",
       color: "#888",
       accent: "#111",
       duration,
-      delay: -i * 5,
+      delay: -i * 4,
       pathIdx,
       flip,
       scale: 0.6,
-      imageUrl: v.url,
-      category: v.category,
-    };
-  });
+      imageUrl: entry.url,
+      category: entry.category,
+    });
+  }
+  return out;
 }
+
 
 export default function CityTraffic() {
   const [night, setNight] = useState(0.25);
