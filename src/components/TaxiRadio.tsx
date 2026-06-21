@@ -300,9 +300,10 @@ export default function TaxiRadio() {
           u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
           u.onend = () => wrapDone();
           u.onerror = () => wrapDone();
-          try { window.speechSynthesis.cancel(); } catch {}
-          try { window.speechSynthesis.resume(); } catch {}
-          window.speechSynthesis.speak(u);
+        try { window.speechSynthesis.cancel(); } catch {}
+try { window.speechSynthesis.resume(); } catch {}
+ttsUnlockedRef.current = true;
+window.speechSynthesis.speak(u);
         } catch { wrapDone(); }
       };
       if (!accessToken) { speakBrowser(); return; }
