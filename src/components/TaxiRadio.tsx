@@ -1,8 +1,3 @@
-import { useEffect, useRef, useState } from 'react';
-import { GAME_ASSETS } from '@/game/gameAssets';
-
-// On recrée les types et variables ici pour éviter de bloquer sur le fichier manquant
-export type RadioNews = {
 content: string;
   date?: string;
 };
