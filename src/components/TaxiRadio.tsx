@@ -354,6 +354,7 @@ export default function TaxiRadio() {
 
 
 // ====== Animateur radio (DJ) ======
+};    
 const djLine = ...
   const djLine = (stationName: string): RadioNews => {
     const l = langRef.current;
