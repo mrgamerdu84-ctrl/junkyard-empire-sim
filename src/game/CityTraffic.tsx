@@ -388,9 +388,9 @@ export default function CityTraffic() {
   }, []);
   // Trafic = uniquement véhicules uploadés par le joueur (catégories roulantes).
   // Le slider "Véhicules civils" du panel admin sert de plafond (0 = aucun, max = tous).
-  const allCustomCars = buildCarsFromCustom();
+  const allCustomCars = buildCarsFromCustom(admin.civilVehicleCount);
   void customTick;
-  const activeCars = allCustomCars.slice(0, Math.max(0, Math.min(allCustomCars.length, admin.civilVehicleCount)));
+  const activeCars = allCustomCars;
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const [lights, setLights] = useState<TrafficLight[]>([]);
