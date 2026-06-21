@@ -106,7 +106,9 @@ export default function CrimeEvents() {
           const meta = KIND_META[kind];
           // Délai avant que l'AI rafle la mission : plus le joueur monte de niveau, plus l'AI est rapide.
           const tier = readDepotTier();
-          const aiDelay = Math.max(2200, 7500 - tier * 950);
+          const diff = getAdmin().aiDifficulty;
+          const diffMult = diff === "easy" ? 1.8 : diff === "hard" ? 0.65 : 1;
+          const aiDelay = Math.max(2200, (7500 - tier * 950) * diffMult);
           const ev: CrimeEvent = {
             id: nextId++,
             kind,
