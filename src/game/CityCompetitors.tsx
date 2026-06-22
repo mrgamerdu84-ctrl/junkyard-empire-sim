@@ -68,6 +68,13 @@ export default function CityCompetitors() {
   const [bankruptToast, setBankruptToast] = useState<string | null>(null);
   const [taunt, setTaunt] = useState<{ id: number; from: string; color: string; text: string } | null>(null);
 
+  // Publie la liste pour les taxis rivaux qui circulent sur la map.
+  useEffect(() => {
+    (window as unknown as { __jceCompetitors?: Competitor[] }).__jceCompetitors = comps;
+    window.dispatchEvent(new CustomEvent("jce:competitors-changed", { detail: comps }));
+  }, [comps]);
+
+
   // Level-up joueur → nouveau concurrent agressif (cap 10).
   useEffect(() => {
     const onLevelUp = () => {
