@@ -508,6 +508,8 @@ export default function CityTraffic() {
         speed: baseSpeed,
         laneKey: `${spec.pathIdx}:${spec.flip ? "r" : "f"}`,
         node: carNodes.current[i],
+        pedNode: parkPedNodes.current[i] ?? null,
+        nextParkAttemptAt: performance.now() + 5000 + Math.random() * 15000,
       };
     });
 
