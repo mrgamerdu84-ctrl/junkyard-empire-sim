@@ -547,6 +547,7 @@ export default function AdminPanel() {
               </>
             )}
 
+            {tab === "spec" && <SpecialMissionsTab cfg={cfg} goSkins={() => setTab("skins")} />}
             {tab === "skins" && <SkinsTab />}
             {tab === "export" && <ExportTab />}
 
