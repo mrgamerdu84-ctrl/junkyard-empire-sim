@@ -7,7 +7,6 @@ import { useAuth } from "@/lib/useAuth";
 import {
   createDefi,
   listMyDefis,
-  submitDefiRun,
   type DefiWithPeers,
 } from "@/lib/defis.functions";
 
