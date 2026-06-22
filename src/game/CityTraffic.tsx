@@ -331,11 +331,12 @@ type Parking = {
   phase: ParkPhase;
   phaseEndsAt: number;
   parkedUntil: number;          // fin de la phase "parked"
+  zoneId: string;               // zone de parking pré-définie occupée
   // Pose figée pendant le parking (snapshot à la fin de l'approche)
   startX: number; startY: number; // position monde avant décalage trottoir
-  px: number; py: number;        // position monde de la voiture garée (sur trottoir)
-  angle: number;                 // angle (deg) de la voiture garée
-  tdx: number; tdy: number;      // tangente unitaire au moment du parking
+  px: number; py: number;        // position monde de la voiture garée (sur trottoir) = zone.x/y
+  angle: number;                 // angle (deg) de la voiture garée = zone.angle
+  tdx: number; tdy: number;      // tangente unitaire au moment du parking (cos/sin angle)
   side: 1 | -1;                  // côté trottoir (selon flip)
   // Conducteur
   pedSpriteIdx: number;
