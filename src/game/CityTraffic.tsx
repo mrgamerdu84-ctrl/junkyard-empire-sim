@@ -527,7 +527,14 @@ export default function CityTraffic() {
     for (let i = 0; i < pathRefs.current.length; i++) {
       if (!VILLAGE_PATHS.has(i)) civilAllowed.push(i);
     }
-    const pickPath = () => civilAllowed[Math.floor(Math.random() * civilAllowed.length)];
+    // Round-robin strict pour garantir une distribution équilibrée sur toutes les routes
+    // (sinon la route du haut, plus courte, reste souvent vide visuellement).
+    let pickCursor = Math.floor(Math.random() * Math.max(1, civilAllowed.length));
+    const pickPath = () => {
+      const p = civilAllowed[pickCursor % civilAllowed.length];
+      pickCursor++;
+      return p;
+    };
     // Rerolle path + sens + durée à chaque tour pour casser la régularité.
     // Trafic civil : conduite tranquille (durée allongée, peu de variation) — pas agressif.
     const rerollSpec = (spec: CarSpec): CarSpec => {
