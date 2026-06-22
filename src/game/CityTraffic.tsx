@@ -964,10 +964,14 @@ export default function CityTraffic() {
 
       <g opacity="0.12">
         {ROADS.map((d, i) => (
-          <path key={i} d={d} stroke="#0b0d10" strokeWidth={i >= 4 ? 34 : 46} fill="none" strokeLinecap="round" />
+          VILLAGE_PATHS.has(i) ? null : (
+            <path key={i} d={d} stroke="#0b0d10" strokeWidth={i >= 4 ? 34 : 46} fill="none" strokeLinecap="round" />
+          )
         ))}
         {ROADS.slice(0, 4).map((d, i) => (
-          <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth="2.4" strokeDasharray="18 18" fill="none" opacity="0.72" />
+          VILLAGE_PATHS.has(i) ? null : (
+            <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth="2.4" strokeDasharray="18 18" fill="none" opacity="0.72" />
+          )
         ))}
       </g>
 
