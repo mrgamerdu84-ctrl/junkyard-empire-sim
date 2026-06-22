@@ -328,35 +328,6 @@ export default function ArmoredTruck() {
 
         {showTruck && (
           <>
-            {/* Flics (uniquement pendant le heist) */}
-            {phase === "heist" && [0, 1, 2].map((i) => (
-              <g key={`pol-${i}`} ref={(el) => { polRefs.current[i] = el; }}>
-                <ellipse cx="0" cy="2" rx="9" ry="3" fill="rgba(0,0,0,0.35)" />
-                <rect x="-7" y="-12" width="14" height="24" rx="3" fill="#1e3a8a" stroke="#0b0d10" strokeWidth="1.2" />
-                <rect x="-6" y="-3" width="12" height="3" fill="#fff" />
-                <rect x="-5" y="-11" width="4" height="3" rx="0.8" fill={i % 2 ? "#ef4444" : "#3b82f6"}>
-                  <animate attributeName="fill" values="#ef4444;#3b82f6;#ef4444" dur="0.6s" repeatCount="indefinite" />
-                </rect>
-                <rect x="1" y="-11" width="4" height="3" rx="0.8" fill={i % 2 ? "#3b82f6" : "#ef4444"}>
-                  <animate attributeName="fill" values="#3b82f6;#ef4444;#3b82f6" dur="0.6s" repeatCount="indefinite" />
-                </rect>
-              </g>
-            ))}
-
-            {/* Braqueur (taxi couleur joueur ou rival) */}
-            {phase === "heist" && heister && (
-              <g ref={chaserRef}>
-                <ellipse cx="0" cy="3" rx="10" ry="3" fill="rgba(0,0,0,0.4)" />
-                <rect x="-8" y="-13" width="16" height="26" rx="4" fill={heisterColor} stroke="#0b0d10" strokeWidth="1.4" />
-                <rect x="-7" y="-3" width="14" height="4" fill="#fff" />
-                <rect x="-7" y="-3" width="2.5" height="2" fill="#0b0d10" />
-                <rect x="-2" y="-3" width="2.5" height="2" fill="#0b0d10" />
-                <rect x="3" y="-3" width="2.5" height="2" fill="#0b0d10" />
-                <text x="0" y="9" textAnchor="middle" fontSize="9" fontWeight="900" fill="#0b0d10" fontFamily="system-ui">
-                  💰
-                </text>
-              </g>
-            )}
 
             {/* Camion blindé — cliquable */}
             <g
