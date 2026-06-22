@@ -3,36 +3,64 @@ import { GAME_ASSETS } from "@/game/gameAssets";
 import { RADIO_NEWS_EVENT, AMBIENT_NEWS, WELCOME_JINGLE, getHoroscopeNews, getTvProgramNews, type RadioNews } from "@/lib/radioNews";
 import junkyCityEmpireAsset from "@/assets/junky_city_empire.mp3.asset.json";
 import ironToothAsset from "@/assets/iron_tooth.mp3.asset.json";
-import rockMusic1 from "@/assets/alex-morgan-rock-rock-music-545492.mp3";
-import rockMusic2 from "@/assets/alex-morgan-rock-rock-music-545498.mp3";
-import rockMusic3 from "@/assets/nastelbom-rock-rock-music-513418.mp3";
 
-const ROCK_TRACKS = [
-  rockMusic1,
-  rockMusic2,
-  rockMusic3,
-];
+// Playlists locales (auto-importées via Vite). Ajouter un MP3 dans un dossier
+// suffit pour qu'il rentre automatiquement dans la rotation de sa radio.
+const toList = (mod: Record<string, string>) => Object.values(mod).filter(Boolean);
+const ROCK_PLAYLIST    = toList(import.meta.glob<string>("/src/assets/radio/rock/*.mp3",       { eager: true, query: "?url", import: "default" }));
+const POP_PLAYLIST     = toList(import.meta.glob<string>("/src/assets/radio/pop/*.mp3",        { eager: true, query: "?url", import: "default" }));
+const ELECTRO_PLAYLIST = toList(import.meta.glob<string>("/src/assets/radio/electro/*.mp3",    { eager: true, query: "?url", import: "default" }));
+const RETRO_PLAYLIST   = toList(import.meta.glob<string>("/src/assets/radio/retro-wave/*.mp3", { eager: true, query: "?url", import: "default" }));
+const RELAX_PLAYLIST   = toList(import.meta.glob<string>("/src/assets/radio/relax/*.mp3",      { eager: true, query: "?url", import: "default" }));
+const KIDS_PLAYLIST    = toList(import.meta.glob<string>("/src/assets/radio/kids/*.mp3",       { eager: true, query: "?url", import: "default" }));
+
 type Station = {
   id: string;
   name: string;
   emoji: string;
   url?: string;
+  playlist?: string[];
   loop?: boolean;
   volume?: number;
   tts?: boolean;
 };
+
+// Pour chaque radio à playlist : si aucune piste locale n'a été fournie, on
+// retombe sur un flux Internet libre (SomaFM) pour ne jamais laisser la radio
+// silencieuse. Dès qu'on dépose des MP3 dans le dossier correspondant, la
+// playlist locale prend le relais automatiquement.
+const station = (id: string, name: string, emoji: string, playlist: string[], fallback?: string, volume = 0.5): Station =>
+  playlist.length > 0
+    ? { id, name, emoji, playlist, loop: true, volume }
+    : { id, name, emoji, url: fallback, volume };
 
 const STATIONS: Station[] = [
   { id: "main", name: "Junky Empire Taxi", emoji: "🚖", url: GAME_ASSETS["audio.music"], loop: true, volume: 0.4 },
   { id: "jce", name: "Junky City Empire", emoji: "🎵", url: junkyCityEmpireAsset.url, loop: true, volume: 0.6 },
   { id: "iron", name: "Iron Tooth", emoji: "🦷", url: ironToothAsset.url, loop: true, volume: 0.6 },
   { id: "infos", name: "Junky Infos", emoji: "📰", tts: true },
-  { id: "pop", name: "Radio Pop", emoji: "🎤", url: "https://ice1.somafm.com/poptron-128-mp3", volume: 0.5 },
-  { id: "electro", name: "Radio Electro", emoji: "🎧", url: "https://ice1.somafm.com/groovesalad-128-mp3", volume: 0.5 },
- { id: "rock", name: "Radio Rock", emoji: "🎸", url: rockMusic1, loop: true, volume: 0.5 },
-  { id: "emotions", name: "Radio Émotions", emoji: "💖", url: "https://ice1.somafm.com/lush-128-mp3", volume: 0.5 },
-  { id: "kids", name: "Radio Kids", emoji: "🧸", url: "https://ice1.somafm.com/fluid-128-mp3", volume: 0.5 },
+  station("pop",      "Radio Pop",        "🎤", POP_PLAYLIST,     "https://ice1.somafm.com/poptron-128-mp3"),
+  station("electro",  "Radio Electro",    "🎧", ELECTRO_PLAYLIST, "https://ice1.somafm.com/groovesalad-128-mp3"),
+  station("rock",     "Radio Rock",       "🎸", ROCK_PLAYLIST,    "https://ice1.somafm.com/u80s-128-mp3"),
+  station("retro",    "Radio Retro Wave", "🌆", RETRO_PLAYLIST,   "https://ice1.somafm.com/defcon-128-mp3"),
+  station("emotions", "Radio Émotions",   "💖", RELAX_PLAYLIST,   "https://ice1.somafm.com/lush-128-mp3"),
+  station("kids",     "Radio Kids",       "🧸", KIDS_PLAYLIST,    "https://ice1.somafm.com/fluid-128-mp3"),
 ];
+
+// Index courant de chaque playlist (persiste tant que le composant vit)
+const playlistIndex = new Map<string, number>();
+const currentTrackUrl = (st: Station): string | undefined => {
+  if (st.playlist && st.playlist.length > 0) {
+    const i = playlistIndex.get(st.id) ?? 0;
+    return st.playlist[i % st.playlist.length];
+  }
+  return st.url;
+};
+const advancePlaylist = (st: Station) => {
+  if (!st.playlist || st.playlist.length === 0) return;
+  const i = (playlistIndex.get(st.id) ?? 0) + 1;
+  playlistIndex.set(st.id, i % st.playlist.length);
+};
 const STORAGE_KEY = "mttw.taxiRadio";
 const LANG_KEY = "mttw.lang";
 const DJ_FIRST_DELAY_MS = 1200;
