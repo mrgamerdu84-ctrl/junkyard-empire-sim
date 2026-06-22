@@ -14,10 +14,10 @@ import { PARKING_ZONES, pickFreeZone } from "./parkingZones";
 
 const PED_PHOTO_IMAGES = PEDESTRIAN_PHOTO_URLS;
 
-// Paths "village" (haut de la map) : aucune voiture/piéton civil
-// ni course taxi ne doit s'y générer. On garde l'index pour ne pas casser
-// les autres références numériques.
-export const VILLAGE_PATHS = new Set<number>([1]);
+// Plus aucun path n'est interdit : toutes les routes de la map sont utilisées
+// par le trafic civil, les courses taxi et les concurrents. On conserve
+// l'export pour la compat avec TaxiTycoon (qui filtre via cet ensemble).
+export const VILLAGE_PATHS = new Set<number>();
 
 // === SÉPARATION DES VOIES (code de la route) ===
 // Demi-largeur d'une route ≈ 23 px. On place chaque véhicule à LANE_HALF px
