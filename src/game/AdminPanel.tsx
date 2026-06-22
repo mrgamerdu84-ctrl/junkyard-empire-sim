@@ -329,7 +329,8 @@ export default function AdminPanel() {
             <div className="adm-tabs">
               <button className={`adm-tab ${tab === "trafic" ? "active" : ""}`} onClick={() => setTab("trafic")}>Trafic</button>
               <button className={`adm-tab ${tab === "hq" ? "active" : ""}`} onClick={() => setTab("hq")}>QG</button>
-              <button className={`adm-tab ${tab === "missions" ? "active" : ""}`} onClick={() => setTab("missions")}>Miss.</button>
+             <button className={`adm-tab ${tab === "missions" ? "active" : ""}`} onClick={() => setTab("missions")}>Miss.</button>
+             <button className={`adm-tab ${tab === "spec" ? "active" : ""}`} onClick={() => setTab("spec")}>💥 Spéc.</button>
               <button className={`adm-tab ${tab === "rival" ? "active" : ""}`} onClick={() => setTab("rival")}>Rival</button>
               <button className={`adm-tab ${tab === "concurrents" ? "active" : ""}`} onClick={() => setTab("concurrents")}>Conc.</button>
               <button className={`adm-tab ${tab === "circuit" ? "active" : ""}`} onClick={() => setTab("circuit")}>Circuit</button>
