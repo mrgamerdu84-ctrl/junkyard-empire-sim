@@ -527,12 +527,13 @@ const djLine = (stationName: string, hostName?: string): RadioNews => {
 
     if (st.tts) {
       a.pause();
-      speak(WELCOME_JINGLE);
+      const host = getCurrentHost(st.id);
+      speak(WELCOME_JINGLE, undefined, host.voice);
       let cycle = 0;
       // première brève rapidement (météo / événement / trafic)
       window.setTimeout(() => {
         ambientIdxRef.current++;
-        speak(pickNextBreve());
+        speak(pickNextBreve(), undefined, getCurrentHost(st.id).voice);
       }, 6000);
       // puis enchaîne toutes les ~18s, avec un intermède musical tous les 3 brèves
       ambientTimerRef.current = window.setInterval(() => {
@@ -542,7 +543,7 @@ const djLine = (stationName: string, hostName?: string): RadioNews => {
           return;
         }
         ambientIdxRef.current++;
-        speak(pickNextBreve());
+        speak(pickNextBreve(), undefined, getCurrentHost(st.id).voice);
       }, 18000);
       return;
     }
