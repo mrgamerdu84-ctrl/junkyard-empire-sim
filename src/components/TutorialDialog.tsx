@@ -37,15 +37,32 @@ const STEPS = [
   },
 ];
 
-function pickFrenchVoice(): SpeechSynthesisVoice | null {
+// Préfère une voix masculine française "vétéran/autoritaire".
+// Beaucoup de navigateurs nomment les voix : "Thomas", "Daniel", "Paul",
+// "Henri", "Nicolas", ou exposent un champ "Male". On les détecte par nom,
+// avec repli sur la première voix française disponible.
+const MALE_FR_HINTS = /(thomas|daniel|paul|henri|nicolas|jean|pierre|google.*français.*homme|male|homme|guillaume|sébastien|antoine)/i;
+const FEMALE_FR_HINTS = /(amelie|amélie|audrey|marie|julie|virginie|female|femme|aurélie|aurelie|céline|celine)/i;
+
+function pickFrenchMaleVoice(): SpeechSynthesisVoice | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
+  const fr = voices.filter(v => /^fr/i.test(v.lang));
   return (
-    voices.find(v => /fr[-_]FR/i.test(v.lang)) ||
-    voices.find(v => /^fr/i.test(v.lang)) ||
+    fr.find(v => MALE_FR_HINTS.test(v.name)) ||
+    fr.find(v => !FEMALE_FR_HINTS.test(v.name)) ||
+    voices.find(v => MALE_FR_HINTS.test(v.name)) ||
+    fr[0] ||
     null
   );
+}
+
+function applyVeteranTone(utter: SpeechSynthesisUtterance) {
+  utter.lang = "fr-FR";
+  utter.rate = 0.92;   // un peu plus lent
+  utter.pitch = 0.75;  // grave, autoritaire
+  utter.volume = 1.0;
 }
 
 export default function TutorialDialog({ onClose }: { onClose: () => void }) {
@@ -74,10 +91,8 @@ export default function TutorialDialog({ onClose }: { onClose: () => void }) {
     try { window.speechSynthesis.cancel(); } catch {}
     if (mutedRef.current) return;
     const utter = new SpeechSynthesisUtterance(`${s.title}. ${s.text}`);
-    utter.lang = "fr-FR";
-    utter.rate = 1.02;
-    utter.pitch = 1.0;
-    const v = pickFrenchVoice();
+    applyVeteranTone(utter);
+    const v = pickFrenchMaleVoice();
     if (v) utter.voice = v;
     try { window.speechSynthesis.speak(utter); } catch {}
   }, [step, s.title, s.text]);
@@ -96,8 +111,8 @@ export default function TutorialDialog({ onClose }: { onClose: () => void }) {
       else {
         // relit l'étape courante
         const utter = new SpeechSynthesisUtterance(`${s.title}. ${s.text}`);
-        utter.lang = "fr-FR";
-        const v = pickFrenchVoice();
+        applyVeteranTone(utter);
+        const v = pickFrenchMaleVoice();
         if (v) utter.voice = v;
         try { window.speechSynthesis.speak(utter); } catch {}
       }
