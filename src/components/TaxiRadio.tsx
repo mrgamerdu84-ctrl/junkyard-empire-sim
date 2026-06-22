@@ -641,16 +641,25 @@ const djLine = (stationName: string): RadioNews => {
       <audio
         ref={audioRef}
         preload="auto"
+        playsInline
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        {...({ "webkit-playsinline": "true" } as any)}
         onEnded={(e) => {
           const a = e.currentTarget;
           const st = STATIONS.find((s) => s.id === stationId);
-          // Fin d'une "chanson" → on relance la séquence : DJ d'abord, PUIS la chanson.
-          // (Ne s'applique qu'aux stations locales en loop ; les flux ne déclenchent pas onEnded.)
-          if (!st?.loop || !st.url || pausedRef.current) return;
+          if (!st || pausedRef.current) return;
+          // Fin d'une "chanson" → on relance la séquence : DJ d'abord, PUIS la chanson suivante.
+          // Stations à playlist locale : passer à la piste suivante (boucle infinie).
+          // Stations loop simples (main/jce/iron) : on relit la même piste après le DJ.
+          // Les flux Internet ne déclenchent pas onEnded.
+          if (!st.playlist && !st.loop) return;
           radioSessionRef.current++;
           const session = radioSessionRef.current;
+          if (st.playlist && st.playlist.length > 0) advancePlaylist(st);
+          const nextUrl = currentTrackUrl(st);
           const startSong = () => {
             if (session !== radioSessionRef.current || pausedRef.current) return;
+            if (nextUrl && a.src !== nextUrl) { a.src = nextUrl; try { a.load(); } catch {} }
             a.currentTime = 0;
             a.play().catch(() => {});
           };
@@ -660,6 +669,7 @@ const djLine = (stationName: string): RadioNews => {
           });
         }}
       />
+
 
       {ticker && (
         <div
