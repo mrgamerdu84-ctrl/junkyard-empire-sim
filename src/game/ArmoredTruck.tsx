@@ -120,9 +120,8 @@ export default function ArmoredTruck() {
     const ms = (lo + Math.random() * (hi - lo)) * mult;
     return window.setTimeout(() => {
       if (cfgRef.current.armoredAutoSpawn === false) {
-        // auto-spawn désactivé : on re-planifie pour vérifier plus tard si réactivé
-        const t = scheduleNext(false);
-        timerRef.current = t;
+        // auto-spawn désactivé : on re-planifie plus tard
+        scheduleNext(false);
         return;
       }
       spawn();
