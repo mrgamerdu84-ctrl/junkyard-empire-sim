@@ -353,6 +353,7 @@ type CarState = {
   parking?: Parking;
   pausedS?: number;              // st.s gelé pendant le parking
   nextParkAttemptAt?: number;    // cooldown anti re-park immédiat
+  visible?: boolean;             // CULLING : dans le viewport visible (+ marge)
 };
 
 // Réglages parking
