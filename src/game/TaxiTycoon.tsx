@@ -1919,6 +1919,65 @@ export default function TaxiTycoon() {
   const currentLivery = allLiveries.find((l) => l.id === save.liveryId) ?? allLiveries[0];
   const currentPaint = TAXI_PAINTS.find((p) => p.id === save.playerTaxiColor) ?? TAXI_PAINTS[0];
 
+  // Publie la couleur joueur pour les autres composants (ArmoredTruck, etc.)
+  useEffect(() => {
+    (window as unknown as { __jcePlayerColor?: string }).__jcePlayerColor = currentPaint.color;
+  }, [currentPaint.color]);
+
+  // === Vol & reprise de missions par couleur de compagnie ===
+  // Chaque mission "offered" porte une couleur de compagnie ; toutes les ~4 s,
+  // un rival peut "voler" la pastille d'une mission (sa couleur la remplace),
+  // et le joueur peut la reprendre (chance plus faible). Acceptation = reprise.
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      const w = window as unknown as { __jceCompetitors?: { id: string; color: string; bankrupt: boolean; taxiCount: number }[] };
+      const rivals = (w.__jceCompetitors ?? []).filter((c) => !c.bankrupt && c.taxiCount > 0);
+      setJobs((js) => {
+        let changed = false;
+        const next = js.map((j) => {
+          if (j.status !== "offered") return j;
+          // Init : par défaut joueur si rien n'est revendiqué
+          if (!j.claimedBy) {
+            changed = true;
+            return { ...j, claimedBy: "player", claimedColor: currentPaint.color };
+          }
+          // Si actuellement au joueur : 18% de chance qu'un rival vole la couleur
+          if (j.claimedBy === "player") {
+            if (rivals.length && Math.random() < 0.18) {
+              const r = rivals[Math.floor(Math.random() * rivals.length)];
+              changed = true;
+              return { ...j, claimedBy: r.id, claimedColor: r.color };
+            }
+            // Garder la couleur joueur à jour si elle a changé
+            if (j.claimedColor !== currentPaint.color) {
+              changed = true;
+              return { ...j, claimedColor: currentPaint.color };
+            }
+            return j;
+          }
+          // Si à un rival : 22% que le joueur la reprenne, 8% qu'un autre rival la vole
+          const roll = Math.random();
+          if (roll < 0.22) {
+            changed = true;
+            return { ...j, claimedBy: "player", claimedColor: currentPaint.color };
+          }
+          if (roll < 0.30 && rivals.length > 1) {
+            const others = rivals.filter((r) => r.id !== j.claimedBy);
+            if (others.length) {
+              const r = others[Math.floor(Math.random() * others.length)];
+              changed = true;
+              return { ...j, claimedBy: r.id, claimedColor: r.color };
+            }
+          }
+          return j;
+        });
+        return changed ? next : js;
+      });
+    }, 4000);
+    return () => window.clearInterval(t);
+  }, [currentPaint.color]);
+
+
   // Synchronise la livrée/couleur si le joueur les change depuis le profil
   useEffect(() => {
     const onLivery = (e: Event) => {
