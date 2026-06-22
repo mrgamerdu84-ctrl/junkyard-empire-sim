@@ -185,6 +185,7 @@ function TaxiTycoonPage() {
       <RulesPanel />
       <VersionBanner />
       <GameMenu onHome={() => setPhase("home")} />
+      <RadioPlayer />
 
       <button
         type="button"
