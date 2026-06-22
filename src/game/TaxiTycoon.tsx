@@ -2597,6 +2597,9 @@ export default function TaxiTycoon() {
               </div>
             );
           })()}
+          {saveBlink && (
+            <div className="tt-save-blink">💾 Sauvegardé</div>
+          )}
         </div>
 
 
