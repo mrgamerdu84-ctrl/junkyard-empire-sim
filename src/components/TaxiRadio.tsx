@@ -613,10 +613,11 @@ const djLine = (stationName: string, hostName?: string): RadioNews => {
         if (session !== radioSessionRef.current) return;
         if (pausedRef.current) { startSong(); return; }
         if (!isAnnounceTime()) { startSong(); return; }
-        speak(djLine(st.name), () => {
+        const host = getCurrentHost(st.id);
+        speak(djLine(st.name, host.name), () => {
           if (session !== radioSessionRef.current) return;
           startSong();
-        });
+        }, host.voice);
       };
 
       // Petit délai pour que la transition soit nette (changement de station perceptible)
