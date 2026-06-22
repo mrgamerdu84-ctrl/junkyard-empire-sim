@@ -14,6 +14,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import { useAdminConfig } from "./adminConfig";
+import armoredTruckAsset from "@/assets/armored-truck.png.asset.json";
+
+const DEFAULT_ARMORED_SPRITE = armoredTruckAsset.url;
 
 const SAVE_KEY = "taxi-tycoon-v4";
 const ARMORED_SPRITE_KEY = "jce.armored.sprite";
