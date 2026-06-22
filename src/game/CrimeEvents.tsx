@@ -57,21 +57,38 @@ const HOTSPOTS: { x: number; y: number; isolated?: boolean }[] = [
 
 let nextId = 1;
 
-function pickKind(isNight: boolean): CrimeKind {
+// Mémoire jour-en-cours pour cap braquage : 5% max d'apparition par jour de jeu.
+let lastDayKey = "";
+let robberyRolledToday = false;
+let robberyAllowedToday = false;
+
+function rollRobberyForDay(now: number) {
+  const dayIdx = Math.floor(now / 300_000);
+  const key = `d${dayIdx}`;
+  if (key !== lastDayKey) {
+    lastDayKey = key;
+    robberyRolledToday = true;
+    robberyAllowedToday = Math.random() < 0.05; // 5% par jour
+  }
+  return robberyAllowedToday;
+}
+
+function pickKind(isNight: boolean, robberyOk: boolean): CrimeKind {
   const r = Math.random();
   if (isNight) {
-    if (r < 0.35) return "robbery";
-    if (r < 0.55) return "fight";
-    if (r < 0.72) return "control";
-    if (r < 0.88) return "accident";
+    if (robberyOk && r < 0.20) return "robbery";
+    if (r < 0.40) return "fight";
+    if (r < 0.62) return "control";
+    if (r < 0.85) return "accident";
     return "fire";
   }
-  if (r < 0.35) return "accident";
-  if (r < 0.6)  return "control";
-  if (r < 0.78) return "fight";
-  if (r < 0.92) return "robbery";
+  if (r < 0.40) return "accident";
+  if (r < 0.65) return "control";
+  if (r < 0.85) return "fight";
+  if (robberyOk && r < 0.93) return "robbery";
   return "fire";
 }
+void robberyRolledToday;
 
 export default function CrimeEvents() {
   const [events, setEvents] = useState<CrimeEvent[]>([]);
