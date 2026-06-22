@@ -906,6 +906,7 @@ export default function CityTraffic() {
 
   return (
     <svg
+      ref={svgRef}
       viewBox="0 0 1920 1080"
       preserveAspectRatio="xMidYMid slice"
       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 3 }}
