@@ -27,7 +27,23 @@ export default function RadarFlash() {
       });
     };
     window.addEventListener("jce.radar.flash", on as EventListener);
-    return () => window.removeEventListener("jce.radar.flash", on as EventListener);
+
+    // Radar d'ambiance : déclenche un flash "PNJ flashé" toutes les
+    // 45-90s pour animer la ville (n'affecte pas le joueur).
+    const tick = () => {
+      const evt = new CustomEvent("jce.radar.flash", {
+        detail: { amount: 0, reason: "Véhicule flashé" },
+      });
+      window.dispatchEvent(evt);
+      const next = 45000 + Math.random() * 45000;
+      ambientTimer = window.setTimeout(tick, next);
+    };
+    let ambientTimer = window.setTimeout(tick, 30000);
+
+    return () => {
+      window.removeEventListener("jce.radar.flash", on as EventListener);
+      window.clearTimeout(ambientTimer);
+    };
   }, []);
 
   useEffect(() => {
