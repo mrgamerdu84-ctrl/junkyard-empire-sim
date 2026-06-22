@@ -3240,6 +3240,24 @@ export default function TaxiTycoon() {
           border-radius: 8px; font-size: 13px; color: #c8ccd2;
         }
         .tt-depot-stat-row b { color: #fff; }
+
+        .tt-save-blink {
+          position: absolute; top: 12px; right: 12px;
+          background: rgba(20,22,28,0.92);
+          border: 1px solid #34d399;
+          color: #34d399;
+          font-size: 11px; font-weight: 800;
+          padding: 4px 10px; border-radius: 20px;
+          pointer-events: none;
+          animation: ttSaveBlink 1s ease forwards;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          z-index: 40;
+        }
+        @keyframes ttSaveBlink {
+          0% { opacity: 0; transform: translateY(-6px); }
+          20%, 80% { opacity: 1; transform: translateY(0); }
+          100% { opacity: 0; transform: translateY(-6px); }
+        }
       `}</style>
 
     </>
