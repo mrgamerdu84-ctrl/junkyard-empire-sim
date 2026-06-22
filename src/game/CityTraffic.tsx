@@ -638,7 +638,7 @@ export default function CityTraffic() {
           const myWp = wps.get(me);
           if (myWp) {
             for (const other of states) {
-              if (other === me || other.mission) continue;
+              if (other === me || other.mission || other.parking) continue;
               if (other.laneKey === me.laneKey) continue; // même lane déjà traité
               const owp = wps.get(other);
               if (!owp) continue;
