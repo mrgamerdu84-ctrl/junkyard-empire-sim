@@ -735,10 +735,11 @@ const djLine = (stationName: string, hostName?: string): RadioNews => {
           };
           const m = new Date().getMinutes();
           if (m === 0 || m === 30) {
-            speak(djLine(st.name), () => {
+            const host = getCurrentHost(st.id);
+            speak(djLine(st.name, host.name), () => {
               if (session !== radioSessionRef.current) return;
               startSong();
-            });
+            }, host.voice);
           } else {
             startSong();
           }
