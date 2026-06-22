@@ -986,6 +986,8 @@ export default function TaxiTycoon() {
     if (!hydrated) return;
     const id = setTimeout(() => {
       try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch {}
+      setSaveBlink(true);
+      window.setTimeout(() => setSaveBlink(false), 1000);
       (async () => {
         try {
           const { pushCloudSave } = await import("@/lib/cloudSave");
