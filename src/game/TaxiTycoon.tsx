@@ -2116,7 +2116,15 @@ export default function TaxiTycoon() {
           const haloColor = isSpecial ? "#fde047" : isStar ? "#a855f7" : isVip ? "#fbbf24" : (j.status === "accepted" ? "#3b82f6" : "#10b981");
           const ringColor = isSpecial ? "#a855f7" : haloColor;
           return (
-            <g key={j.id} transform={`translate(${p.x},${p.y})`}>
+            <g
+              key={j.id}
+              transform={`translate(${p.x},${p.y})`}
+              style={{ cursor: j.status === "offered" ? "pointer" : "default", pointerEvents: "auto" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (j.status === "offered") acceptJob(j.id);
+              }}
+            >
               {/* halo au sol — plus gros et pulsant pour MISSION SPÉCIALE */}
               {isSpecial && (
                 <circle r="22" fill="none" stroke={ringColor} strokeWidth="2" opacity="0.85">
