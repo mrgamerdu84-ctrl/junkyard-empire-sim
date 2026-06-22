@@ -83,7 +83,7 @@ export default function ArmoredTruck() {
   // Re-charge le sprite si modifié depuis l'admin
   useEffect(() => {
     const onStorage = () => {
-      try { setSpriteUrl(localStorage.getItem(ARMORED_SPRITE_KEY)); } catch { /* noop */ }
+      try { setSpriteUrl(localStorage.getItem(ARMORED_SPRITE_KEY) ?? DEFAULT_ARMORED_SPRITE); } catch { /* noop */ }
     };
     window.addEventListener("jce:armored-sprite-changed", onStorage);
     window.addEventListener("storage", onStorage);
