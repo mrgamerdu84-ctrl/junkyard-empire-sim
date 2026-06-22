@@ -1072,10 +1072,23 @@ export default function CityTraffic() {
                 <circle r="7" fill="#22e36a" opacity={night * 0.35} />
               )}
             </g>
-            {/* Passage piéton (zébra) au sol */}
-            <g opacity="0.55">
+            {/* Passages piétons (zébras) aux 4 côtés de l'intersection */}
+            <g opacity="0.65" pointerEvents="none">
+              {/* Sud */}
               {[-12, -6, 0, 6, 12].map((ox) => (
-                <rect key={ox} x={ox - 1.5} y={20} width="3" height="14" fill="#f4f4f4" rx="0.5" />
+                <rect key={`s${ox}`} x={ox - 1.5} y={20} width="3" height="14" fill="#f4f4f4" rx="0.5" />
+              ))}
+              {/* Nord */}
+              {[-12, -6, 0, 6, 12].map((ox) => (
+                <rect key={`n${ox}`} x={ox - 1.5} y={-34} width="3" height="14" fill="#f4f4f4" rx="0.5" />
+              ))}
+              {/* Est */}
+              {[-12, -6, 0, 6, 12].map((oy) => (
+                <rect key={`e${oy}`} x={20} y={oy - 1.5} width="14" height="3" fill="#f4f4f4" rx="0.5" />
+              ))}
+              {/* Ouest */}
+              {[-12, -6, 0, 6, 12].map((oy) => (
+                <rect key={`w${oy}`} x={-34} y={oy - 1.5} width="14" height="3" fill="#f4f4f4" rx="0.5" />
               ))}
             </g>
           </g>
