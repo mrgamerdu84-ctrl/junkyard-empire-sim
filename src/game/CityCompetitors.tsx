@@ -29,6 +29,24 @@ const INITIAL: Competitor[] = [
   { id: "shadow",  name: "Shadow Transports",   color: "#a855f7", x: 1620, y: 760, treasury: 22_000, taxiCount: 14, bankrupt: false },
 ];
 
+// Emplacements de QG additionnels — chaque level-up choisit le suivant libre.
+const EXTRA_HQ_SPOTS: { x: number; y: number; color: string; name: string }[] = [
+  { x: 900,  y: 200, color: "#ef4444", name: "Crimson Cabs" },
+  { x: 1280, y: 940, color: "#10b981", name: "Verde Voyages" },
+  { x: 220,  y: 500, color: "#f97316", name: "Orange Pulse" },
+  { x: 1750, y: 220, color: "#ec4899", name: "Pink Bullet" },
+  { x: 760,  y: 1000, color: "#0ea5e9", name: "Aqua Streets" },
+  { x: 1100, y: 560, color: "#84cc16", name: "Lime Limos" },
+];
+const MAX_COMPETITORS = INITIAL.length + EXTRA_HQ_SPOTS.length; // 10
+const TAUNTS = [
+  "On va t'écraser, bleu !",
+  "Range-toi, amateur.",
+  "Mes taxis vont plus vite que les tiens.",
+  "Tu peux laisser tomber le permis.",
+  "Bientôt, c'est nous qui aurons la ville.",
+];
+
 function readPlayerMoney(): number {
   try {
     const raw = localStorage.getItem(SAVE_KEY);
