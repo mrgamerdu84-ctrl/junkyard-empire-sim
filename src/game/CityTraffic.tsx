@@ -10,7 +10,7 @@ import {
   nowSeconds,
   type TrafficLight,
 } from "./trafficLights";
-import { PARKING_ZONES, pickFreeZone, type ParkingZone } from "./parkingZones";
+import { PARKING_ZONES, pickFreeZone } from "./parkingZones";
 
 const PED_PHOTO_IMAGES = PEDESTRIAN_PHOTO_URLS;
 
