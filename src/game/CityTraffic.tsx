@@ -644,19 +644,23 @@ export default function CityTraffic() {
       // 1a) Pré-calcul des positions monde + vecteur direction pour le check cross-lane.
       type WP = { x: number; y: number; dx: number; dy: number };
       const wps = new Map<CarState, WP>();
+      const vr = visibleRect.current;
       for (const st of states) {
-        if (st.mission || st.parking) continue;
+        if (st.mission || st.parking) { st.visible = true; continue; }
         const path = pathRefs.current[st.spec.pathIdx];
-        if (!path) continue;
+        if (!path) { st.visible = false; continue; }
         const fwd = st.spec.flip ? st.pathLen - st.s : st.s;
         const p = path.getPointAtLength(fwd);
+        // CULLING : hors viewport (+ marge) → pas de tangente, pas de raycast, pas de DOM write.
+        st.visible = p.x >= vr.minX && p.x <= vr.maxX && p.y >= vr.minY && p.y <= vr.maxY;
+        if (!st.visible) continue;
         const p2 = path.getPointAtLength(Math.min(st.pathLen, fwd + (st.spec.flip ? -1 : 1)));
         const tdx = p2.x - p.x, tdy = p2.y - p.y;
         const L = Math.hypot(tdx, tdy) || 1;
         wps.set(st, { x: p.x, y: p.y, dx: tdx / L, dy: tdy / L });
       }
       for (const lane of lanes.values()) {
-        const sorted = [...lane].filter(s => !s.mission && !s.parking).sort((a, b) => b.s - a.s);
+        const sorted = [...lane].filter(s => !s.mission && !s.parking && s.visible).sort((a, b) => b.s - a.s);
         for (let i = 0; i < sorted.length; i++) {
           const me = sorted[i];
           const ahead = sorted[(i - 1 + sorted.length) % sorted.length];
@@ -681,7 +685,7 @@ export default function CityTraffic() {
           const myWp = wps.get(me);
           if (myWp) {
             for (const other of states) {
-              if (other === me || other.mission || other.parking) continue;
+              if (other === me || other.mission || other.parking || !other.visible) continue;
               if (other.laneKey === me.laneKey) continue; // même lane déjà traité
               const owp = wps.get(other);
               if (!owp) continue;
@@ -706,6 +710,11 @@ export default function CityTraffic() {
             if (me.speed < floor) me.speed = floor;
           } else if (me.speed < 0) me.speed = 0;
         }
+      }
+      // Cars hors-écran : roulent à vitesse de base (pas de calcul de gap, pas de raycast).
+      for (const st of states) {
+        if (st.mission || st.parking || st.visible) continue;
+        st.speed = st.baseSpeed;
       }
 
       // 1c) Spawner de stationnements — maintient entre PARK_TARGET_MIN et PARK_TARGET_MAX
