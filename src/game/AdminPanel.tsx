@@ -2,7 +2,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig, setAdmin, resetAdmin, type AdminConfig } from "./adminConfig";
 import { useVersionCheck, formatBuildDate } from "@/lib/version-check";
-import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey, listCustomVehicles, addCustomVehicle, removeCustomVehicle, type CustomVehicle, type CustomVehicleCategory, VEHICLE_CATEGORY_LABELS } from "./gameAssets";
+import { GAME_ASSETS, setAssetOverride, listAssetKeys, type AssetKey, listCustomVehicles, addCustomVehicle, removeCustomVehicle, type CustomVehicle, type CustomVehicleCategory, VEHICLE_CATEGORY_LABELS, listCustomPedestrians, addCustomPedestrian, removeCustomPedestrian, type CustomPedestrian } from "./gameAssets";
 import { useAuth } from "@/lib/useAuth";
 import { useIsAdmin, useCloudAdminSync, getLocalCompetitors, setCompetitorsFromCloud, type CloudCompetitor } from "@/lib/adminState";
 
