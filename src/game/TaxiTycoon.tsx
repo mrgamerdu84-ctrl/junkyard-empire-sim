@@ -2728,6 +2728,17 @@ export default function TaxiTycoon() {
 
 
 
+        <button
+          className="tt-actions-fab"
+          onClick={() => setActionsOpen((v) => !v)}
+          title={actionsOpen ? "Réduire les actions" : "Afficher les actions"}
+          aria-expanded={actionsOpen}
+        >
+          <span className="tt-mfab-ico">{actionsOpen ? "✕" : "🛠️"}</span>
+          <span className="tt-mfab-lbl">{actionsOpen ? "Fermer" : "Actions"}</span>
+        </button>
+
+        {actionsOpen && (
         <div className="tt-actions">
           <button className="tt-btn primary" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= effectiveMaxTaxis}>
             <span className="tt-btn-ico">🚕</span>
@@ -2760,6 +2771,7 @@ export default function TaxiTycoon() {
             <span className="tt-btn-cost">Améliorations</span>
           </button>
         </div>
+        )}
 
 
         {/* === Modal Boutique QG === */}
