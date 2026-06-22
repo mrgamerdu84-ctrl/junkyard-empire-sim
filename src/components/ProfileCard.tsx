@@ -470,10 +470,10 @@ function AdminVehiclesCatalog() {
   useEffect(() => {
     const refresh = () => setItems(listCustomVehicles());
     window.addEventListener("storage", refresh);
-    window.addEventListener("jce:custom-vehicles-changed", refresh as EventListener);
+    window.addEventListener("jce.customVehicles.changed", refresh as EventListener);
     return () => {
       window.removeEventListener("storage", refresh);
-      window.removeEventListener("jce:custom-vehicles-changed", refresh as EventListener);
+      window.removeEventListener("jce.customVehicles.changed", refresh as EventListener);
     };
   }, []);
 
