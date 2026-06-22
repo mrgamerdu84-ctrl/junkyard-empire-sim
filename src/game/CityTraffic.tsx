@@ -222,7 +222,7 @@ function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGP
             {/* +90° : sprite top-down "tête au nord", parent applique rotate(angle) basé sur +x */}
             <g transform="rotate(90)">
               <image
-                href={PED_PHOTO_IMAGES[spec.imageIdx]}
+                href={getPedPhotoImages()[spec.imageIdx]}
                 x={-S / 2}
                 y={-S / 2}
                 width={S}
@@ -770,7 +770,7 @@ export default function CityTraffic() {
                   angle: zone.angle,
                   tdx, tdy,
                   side,
-                  pedSpriteIdx: Math.floor(Math.random() * PED_PHOTO_IMAGES.length),
+                  pedSpriteIdx: Math.floor(Math.random() * getPedPhotoImages().length),
                   pedWalkMs: 1800 + Math.random() * 1400,
                   pedReturnAt: now + PARK_APPROACH_MS + parkedMs - 2000,
                 };
@@ -1029,7 +1029,7 @@ export default function CityTraffic() {
               <ellipse cx="0" cy={S * 0.2} rx={S * 0.35} ry={S * 0.18} fill="rgba(0,0,0,0.45)" />
               <g transform="rotate(90)">
                 <image
-                  href={PED_PHOTO_IMAGES[0]}
+                  href={getPedPhotoImages()[0]}
                   x={-S / 2}
                   y={-S / 2}
                   width={S}
