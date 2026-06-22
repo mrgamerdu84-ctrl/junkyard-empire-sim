@@ -443,6 +443,48 @@ export default function CityTraffic() {
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const parkPedNodes = useRef<(SVGGElement | null)[]>([]);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  // Viewport visible en coordonnées SVG (avec preserveAspectRatio="xMidYMid slice").
+  // Recalculé sur resize. Marge de 200 px pour pré-activer les véhicules qui entrent.
+  const visibleRect = useRef<{ minX: number; minY: number; maxX: number; maxY: number }>({
+    minX: -9999, minY: -9999, maxX: 9999, maxY: 9999,
+  });
+  useEffect(() => {
+    const recompute = () => {
+      const svg = svgRef.current;
+      if (!svg) return;
+      const r = svg.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      const VB_W = 1920, VB_H = 1080;
+      const containerRatio = r.width / r.height;
+      const vbRatio = VB_W / VB_H;
+      let visW: number, visH: number;
+      if (containerRatio > vbRatio) {
+        // largeur entièrement visible, hauteur slicée
+        visW = VB_W;
+        visH = VB_W / containerRatio;
+      } else {
+        // hauteur entièrement visible, largeur slicée
+        visH = VB_H;
+        visW = VB_H * containerRatio;
+      }
+      const cx = VB_W / 2, cy = VB_H / 2;
+      const margin = 220;
+      visibleRect.current = {
+        minX: cx - visW / 2 - margin,
+        minY: cy - visH / 2 - margin,
+        maxX: cx + visW / 2 + margin,
+        maxY: cy + visH / 2 + margin,
+      };
+    };
+    recompute();
+    window.addEventListener("resize", recompute);
+    window.addEventListener("orientationchange", recompute);
+    return () => {
+      window.removeEventListener("resize", recompute);
+      window.removeEventListener("orientationchange", recompute);
+    };
+  }, []);
   const [lights, setLights] = useState<TrafficLight[]>([]);
 
 
