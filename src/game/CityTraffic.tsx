@@ -852,8 +852,9 @@ export default function CityTraffic() {
           if (ped) {
             if (pk.phase === "parked") {
               // Base : position sur le trottoir, à côté de la voiture garée
-              const baseX = pk.startX + (-pk.tdy) * PARK_PED_OFFSET * pk.side;
-              const baseY = pk.startY + ( pk.tdx) * PARK_PED_OFFSET * pk.side;
+              // Base : position sur le trottoir, à côté de la voiture garée (zone fixe)
+              const baseX = pk.px + (-pk.tdy) * PARK_PED_OFFSET * pk.side;
+              const baseY = pk.py + ( pk.tdx) * PARK_PED_OFFSET * pk.side;
               let walkK = 0;
               let facingBack = false;
               if (now < pk.pedReturnAt) {
