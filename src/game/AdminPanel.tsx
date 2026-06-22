@@ -111,6 +111,21 @@ export default function AdminPanel() {
     setPwd("");
   };
 
+  const doResetGame = () => {
+    setResetGameMsg("");
+    if (resetGamePhrase.trim() !== "RESET") {
+      setResetGameMsg('Tape exactement "RESET" pour effacer toute la progression.');
+      return;
+    }
+    try {
+      localStorage.removeItem("taxi-tycoon-v4");
+      setResetGameMsg("✅ Partie réinitialisée. Rechargement…");
+      window.setTimeout(() => window.location.reload(), 800);
+    } catch {
+      setResetGameMsg("❌ Impossible d'effacer la sauvegarde.");
+    }
+  };
+
 
   // Mode "placer le QG" — clic sur la map = nouvelle position.
   // On ferme le panneau pendant le placement pour que le clic atteigne la map,
