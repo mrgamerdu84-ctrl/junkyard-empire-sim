@@ -463,7 +463,7 @@ export default function TaxiRadio() {
 
 // ====== Animateur radio (DJ) ======
 
-const djLine = (stationName: string): RadioNews => {
+const djLine = (stationName: string, hostName?: string): RadioNews => {
     const l = langRef.current;
     const now = new Date();
     const hh = now.getHours();
@@ -473,21 +473,23 @@ const djLine = (stationName: string): RadioNews => {
     const w = weatherRef.current;
     const weatherFr = w ? `${weatherCodeText(w.code, "fr")}, ${w.tempC}°C${w.city ? " à " + w.city : ""}` : "météo en cours de mise à jour";
     const weatherEn = w ? `${weatherCodeText(w.code, "en")}, ${w.tempC}°C${w.city ? " in " + w.city : ""}` : "weather updating";
+    const sigFr = hostName ? `Ici ${hostName}. ` : "";
+    const sigEn = hostName ? `${hostName} here. ` : "";
     const intros: RadioNews[] = [
-      { fr: `Il est ${timeFr} sur ${stationName} ! Côté météo : ${weatherFr}. On enchaîne avec un titre du tonnerre, restez branchés !`,
-        en: `It's ${timeEn} on ${stationName}! Weather report: ${weatherEn}. Next track is fire — stay tuned!` },
-      { fr: `Ici ${stationName}, ${timeFr} pile ! ${weatherFr.charAt(0).toUpperCase() + weatherFr.slice(1)} dehors, parfait pour rouler. Prochain morceau dans un instant !`,
-        en: `This is ${stationName}, ${timeEn} sharp! ${weatherEn} outside, perfect driving weather. Next track coming up!` },
-      { fr: `Salut les chauffeurs, ${stationName} vous accompagne. Il est ${timeFr}, ${weatherFr}. On continue avec une pépite, c'est cadeau !`,
-        en: `Hey drivers, ${stationName} keeps you company. It's ${timeEn}, ${weatherEn}. Up next, a real gem — enjoy!` },
-      { fr: `${stationName} ! ${timeFr}, et dehors c'est ${weatherFr}. Le prochain titre est encore meilleur. Roulez prudemment !`,
-        en: `${stationName}! ${timeEn}, and outside it's ${weatherEn}. What's next is even better. Drive safe!` },
-      { fr: `Bienvenue de retour sur ${stationName} ! Il est ${timeFr}, météo : ${weatherFr}. La musique qui envoie, c'est parti !`,
-        en: `Welcome back to ${stationName}! It's ${timeEn}, weather: ${weatherEn}. Pumping music, here we go!` },
-      { fr: `Vous êtes sur ${stationName} ! ${timeFr}, ${weatherFr} sur Junky City. Marathon musical, tenez bon !`,
-        en: `You're on ${stationName}! ${timeEn}, ${weatherEn} over Junky City. Music marathon, hold tight!` },
-      { fr: `${stationName} en direct ! ${timeFr} à l'horloge, ${weatherFr} au thermomètre. Le prochain titre, vous allez kiffer !`,
-        en: `${stationName} live! ${timeEn} on the clock, ${weatherEn} on the thermometer. You're gonna love the next one!` },
+      { fr: `${sigFr}Il est ${timeFr} sur ${stationName} ! Côté météo : ${weatherFr}. On enchaîne avec un titre du tonnerre, restez branchés !`,
+        en: `${sigEn}It's ${timeEn} on ${stationName}! Weather report: ${weatherEn}. Next track is fire — stay tuned!` },
+      { fr: `${sigFr}Ici ${stationName}, ${timeFr} pile ! ${weatherFr.charAt(0).toUpperCase() + weatherFr.slice(1)} dehors, parfait pour rouler. Prochain morceau dans un instant !`,
+        en: `${sigEn}This is ${stationName}, ${timeEn} sharp! ${weatherEn} outside, perfect driving weather. Next track coming up!` },
+      { fr: `${sigFr}Salut les chauffeurs, ${stationName} vous accompagne. Il est ${timeFr}, ${weatherFr}. On continue avec une pépite, c'est cadeau !`,
+        en: `${sigEn}Hey drivers, ${stationName} keeps you company. It's ${timeEn}, ${weatherEn}. Up next, a real gem — enjoy!` },
+      { fr: `${sigFr}${stationName} ! ${timeFr}, et dehors c'est ${weatherFr}. Le prochain titre est encore meilleur. Roulez prudemment !`,
+        en: `${sigEn}${stationName}! ${timeEn}, and outside it's ${weatherEn}. What's next is even better. Drive safe!` },
+      { fr: `${sigFr}Bienvenue de retour sur ${stationName} ! Il est ${timeFr}, météo : ${weatherFr}. La musique qui envoie, c'est parti !`,
+        en: `${sigEn}Welcome back to ${stationName}! It's ${timeEn}, weather: ${weatherEn}. Pumping music, here we go!` },
+      { fr: `${sigFr}Vous êtes sur ${stationName} ! ${timeFr}, ${weatherFr} sur Junky City. Marathon musical, tenez bon !`,
+        en: `${sigEn}You're on ${stationName}! ${timeEn}, ${weatherEn} over Junky City. Music marathon, hold tight!` },
+      { fr: `${sigFr}${stationName} en direct ! ${timeFr} à l'horloge, ${weatherFr} au thermomètre. Le prochain titre, vous allez kiffer !`,
+        en: `${sigEn}${stationName} live! ${timeEn} on the clock, ${weatherEn} on the thermometer. You're gonna love the next one!` },
     ];
     return intros[Math.floor(Math.random() * intros.length)];
   };
