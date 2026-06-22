@@ -66,17 +66,65 @@ export default function CityCompetitors() {
   const [comps, setComps] = useState<Competitor[]>(INITIAL);
   const [playerMoney, setPlayerMoney] = useState<number>(0);
   const [bankruptToast, setBankruptToast] = useState<string | null>(null);
+  const [taunt, setTaunt] = useState<{ id: number; from: string; color: string; text: string } | null>(null);
 
-  // Tick IA : trésorerie fluctue toutes les 5s (-8% à +12%, biais positif léger)
+  // Level-up joueur → nouveau concurrent agressif (cap 10).
+  useEffect(() => {
+    const onLevelUp = () => {
+      setComps((arr) => {
+        if (arr.length >= MAX_COMPETITORS) return arr;
+        const spot = EXTRA_HQ_SPOTS[arr.length - INITIAL.length];
+        if (!spot) return arr;
+        const index = arr.length - INITIAL.length + 1;
+        const aggression = 1 + index * 0.25;
+        const newComp: Competitor = {
+          id: `lvl-${arr.length}`,
+          name: `${spot.name} (Niv ${index + 1})`,
+          color: spot.color,
+          x: spot.x, y: spot.y,
+          treasury: Math.round(15_000 * aggression),
+          taxiCount: Math.round(8 + index * 2),
+          bankrupt: false,
+        };
+        setBankruptToast(`🏢 Nouveau concurrent : ${newComp.name} !`);
+        window.setTimeout(() => setBankruptToast(null), 5000);
+        return [...arr, newComp];
+      });
+    };
+    window.addEventListener("jce:license-up", onLevelUp as EventListener);
+    return () => window.removeEventListener("jce:license-up", onLevelUp as EventListener);
+  }, []);
+
+  // Narguage périodique
+  useEffect(() => {
+    const t = window.setInterval(() => {
+      setComps((arr) => {
+        const alive = arr.filter((c) => !c.bankrupt);
+        if (alive.length === 0) return arr;
+        const aggressive = alive.filter((c) => c.id.startsWith("lvl-"));
+        const pool = aggressive.length > 0 && Math.random() < 0.7 ? aggressive : alive;
+        const who = pool[Math.floor(Math.random() * pool.length)];
+        const text = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
+        setTaunt({ id: Date.now(), from: who.name, color: who.color, text });
+        window.setTimeout(() => setTaunt(null), 4200);
+        return arr;
+      });
+    }, 22000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Tick IA : trésorerie fluctue toutes les 5s ; concurrents agressifs (id "lvl-*") croissent plus vite.
   useEffect(() => {
     const t = window.setInterval(() => {
       setComps((arr) =>
         arr.map((c) => {
           if (c.bankrupt) return c;
-          const delta = c.treasury * (-0.08 + Math.random() * 0.20);
+          const isAggressive = c.id.startsWith("lvl-");
+          const lo = isAggressive ? -0.04 : -0.08;
+          const hi = isAggressive ? 0.28 : 0.20;
+          const delta = c.treasury * (lo + Math.random() * (hi - lo));
           const nextT = Math.max(500, c.treasury + delta);
-          // évolue parfois de taxis (±1)
-          const dT = Math.random() < 0.15 ? (Math.random() < 0.5 ? -1 : 1) : 0;
+          const dT = Math.random() < (isAggressive ? 0.25 : 0.15) ? (Math.random() < 0.5 ? -1 : 1) : 0;
           return { ...c, treasury: nextT, taxiCount: Math.max(1, c.taxiCount + dT) };
         }),
       );
