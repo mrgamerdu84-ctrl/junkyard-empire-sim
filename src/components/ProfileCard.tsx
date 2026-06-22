@@ -201,6 +201,11 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
           const t = tierFor(licenseLevel);
           const nextXp = t.nextXp;
           const pct = nextXp ? Math.min(100, Math.round(((licenseXp - t.minXp) / (nextXp - t.minXp)) * 100)) : 100;
+          // Plaque évolutive : préfixe LV + niveau, hash stable sur l'id.
+          const idSeed = (user?.id || "00000000").replace(/-/g, "").toUpperCase();
+          const letters = (idSeed.replace(/[^A-Z]/g, "") + "AAA").slice(0, 3);
+          const digits = (idSeed.replace(/[^0-9]/g, "") + "000").slice(0, 3);
+          const plate = `LV${String(t.level).padStart(2, "0")}-${letters}-${digits}`;
           return (
             <div style={{
               background: "linear-gradient(160deg,#0a0c10,#1f2937)",
@@ -217,7 +222,21 @@ export default function ProfileCard({ onClose }: { onClose: () => void }) {
               <div style={{ height: 8, background: "#0a0c10", borderRadius: 4, overflow: "hidden", border: "1px solid #374151" }}>
                 <div style={{ width: `${pct}%`, height: "100%", background: "linear-gradient(90deg,#f59e0b,#fde047)", transition: "width .3s" }} />
               </div>
-              <div style={{ marginTop: 6, fontSize: 11, color: "#9ca3af" }}>
+              <div style={{ marginTop: 10, display: "flex", justifyContent: "center" }}>
+                <div style={{
+                  background: "linear-gradient(180deg,#fef9c3,#fde047)",
+                  color: "#1a1208",
+                  border: "2px solid #1a1208",
+                  borderRadius: 6,
+                  padding: "4px 14px",
+                  font: "900 18px/1 'Courier New', ui-monospace, monospace",
+                  letterSpacing: 2,
+                  boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.25)",
+                }} title="Ta plaque évolue à chaque montée de permis">
+                  {plate}
+                </div>
+              </div>
+              <div style={{ marginTop: 8, fontSize: 11, color: "#9ca3af" }}>
                 {t.level >= 4 ? "⭐ Clients STAR débloqués (+100% pourboire)" :
                  t.level >= 3 ? "🥈 Clients VIP débloqués (+50% pourboire). STAR à Niv. 4." :
                  t.level >= 2 ? "Encore un peu : clients VIP à Niv. 3 🥈" :
