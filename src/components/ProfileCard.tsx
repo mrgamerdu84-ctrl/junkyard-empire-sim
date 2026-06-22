@@ -7,6 +7,7 @@ import { deleteOwnAccount } from "@/lib/account.functions";
 import avatarMan from "@/assets/avatar-man.png";
 import avatarWoman from "@/assets/avatar-woman.png";
 import { getAllLiveries, TAXI_PAINTS } from "@/game/TaxiTycoon";
+import { listCustomVehicles, VEHICLE_CATEGORY_LABELS, type CustomVehicle, type CustomVehicleCategory } from "@/game/gameAssets";
 
 
 const TT_SAVE_KEY = "taxi-tycoon-v4";
