@@ -486,7 +486,8 @@ const djLine = (stationName: string): RadioNews => {
       return;
     }
 
-    if (st.url) {
+    const trackUrl = currentTrackUrl(st);
+    if (trackUrl) {
       // Heure des infos : pendant les 10 premières minutes de chaque heure,
       // les radios musicales basculent sur les brèves (avec courts intermèdes musicaux).
       if (newsHour) {
@@ -499,8 +500,8 @@ const djLine = (stationName: string): RadioNews => {
         }, 4000);
         ambientTimerRef.current = window.setInterval(() => {
           cycle++;
-          if (cycle % 4 === 0 && st.url) {
-            playMusicInterlude(st.url, 12000);
+          if (cycle % 4 === 0 && trackUrl) {
+            playMusicInterlude(trackUrl, 12000);
             return;
           }
           ambientIdxRef.current++;
@@ -515,8 +516,10 @@ const djLine = (stationName: string): RadioNews => {
       radioSessionRef.current++;
       const session = radioSessionRef.current;
       a.pause();
-      a.loop = false; // on gère la boucle manuellement pour réinsérer le DJ entre chaque passe
-      if (st.url && a.src !== st.url) a.src = st.url;
+      // Pour une playlist locale on enchaîne piste après piste manuellement,
+      // donc loop = false. Pour un flux unique (Soma, JCE, ...) on garde loop.
+      a.loop = !st.playlist && !!st.loop;
+      if (a.src !== trackUrl) { a.src = trackUrl; try { a.load(); } catch {} }
       a.volume = st.volume ?? 0.5;
 
       const startSong = () => {
