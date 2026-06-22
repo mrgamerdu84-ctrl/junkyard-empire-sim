@@ -316,6 +316,30 @@ export default function TaxiRadio() {
     // Fallback de sécurité : si rien ne se passe sous 20s, on libère la séquence
     const failsafe = window.setTimeout(done, 20000);
     const wrapDone = () => { window.clearTimeout(failsafe); done(); };
+    const speakBrowser = () => {
+      if (typeof window === "undefined" || !("speechSynthesis" in window)) { wrapDone(); return; }
+      try {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = l === "en" ? "en-US" : "fr-FR";
+        const v = pickVoice(l); if (v) u.voice = v;
+        u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
+        u.onend = () => wrapDone();
+        u.onerror = () => wrapDone();
+        try { window.speechSynthesis.cancel(); } catch {}
+        try { window.speechSynthesis.resume(); } catch {}
+        ttsUnlockedRef.current = true;
+        window.speechSynthesis.speak(u);
+        // iOS Safari : keep-alive (le moteur passe en pause après ~15s)
+        const keep = window.setInterval(() => {
+          try {
+            if (!window.speechSynthesis.speaking) { window.clearInterval(keep); return; }
+            window.speechSynthesis.pause();
+            window.speechSynthesis.resume();
+          } catch { window.clearInterval(keep); }
+        }, 10000);
+        u.addEventListener("end", () => window.clearInterval(keep));
+      } catch { wrapDone(); }
+    };
     try {
       if (ttsAudioRef.current) {
         try { ttsAudioRef.current.pause(); } catch {}
@@ -325,22 +349,6 @@ export default function TaxiRadio() {
       const { supabase } = await import("@/integrations/supabase/client");
       const { data: sessionData } = await supabase.auth.getSession();
       const accessToken = sessionData?.session?.access_token;
-      const speakBrowser = () => {
-        if (typeof window === "undefined" || !("speechSynthesis" in window)) { wrapDone(); return; }
-        try {
-          // Re-pick voice lazily (voices may load after first render)
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = l === "en" ? "en-US" : "fr-FR";
-          const v = pickVoice(l); if (v) u.voice = v;
-          u.rate = 1.0; u.pitch = 1.0; u.volume = 1.0;
-          u.onend = () => wrapDone();
-          u.onerror = () => wrapDone();
-        try { window.speechSynthesis.cancel(); } catch {}
-try { window.speechSynthesis.resume(); } catch {}
-ttsUnlockedRef.current = true;
-window.speechSynthesis.speak(u);
-        } catch { wrapDone(); }
-      };
       if (!accessToken) { speakBrowser(); return; }
       const res = await fetch("/api/public/radio-tts", {
         method: "POST",
