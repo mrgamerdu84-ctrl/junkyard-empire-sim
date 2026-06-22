@@ -386,9 +386,12 @@ const PARK_LANE_OFFSET = 18;
 const PARK_PED_OFFSET = 34;
 const PARK_PED_WALK_PX = 55;
 
-// Toutes les catégories sauf "taxi" peuvent rouler dans la circulation.
+// Catégories autorisées dans le trafic libre : uniquement les civils & véhicules
+// de service. Police / ambulance / pompiers ne roulent QUE sur intervention
+// (cf. EmergencyStations + InterventionDispatcher) → ils restent à leur QG
+// le reste du temps.
 const TRAFFIC_CATEGORIES: CustomVehicleCategory[] = [
-  "civil", "police", "ambulance", "firetruck", "service",
+  "civil", "service",
 ];
 
 function buildCarsFromCustom(count?: number): CarSpec[] {
@@ -401,21 +404,12 @@ function buildCarsFromCustom(count?: number): CarSpec[] {
   // Permet d'avoir du trafic même sans uploads, et boucle modulo si N > pool.length.
   const civilUrls = getCivilCarUrls();
   type Entry = { url: string; category: CustomVehicleCategory };
-  // Véhicules d'urgence : 1 seul de chaque par défaut, pour donner
-  // l'impression qu'ils sont "garés" au commissariat / caserne et
-  // n'apparaissent qu'occasionnellement dans le trafic. Ils restent
-  // disponibles pour les interventions (assignation par catégorie).
-  const emergencyDefaults: Entry[] = [
-    { url: GAME_ASSETS["police.car"], category: "police" },
-    { url: GAME_ASSETS["emergency.ambulance"], category: "ambulance" },
-    { url: GAME_ASSETS["emergency.firetruck"], category: "firetruck" },
-  ];
   const pool: Entry[] = [
-    ...emergencyDefaults,
     ...civilUrls.map((url): Entry => ({ url, category: "civil" })),
     ...customs.map((v): Entry => ({ url: v.url, category: v.category })),
   ];
   if (pool.length === 0) return [];
+
 
   const N = Math.max(0, count ?? pool.length);
   const out: CarSpec[] = [];
