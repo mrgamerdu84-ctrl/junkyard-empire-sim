@@ -111,8 +111,8 @@ export default function TutorialDialog({ onClose }: { onClose: () => void }) {
       else {
         // relit l'étape courante
         const utter = new SpeechSynthesisUtterance(`${s.title}. ${s.text}`);
-        utter.lang = "fr-FR";
-        const v = pickFrenchVoice();
+        applyVeteranTone(utter);
+        const v = pickFrenchMaleVoice();
         if (v) utter.voice = v;
         try { window.speechSynthesis.speak(utter); } catch {}
       }
