@@ -788,34 +788,28 @@ export default function CityTraffic() {
           }
           node.setAttribute("transform", `translate(${cx.toFixed(2)},${cy.toFixed(2)}) rotate(${pk.angle.toFixed(2)})`);
 
-          // Animation du conducteur : sort, marche, revient
+          // Animation du conducteur : sort, marche en avant, idle, revient
           const ped = st.pedNode;
           if (ped) {
             if (pk.phase === "parked") {
-              // base = position au bord du trottoir, juste à côté de la portière
+              // Base : position sur le trottoir, à côté de la voiture garée
               const baseX = pk.startX + (-pk.tdy) * PARK_PED_OFFSET * pk.side;
               const baseY = pk.startY + ( pk.tdx) * PARK_PED_OFFSET * pk.side;
-              // progression 0 → 1 → 0 (aller-retour le long du trottoir)
-              const elapsed = now - (pk.parkedUntil - (pk.parkedUntil - (pk.phaseEndsAt - PARK_APPROACH_MS)));
-              // Simplification : fraction du temps écoulé depuis le début de la phase parked
-              const totalParked = pk.parkedUntil - (pk.phaseEndsAt); // négatif pendant approach
-              void elapsed; void totalParked;
-              const remaining = pk.parkedUntil - now;
-              const fullParked = pk.parkedUntil - (pk.parkedUntil - (PARK_DURATION_MIN_MS)); // pas utilisé
-              void fullParked;
-              // On utilise pk.pedReturnAt : avant → marche en avant, après → revient
-              let walkK: number;
+              let walkK = 0;
+              let facingBack = false;
               if (now < pk.pedReturnAt) {
-                walkK = Math.min(1, (now - (pk.parkedUntil - (pk.pedReturnAt + 0 - (pk.parkedUntil - pk.pedWalkMs)))) / pk.pedWalkMs);
-                // Fallback simple : fraction = 1 - remaining/total
-                walkK = Math.max(0, Math.min(1, 1 - (pk.pedReturnAt - now) / pk.pedWalkMs));
+                // aller : 0 → 1 sur pedWalkMs
+                walkK = Math.max(0, Math.min(1, (now - (pk.pedReturnAt - pk.pedWalkMs)) / pk.pedWalkMs));
               } else {
-                walkK = 1 - Math.max(0, Math.min(1, (now - pk.pedReturnAt) / Math.max(800, remaining)));
+                // retour : 1 → 0 sur ce qui reste avant parkedUntil
+                const back = Math.max(400, pk.parkedUntil - pk.pedReturnAt);
+                walkK = 1 - Math.max(0, Math.min(1, (now - pk.pedReturnAt) / back));
+                facingBack = true;
               }
               const off = walkK * PARK_PED_WALK_PX;
               const px = baseX + pk.tdx * off;
               const py = baseY + pk.tdy * off;
-              const pAng = (Math.atan2(pk.tdy, pk.tdx) * 180) / Math.PI + (now < pk.pedReturnAt ? 0 : 180);
+              const pAng = (Math.atan2(pk.tdy, pk.tdx) * 180) / Math.PI + (facingBack ? 180 : 0);
               ped.setAttribute("transform", `translate(${px.toFixed(2)},${py.toFixed(2)}) rotate(${pAng.toFixed(2)})`);
               ped.setAttribute("opacity", "1");
             } else {
