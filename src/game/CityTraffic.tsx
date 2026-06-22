@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAdminConfig } from "./adminConfig";
-import { PEDESTRIAN_PHOTO_URLS, listCustomVehicles, getCivilCarUrls, GAME_ASSETS, type CustomVehicleCategory } from "./gameAssets";
+import { getPedestrianPhotoUrls, listCustomVehicles, getCivilCarUrls, GAME_ASSETS, type CustomVehicleCategory } from "./gameAssets";
 import { VehicleSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
 import {
   initTrafficLights,
@@ -12,7 +12,10 @@ import {
 } from "./trafficLights";
 import { PARKING_ZONES, pickFreeZone } from "./parkingZones";
 
-const PED_PHOTO_IMAGES = PEDESTRIAN_PHOTO_URLS;
+// Dynamique : inclut les piétons custom uploadés via le panel admin.
+// Recalculé à chaque appel — les composants qui en dépendent écoutent
+// 'jce.customPedestrians.changed' pour re-render.
+const getPedPhotoImages = () => getPedestrianPhotoUrls();
 
 // Plus aucun path n'est interdit : toutes les routes de la map sont utilisées
 // par le trafic civil, les courses taxi et les concurrents. On conserve
