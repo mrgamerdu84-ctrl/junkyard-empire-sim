@@ -16,6 +16,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDefisRouteImport } from './routes/_authenticated/defis'
+import { Route as AuthenticatedArenaRouteImport } from './routes/_authenticated/arena'
 import { Route as ApiPublicUploadApkRouteImport } from './routes/api/public/upload-apk'
 import { Route as ApiPublicRadioTtsRouteImport } from './routes/api/public/radio-tts'
 
@@ -53,6 +54,11 @@ const AuthenticatedDefisRoute = AuthenticatedDefisRouteImport.update({
   path: '/defis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedArenaRoute = AuthenticatedArenaRouteImport.update({
+  id: '/arena',
+  path: '/arena',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicUploadApkRoute = ApiPublicUploadApkRouteImport.update({
   id: '/api/public/upload-apk',
   path: '/api/public/upload-apk',
@@ -70,6 +76,7 @@ export interface FileRoutesByFullPath {
   '/download': typeof DownloadRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/arena': typeof AuthenticatedArenaRoute
   '/defis': typeof AuthenticatedDefisRoute
   '/api/public/radio-tts': typeof ApiPublicRadioTtsRoute
   '/api/public/upload-apk': typeof ApiPublicUploadApkRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/arena': typeof AuthenticatedArenaRoute
   '/defis': typeof AuthenticatedDefisRoute
   '/api/public/radio-tts': typeof ApiPublicRadioTtsRoute
   '/api/public/upload-apk': typeof ApiPublicUploadApkRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/download': typeof DownloadRoute
   '/mentions-legales': typeof MentionsLegalesRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/arena': typeof AuthenticatedArenaRoute
   '/_authenticated/defis': typeof AuthenticatedDefisRoute
   '/api/public/radio-tts': typeof ApiPublicRadioTtsRoute
   '/api/public/upload-apk': typeof ApiPublicUploadApkRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/mentions-legales'
     | '/reset-password'
+    | '/arena'
     | '/defis'
     | '/api/public/radio-tts'
     | '/api/public/upload-apk'
@@ -114,6 +124,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/mentions-legales'
     | '/reset-password'
+    | '/arena'
     | '/defis'
     | '/api/public/radio-tts'
     | '/api/public/upload-apk'
@@ -125,6 +136,7 @@ export interface FileRouteTypes {
     | '/download'
     | '/mentions-legales'
     | '/reset-password'
+    | '/_authenticated/arena'
     | '/_authenticated/defis'
     | '/api/public/radio-tts'
     | '/api/public/upload-apk'
@@ -192,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDefisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/arena': {
+      id: '/_authenticated/arena'
+      path: '/arena'
+      fullPath: '/arena'
+      preLoaderRoute: typeof AuthenticatedArenaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/upload-apk': {
       id: '/api/public/upload-apk'
       path: '/api/public/upload-apk'
@@ -210,10 +229,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedArenaRoute: typeof AuthenticatedArenaRoute
   AuthenticatedDefisRoute: typeof AuthenticatedDefisRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedArenaRoute: AuthenticatedArenaRoute,
   AuthenticatedDefisRoute: AuthenticatedDefisRoute,
 }
 
@@ -233,13 +254,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

@@ -246,6 +246,15 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
             Jouer ▶
           </button>
         )}
+        {user && (
+          <button
+            className="hs-btn"
+            style={{ background: "linear-gradient(180deg,#ef4444,#b91c1c)", color: "#fff", boxShadow: "0 6px 0 #7f1d1d, 0 12px 20px rgba(0,0,0,0.5)", border: "2px solid #fca5a5", textShadow: "0 1px 0 rgba(0,0,0,0.3)" }}
+            onClick={() => navigate({ to: "/arena" })}
+          >
+            ⚔️ Arène Mondiale
+          </button>
+        )}
         <button className="hs-btn" onClick={() => setShowLeaderboard(true)}>
           🏆 Classement
         </button>

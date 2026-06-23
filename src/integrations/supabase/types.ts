@@ -140,6 +140,166 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_elo: {
+        Row: {
+          draws: number
+          losses: number
+          rating: number
+          updated_at: string
+          user_id: string
+          wins: number
+        }
+        Insert: {
+          draws?: number
+          losses?: number
+          rating?: number
+          updated_at?: string
+          user_id: string
+          wins?: number
+        }
+        Update: {
+          draws?: number
+          losses?: number
+          rating?: number
+          updated_at?: string
+          user_id?: string
+          wins?: number
+        }
+        Relationships: []
+      }
+      mp_match_events: {
+        Row: {
+          amount: number
+          created_at: string
+          event_type: string
+          id: number
+          match_id: string
+          missions_completed: number
+          total_score: number
+          user_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          event_type: string
+          id?: number
+          match_id: string
+          missions_completed?: number
+          total_score?: number
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          event_type?: string
+          id?: number
+          match_id?: string
+          missions_completed?: number
+          total_score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_match_events_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "mp_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_match_players: {
+        Row: {
+          elo_after: number | null
+          elo_before: number
+          last_event_at: string
+          match_id: string
+          missions_completed: number
+          pseudo: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          elo_after?: number | null
+          elo_before?: number
+          last_event_at?: string
+          match_id: string
+          missions_completed?: number
+          pseudo?: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          elo_after?: number | null
+          elo_before?: number
+          last_event_at?: string
+          match_id?: string
+          missions_completed?: number
+          pseudo?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_match_players_match_id_fkey"
+            columns: ["match_id"]
+            isOneToOne: false
+            referencedRelation: "mp_matches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_matches: {
+        Row: {
+          duration_sec: number
+          ended_at: string | null
+          id: string
+          seed: number
+          started_at: string
+          status: string
+          winner_id: string | null
+        }
+        Insert: {
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          seed: number
+          started_at?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Update: {
+          duration_sec?: number
+          ended_at?: string | null
+          id?: string
+          seed?: number
+          started_at?: string
+          status?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
+      mp_queue: {
+        Row: {
+          duration_sec: number
+          joined_at: string
+          rating: number
+          user_id: string
+        }
+        Insert: {
+          duration_sec?: number
+          joined_at?: string
+          rating?: number
+          user_id: string
+        }
+        Update: {
+          duration_sec?: number
+          joined_at?: string
+          rating?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_kind: string
@@ -227,6 +387,44 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      mp_finish_match: {
+        Args: { _match_id: string }
+        Returns: {
+          duration_sec: number
+          ended_at: string | null
+          id: string
+          seed: number
+          started_at: string
+          status: string
+          winner_id: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "mp_matches"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      mp_join_matchmaking: { Args: { _duration_sec?: number }; Returns: string }
+      mp_leaderboard: {
+        Args: { _limit?: number }
+        Returns: {
+          draws: number
+          losses: number
+          pseudo: string
+          rating: number
+          user_id: string
+          wins: number
+        }[]
+      }
+      mp_leave_queue: { Args: never; Returns: undefined }
+      mp_submit_event: {
+        Args: { _amount: number; _match_id: string }
+        Returns: {
+          missions_completed: number
+          total_score: number
+        }[]
       }
       submit_defi_run: {
         Args: {
