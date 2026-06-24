@@ -164,14 +164,21 @@ export default function AdminPanel() {
     setAdmin({ circuitPoints: [] }); // repart d'un circuit vide
     setDrawMode(true);
     setOpen(false);
+    (window as unknown as { __jceCircuitEdit?: boolean }).__jceCircuitEdit = true;
+    window.dispatchEvent(new CustomEvent("jce:circuit-edit-changed", { detail: true }));
   };
   const undoPoint = () => {
     const pts = cfg.circuitPoints ?? [];
     if (pts.length === 0) return;
     setAdmin({ circuitPoints: pts.slice(0, -1) });
   };
-  const finishDraw = () => setDrawMode(false);
+  const finishDraw = () => {
+    setDrawMode(false);
+    (window as unknown as { __jceCircuitEdit?: boolean }).__jceCircuitEdit = false;
+    window.dispatchEvent(new CustomEvent("jce:circuit-edit-changed", { detail: false }));
+  };
   const clearCircuit = () => setAdmin({ circuitPoints: [], circuitTaxiCount: 0 });
+
 
 
 
