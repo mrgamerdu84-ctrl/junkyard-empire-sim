@@ -115,6 +115,7 @@ export default function CityRivalTaxis() {
         const path = pathRefs.current[roam.pathIdx];
         if (!path) continue;
         const len = lens[roam.pathIdx];
+        if (!Number.isFinite(len) || len <= 0) continue;
         let u = (now - roam.startedAt) / (roam.duration * 1000);
         if (u >= 1) {
           // Tirer une nouvelle route + sens aléatoires
@@ -124,7 +125,8 @@ export default function CityRivalTaxis() {
           roam.startedAt = now;
           u = 0;
         }
-        const fwd = roam.flip ? len * (1 - u) : len * u;
+        const fwd = Math.max(0, Math.min(len, roam.flip ? len * (1 - u) : len * u));
+        if (!Number.isFinite(fwd)) continue;
         const p = path.getPointAtLength(fwd);
         const p2 = path.getPointAtLength(Math.min(len, Math.max(0, fwd + (roam.flip ? -1 : 1))));
         const tdx = p2.x - p.x, tdy = p2.y - p.y;
