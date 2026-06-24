@@ -693,6 +693,7 @@ export default function CityTraffic() {
       const wps = new Map<CarState, WP>();
       const vr = visibleRect.current;
       for (const st of states) {
+        if ((st as CarState & { dormant?: boolean }).dormant) { st.visible = false; continue; }
         if (st.mission || st.parking) { st.visible = true; continue; }
         const path = pathRefs.current[st.spec.pathIdx];
         if (!path) { st.visible = false; continue; }
