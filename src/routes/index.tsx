@@ -184,6 +184,7 @@ function TaxiTycoonPage() {
       {/* <AmbientSirens /> — désactivé sur demande joueur */}
       <AdminPanel />
       <RulesPanel />
+      <TrafficDebugPanel />
       <VersionBanner />
       <GameMenu onHome={() => setPhase("home")} />
       <RadioPlayer />
