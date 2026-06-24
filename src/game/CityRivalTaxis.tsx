@@ -8,6 +8,7 @@
 // =============================================================
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
+import { getGameTime } from "./cityClock";
 
 // Routes utilisables par les taxis rivaux : on exclut les "village paths"
 // (ex: index 1, off-screen en portrait) pour ne pas voir des voitures voler.
@@ -96,14 +97,25 @@ export default function CityRivalTaxis() {
       startedAt: now0 - sp.offset * sp.duration * 1000,
     }));
     let raf = 0;
+    let lastDensityCheck = 0;
+    let activeCount = specs.length;
     const step = (now: number) => {
+      if (now - lastDensityCheck > 4000) {
+        lastDensityCheck = now;
+        const gt = getGameTime();
+        const ratio = Math.max(0.12, Math.min(1, gt.density / 1.2));
+        activeCount = Math.max(1, Math.round(specs.length * ratio));
+      }
       for (let i = 0; i < specs.length; i++) {
         const node = carRefs.current[i];
         const roam = roamRef.current[i];
         if (!node || !roam) continue;
+        if (i >= activeCount) { node.setAttribute("opacity", "0"); continue; }
+        node.setAttribute("opacity", "0.95");
         const path = pathRefs.current[roam.pathIdx];
         if (!path) continue;
         const len = lens[roam.pathIdx];
+        if (!Number.isFinite(len) || len <= 0) continue;
         let u = (now - roam.startedAt) / (roam.duration * 1000);
         if (u >= 1) {
           // Tirer une nouvelle route + sens aléatoires
@@ -113,7 +125,8 @@ export default function CityRivalTaxis() {
           roam.startedAt = now;
           u = 0;
         }
-        const fwd = roam.flip ? len * (1 - u) : len * u;
+        const fwd = Math.max(0, Math.min(len, roam.flip ? len * (1 - u) : len * u));
+        if (!Number.isFinite(fwd)) continue;
         const p = path.getPointAtLength(fwd);
         const p2 = path.getPointAtLength(Math.min(len, Math.max(0, fwd + (roam.flip ? -1 : 1))));
         const tdx = p2.x - p.x, tdy = p2.y - p.y;

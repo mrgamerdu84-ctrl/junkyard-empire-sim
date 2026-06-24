@@ -11,6 +11,9 @@ import {
   type TrafficLight,
 } from "./trafficLights";
 import { PARKING_ZONES, pickFreeZone } from "./parkingZones";
+import { getGameTime } from "./cityClock";
+// Réf. inutilisées après suppression du script de parking — gardées pour compat exports.
+void PARKING_ZONES; void pickFreeZone;
 
 // Dynamique : inclut les piétons custom uploadés via le panel admin.
 // Recalculé à chaque appel — les composants qui en dépendent écoutent
@@ -654,9 +657,34 @@ export default function CityTraffic() {
 
     let last = performance.now();
     let raf = 0;
+    // Densité jour/nuit : recalculée toutes les 4s. La nuit, on cache une grande
+    // partie des voitures pour simuler un trafic clairsemé (comme dans la vraie vie).
+    let lastDensityCheck = 0;
+    let activeCount = states.length;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); // clamp à 50ms (onglet inactif)
       last = now;
+
+      if (now - lastDensityCheck > 4000) {
+        lastDensityCheck = now;
+        const gt = getGameTime();
+        // density ≈ 0.15 (nuit) .. 1.55 (rush). On mappe sur 15%..100% du parc.
+        const ratio = Math.max(0.12, Math.min(1, gt.density / 1.2));
+        activeCount = Math.max(1, Math.round(states.length * ratio));
+        for (let i = 0; i < states.length; i++) {
+          const dormant = i >= activeCount;
+          const st = states[i];
+          if (dormant && !st.mission) {
+            if (st.node) st.node.setAttribute("opacity", "0");
+            st.visible = false;
+          } else if (st.node) {
+            st.node.setAttribute("opacity", "1");
+          }
+          (st as CarState & { dormant?: boolean }).dormant = dormant && !st.mission;
+        }
+      }
+
+
 
       // 1) calcul de la vitesse cible (freinage selon distance au véhicule devant)
       //    Les voitures en mission sont retirées de la circulation : on les ignore.
@@ -665,6 +693,7 @@ export default function CityTraffic() {
       const wps = new Map<CarState, WP>();
       const vr = visibleRect.current;
       for (const st of states) {
+        if ((st as CarState & { dormant?: boolean }).dormant) { st.visible = false; continue; }
         if (st.mission || st.parking) { st.visible = true; continue; }
         const path = pathRefs.current[st.spec.pathIdx];
         if (!path) { st.visible = false; continue; }
@@ -736,52 +765,9 @@ export default function CityTraffic() {
         st.speed = st.baseSpeed;
       }
 
-      // 1c) Spawner de stationnements — pioche une zone fixe dans PARKING_ZONES.
-      //     Les voitures garées n'utilisent PAS le réseau de waypoints :
-      //     elles sont alignées exactement sur (zone.x, zone.y, zone.angle).
-      const activeParked = states.reduce((n, s) => n + (s.parking ? 1 : 0), 0);
-      const target = PARK_TARGET_MIN + Math.floor(Math.random() * (PARK_TARGET_MAX - PARK_TARGET_MIN + 1));
-      if (activeParked < target && PARKING_ZONES.length > 0) {
-        if (Math.random() < 0.02) {
-          const occupied = new Set<string>();
-          for (const s of states) if (s.parking) occupied.add(s.parking.zoneId);
-          const zone = pickFreeZone(occupied);
-          if (zone) {
-            const candidates = states.filter(s =>
-              !s.mission && !s.parking &&
-              (s.nextParkAttemptAt === undefined || now >= s.nextParkAttemptAt) &&
-              s.speed > s.baseSpeed * 0.3,
-            );
-            if (candidates.length > 0) {
-              const victim = candidates[Math.floor(Math.random() * candidates.length)];
-              const wp = wps.get(victim);
-              if (wp) {
-                const side: 1 | -1 = (zone.side as 1 | -1);
-                const angleRad = (zone.angle * Math.PI) / 180;
-                const tdx = Math.cos(angleRad);
-                const tdy = Math.sin(angleRad);
-                const parkedMs = PARK_DURATION_MIN_MS + Math.random() * (PARK_DURATION_MAX_MS - PARK_DURATION_MIN_MS);
-                victim.parking = {
-                  phase: "approaching",
-                  phaseEndsAt: now + PARK_APPROACH_MS,
-                  parkedUntil: now + PARK_APPROACH_MS + parkedMs,
-                  zoneId: zone.id,
-                  startX: wp.x, startY: wp.y,
-                  px: zone.x, py: zone.y,
-                  angle: zone.angle,
-                  tdx, tdy,
-                  side,
-                  pedSpriteIdx: Math.floor(Math.random() * getPedPhotoImages().length),
-                  pedWalkMs: 1800 + Math.random() * 1400,
-                  pedReturnAt: now + PARK_APPROACH_MS + parkedMs - 2000,
-                };
-                victim.pausedS = victim.s;
-                victim.speed = 0;
-              }
-            }
-          }
-        }
-      }
+      // 1c) Stationnement supprimé : trafic continu — aucune voiture ne se gare.
+
+
 
 
       // 2) avancer et appliquer le transform
@@ -789,6 +775,9 @@ export default function CityTraffic() {
       for (const st of states) {
         const node = st.node;
         if (!node) continue;
+        if ((st as CarState & { dormant?: boolean }).dormant && !st.mission) continue;
+
+
 
         // ===== Branche MISSION : la voiture quitte le path et fonce =====
         if (st.mission) {
@@ -831,68 +820,8 @@ export default function CityTraffic() {
           if (st.mission) continue; // reste en mission → skip path logic
         }
 
-        // ===== Branche PARKING : la voiture se gare sur le trottoir =====
-        if (st.parking) {
-          const pk = st.parking;
-          let cx = pk.px, cy = pk.py;
-          // Phase approaching : lerp depuis startX/Y vers px/py
-          if (pk.phase === "approaching") {
-            const k = Math.min(1, 1 - (pk.phaseEndsAt - now) / PARK_APPROACH_MS);
-            cx = pk.startX + (pk.px - pk.startX) * k;
-            cy = pk.startY + (pk.py - pk.startY) * k;
-            if (now >= pk.phaseEndsAt) {
-              pk.phase = "parked";
-            }
-          } else if (pk.phase === "parked") {
-            if (now >= pk.parkedUntil) {
-              pk.phase = "leaving";
-              pk.phaseEndsAt = now + PARK_LEAVE_MS;
-            }
-          } else if (pk.phase === "leaving") {
-            const k = Math.min(1, 1 - (pk.phaseEndsAt - now) / PARK_LEAVE_MS);
-            cx = pk.px + (pk.startX - pk.px) * k;
-            cy = pk.py + (pk.startY - pk.py) * k;
-            if (now >= pk.phaseEndsAt) {
-              // Fin : reprise du trafic
-              st.parking = undefined;
-              st.speed = st.baseSpeed * 0.4;
-              st.nextParkAttemptAt = now + PARK_COOLDOWN_MS;
-              if (st.pedNode) st.pedNode.setAttribute("opacity", "0");
-            }
-          }
-          node.setAttribute("transform", `translate(${cx.toFixed(2)},${cy.toFixed(2)}) rotate(${pk.angle.toFixed(2)})`);
+        // ===== Branche PARKING supprimée : aucune voiture ne se gare =====
 
-          // Animation du conducteur : sort, marche en avant, idle, revient
-          const ped = st.pedNode;
-          if (ped) {
-            if (pk.phase === "parked") {
-              // Base : position sur le trottoir, à côté de la voiture garée
-              // Base : position sur le trottoir, à côté de la voiture garée (zone fixe)
-              const baseX = pk.px + (-pk.tdy) * PARK_PED_OFFSET * pk.side;
-              const baseY = pk.py + ( pk.tdx) * PARK_PED_OFFSET * pk.side;
-              let walkK = 0;
-              let facingBack = false;
-              if (now < pk.pedReturnAt) {
-                // aller : 0 → 1 sur pedWalkMs
-                walkK = Math.max(0, Math.min(1, (now - (pk.pedReturnAt - pk.pedWalkMs)) / pk.pedWalkMs));
-              } else {
-                // retour : 1 → 0 sur ce qui reste avant parkedUntil
-                const back = Math.max(400, pk.parkedUntil - pk.pedReturnAt);
-                walkK = 1 - Math.max(0, Math.min(1, (now - pk.pedReturnAt) / back));
-                facingBack = true;
-              }
-              const off = walkK * PARK_PED_WALK_PX;
-              const px = baseX + pk.tdx * off;
-              const py = baseY + pk.tdy * off;
-              const pAng = (Math.atan2(pk.tdy, pk.tdx) * 180) / Math.PI + (facingBack ? 180 : 0);
-              ped.setAttribute("transform", `translate(${px.toFixed(2)},${py.toFixed(2)}) rotate(${pAng.toFixed(2)})`);
-              ped.setAttribute("opacity", "1");
-            } else {
-              ped.setAttribute("opacity", "0");
-            }
-          }
-          if (st.parking) continue;
-        }
 
         // ===== Trafic normal =====
         const prev = st.s;
