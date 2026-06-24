@@ -9,7 +9,7 @@ import { getGameTime } from "./cityClock";
 import { getAdmin } from "./adminConfig";
 import type { CustomVehicleCategory } from "./gameAssets";
 
-type CrimeKind = "robbery" | "accident" | "control" | "fight" | "fire";
+type CrimeKind = "robbery" | "burglary" | "accident" | "control" | "fight" | "fire";
 
 type CrimeEvent = {
   id: number;
@@ -37,6 +37,7 @@ function readDepotTier(): number {
 
 const KIND_META: Record<CrimeKind, { icon: string; color: string; label: string; category: CustomVehicleCategory }> = {
   robbery:  { icon: "🚨", color: "#ef4444", label: "Braquage",       category: "police" },
+  burglary: { icon: "🏠", color: "#b91c1c", label: "Cambriolage",    category: "police" },
   accident: { icon: "🚑", color: "#f97316", label: "Accident",       category: "ambulance" },
   control:  { icon: "🚔", color: "#3b82f6", label: "Contrôle",       category: "police" },
   fight:    { icon: "🥊", color: "#a855f7", label: "Rixe",           category: "police" },
@@ -76,15 +77,17 @@ function rollRobberyForDay(now: number) {
 function pickKind(isNight: boolean, robberyOk: boolean): CrimeKind {
   const r = Math.random();
   if (isNight) {
-    if (robberyOk && r < 0.20) return "robbery";
-    if (r < 0.40) return "fight";
+    if (robberyOk && r < 0.16) return "robbery";
+    if (r < 0.30) return "burglary";
+    if (r < 0.45) return "fight";
     if (r < 0.62) return "control";
     if (r < 0.85) return "accident";
     return "fire";
   }
-  if (r < 0.40) return "accident";
-  if (r < 0.65) return "control";
-  if (r < 0.85) return "fight";
+  if (r < 0.35) return "accident";
+  if (r < 0.55) return "control";
+  if (r < 0.72) return "fight";
+  if (r < 0.85) return "burglary";
   if (robberyOk && r < 0.93) return "robbery";
   return "fire";
 }
@@ -120,7 +123,7 @@ export default function CrimeEvents() {
           const spot = pool[Math.floor(Math.random() * pool.length)];
           const robberyOk = rollRobberyForDay(now);
           const kind = pickKind(isNight, robberyOk);
-          const ttl = kind === "control" ? 9000 : kind === "accident" ? 14000 : kind === "fire" ? 16000 : 11000;
+          const ttl = kind === "control" ? 9000 : kind === "accident" ? 14000 : kind === "fire" ? 16000 : kind === "burglary" ? 13000 : 11000;
           const meta = KIND_META[kind];
           // Délai avant que l'AI rafle la mission : plus le joueur monte de niveau, plus l'AI est rapide.
           const tier = readDepotTier();
@@ -194,7 +197,7 @@ export default function CrimeEvents() {
       const kind: CrimeKind = detail.kind ?? "robbery";
       const meta = KIND_META[kind];
       const spot = HOTSPOTS[Math.floor(Math.random() * HOTSPOTS.length)];
-      const ttl = kind === "control" ? 9000 : kind === "accident" ? 14000 : kind === "fire" ? 16000 : 11000;
+      const ttl = kind === "control" ? 9000 : kind === "accident" ? 14000 : kind === "fire" ? 16000 : kind === "burglary" ? 13000 : 11000;
       const tier = readDepotTier();
       const diff = getAdmin().aiDifficulty;
       const diffMult = diff === "easy" ? 1.8 : diff === "hard" ? 0.65 : 1;

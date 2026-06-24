@@ -8,6 +8,7 @@ import CityRivalTaxis from "@/game/CityRivalTaxis";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CityHud from "@/game/CityHud";
 import CrimeEvents from "@/game/CrimeEvents";
+import CrimeResponses from "@/game/CrimeResponses";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
 import EmergencyStations from "@/game/EmergencyStations";
 import EmergencyPatrols from "@/game/EmergencyPatrols";
@@ -176,6 +177,7 @@ function TaxiTycoonPage() {
         <EmergencyPatrols />
         <PlainclothesCops />
         <CrimeEvents />
+        <CrimeResponses />
         <InterventionDispatcher />
         <TaxiTycoon />
         <ArmoredTruck />
