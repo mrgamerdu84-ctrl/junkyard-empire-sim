@@ -42,11 +42,26 @@ export default function PlainclothesCops() {
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
-    type State = { s: number; dir: 1 | -1; len: number };
-    const states: State[] = COPS.map(c => {
+    // dir 0 = pause (observation discrète d'un parking / coin de rue).
+    type State = {
+      s: number;
+      dir: 1 | -1 | 0;
+      len: number;
+      pauseUntil: number;   // timestamp ms — fin de la pause en cours
+      nextCheckAt: number;  // timestamp ms — prochain "contrôle" déclenché
+    };
+    const now0 = performance.now();
+    const states: State[] = COPS.map((c, i) => {
       const path = pathRefs.current[c.pathIdx];
       const len = path ? path.getTotalLength() : 1000;
-      return { s: c.startFrac * len, dir: 1, len };
+      return {
+        s: c.startFrac * len,
+        dir: 1,
+        len,
+        pauseUntil: 0,
+        // 1er contrôle entre 45 s et 90 s après le démarrage, décalé par flic
+        nextCheckAt: now0 + 45000 + i * 22000 + Math.random() * 45000,
+      };
     });
 
     const step = (now: number) => {
@@ -58,11 +73,39 @@ export default function PlainclothesCops() {
         const path = pathRefs.current[cop.pathIdx];
         const node = nodeRefs.current[i];
         if (!path || !node) continue;
-        st.s += st.dir * cop.speed * dt;
-        if (st.s >= st.len) { st.s = st.len; st.dir = -1; }
-        if (st.s <= 0) { st.s = 0; st.dir = 1; }
+
+        // Déclenchement d'un contrôle : pause longue à l'endroit actuel.
+        if (st.dir !== 0 && now >= st.nextCheckAt) {
+          st.dir = 0;
+          // Observation de 14 à 26 s : il regarde, fait semblant de lire son tel.
+          st.pauseUntil = now + 14000 + Math.random() * 12000;
+        }
+
+        if (st.dir === 0) {
+          // Toujours en pause : ne bouge pas, mais le sprite reste visible.
+          if (now >= st.pauseUntil) {
+            // Repart dans un sens aléatoire pour casser la routine.
+            st.dir = Math.random() < 0.5 ? 1 : -1;
+            // Prochaine vérif beaucoup plus tard : 3 à 6 min.
+            st.nextCheckAt = now + 180000 + Math.random() * 180000;
+          }
+        } else {
+          // Micro-pauses naturelles (feu rouge mental, vitrine, etc.)
+          // ~1 chance sur 1500 frames d'observer 2-5 s sans déclencher de "contrôle".
+          if (Math.random() < 0.0007) {
+            st.dir = 0;
+            st.pauseUntil = now + 2000 + Math.random() * 3000;
+            // On ne touche pas à nextCheckAt : c'est juste une pause de marche.
+            continue;
+          }
+          st.s += st.dir * cop.speed * dt;
+          if (st.s >= st.len) { st.s = st.len; st.dir = -1; }
+          if (st.s <= 0) { st.s = 0; st.dir = 1; }
+        }
+
         const p = path.getPointAtLength(st.s);
-        const p2 = path.getPointAtLength(Math.max(0, Math.min(st.len, st.s + st.dir * 2)));
+        const dirSample = st.dir === 0 ? 1 : st.dir;
+        const p2 = path.getPointAtLength(Math.max(0, Math.min(st.len, st.s + dirSample * 2)));
         const dx = p2.x - p.x, dy = p2.y - p.y;
         const L = Math.hypot(dx, dy) || 1;
         const nx = -dy / L * SIDEWALK_OFFSET * cop.side;
@@ -75,6 +118,7 @@ export default function PlainclothesCops() {
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, []);
+
 
   return (
     <svg
