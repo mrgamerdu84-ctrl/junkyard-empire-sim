@@ -71,6 +71,13 @@ export default function ArmoredTruck() {
   const cfgRef = useRef(cfg);
   useEffect(() => { cfgRef.current = cfg; }, [cfg]);
 
+  const dynamicPaths = useMemo(() => {
+    const d = circuitToSvgPath(cfg.circuitPoints);
+    return d ? [d] : [];
+  }, [cfg.circuitPoints]);
+
+
+
   const [phase, setPhase] = useState<Phase>("idle");
   const [pathIdx, setPathIdx] = useState(0);
   const [flip, setFlip] = useState(false);
