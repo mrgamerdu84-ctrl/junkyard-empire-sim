@@ -658,6 +658,21 @@ export default function TaxiTycoon() {
     return { pts, total, offsets };
   }, [admin.circuitPoints]);
 
+  // Mode édition du circuit (admin) : pendant ce mode, on affiche de petits
+  // points discrets pour repérer les clics. En dehors, le tracé est invisible.
+  const [circuitEditMode, setCircuitEditMode] = useState<boolean>(
+    () => Boolean((window as unknown as { __jceCircuitEdit?: boolean }).__jceCircuitEdit),
+  );
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      const d = (e as CustomEvent<boolean>).detail;
+      setCircuitEditMode(Boolean(d));
+    };
+    window.addEventListener("jce:circuit-edit-changed", onChange as EventListener);
+    return () => window.removeEventListener("jce:circuit-edit-changed", onChange as EventListener);
+  }, []);
+
+
   const circuitTaxisRef = useRef<{ id: number; pos: number }[]>([]);
   const circuitInfoRef = useRef(circuitInfo);
   circuitInfoRef.current = circuitInfo;
