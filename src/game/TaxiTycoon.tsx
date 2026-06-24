@@ -1,4 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import LeaderboardPanel from '@/components/LeaderboardPanel';
+import TutorialDialog from '@/components/TutorialDialog';
+import { resetTutorial } from '@/lib/leaderboard';
 import mapAsset from '@/assets/map_city.png.asset.json';
 import bureauAsset from '@/assets/bureau_patron.png.asset.json';
 
