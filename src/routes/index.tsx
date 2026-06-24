@@ -123,9 +123,11 @@ function TaxiTycoonPage() {
         }
         .tt-map {
           position: absolute; inset: 0; width: 100%; height: 100%;
-          object-fit: cover; display: block; z-index: 1;
+          object-fit: contain; object-position: center; display: block; z-index: 1;
+          background: #0c0d10;
           filter: saturate(1.05) brightness(0.95);
         }
+
         .tt-vignette {
           position: absolute; inset: 0; z-index: 2; pointer-events: none;
           background: radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,0.55) 100%);

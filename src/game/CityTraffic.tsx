@@ -40,13 +40,13 @@ const LANE_HALF = 11;
 /* ============================================================
  * JUNKY CITY EMPIRE — overlay aligné sur citymap.jpg
  * IMPORTANT : le SVG utilise le même ratio que l'image 1920x1080.
- * Avec preserveAspectRatio="xMidYMid slice", les voitures restent
+ * Avec preserveAspectRatio="xMidYMid meet", les voitures restent
  * calées sur les routes même en mobile recadré.
  * ============================================================ */
 
 // Trajectoires recalibrées sur citymap-v3.jpg (1920×1071) :
 // 4 ronds-points aux coins + 2 axes traversants devant le dépôt central.
-// Coordonnées dans le viewBox 1920×1080 (preserveAspectRatio="xMidYMid slice").
+// Coordonnées dans le viewBox 1920×1080 (preserveAspectRatio="xMidYMid meet").
 //   - RP haut-gauche  ≈ (445, 280)
 //   - RP haut-droit   ≈ (1330, 280)
 //   - RP bas-droit    ≈ (1410, 870)
@@ -498,37 +498,23 @@ export default function CityTraffic() {
   const carNodes = useRef<(SVGGElement | null)[]>([]);
   const parkPedNodes = useRef<(SVGGElement | null)[]>([]);
   const svgRef = useRef<SVGSVGElement | null>(null);
-  // Viewport visible en coordonnées SVG (avec preserveAspectRatio="xMidYMid slice").
+  // Viewport visible en coordonnées SVG (avec preserveAspectRatio="xMidYMid meet").
   // Recalculé sur resize. Marge de 200 px pour pré-activer les véhicules qui entrent.
   const visibleRect = useRef<{ minX: number; minY: number; maxX: number; maxY: number }>({
     minX: -9999, minY: -9999, maxX: 9999, maxY: 9999,
   });
   useEffect(() => {
     const recompute = () => {
-      const svg = svgRef.current;
-      if (!svg) return;
-      const r = svg.getBoundingClientRect();
-      if (r.width <= 0 || r.height <= 0) return;
+      // preserveAspectRatio="xMidYMid meet" : tout le viewBox 1920×1080 est
+      // toujours visible (avec letterbox éventuel). On garde la marge pour
+      // pré-activer les véhicules à la frange.
       const VB_W = 1920, VB_H = 1080;
-      const containerRatio = r.width / r.height;
-      const vbRatio = VB_W / VB_H;
-      let visW: number, visH: number;
-      if (containerRatio > vbRatio) {
-        // largeur entièrement visible, hauteur slicée
-        visW = VB_W;
-        visH = VB_W / containerRatio;
-      } else {
-        // hauteur entièrement visible, largeur slicée
-        visH = VB_H;
-        visW = VB_H * containerRatio;
-      }
-      const cx = VB_W / 2, cy = VB_H / 2;
       const margin = 220;
       visibleRect.current = {
-        minX: cx - visW / 2 - margin,
-        minY: cy - visH / 2 - margin,
-        maxX: cx + visW / 2 + margin,
-        maxY: cy + visH / 2 + margin,
+        minX: -margin,
+        minY: -margin,
+        maxX: VB_W + margin,
+        maxY: VB_H + margin,
       };
     };
     recompute();
@@ -538,6 +524,7 @@ export default function CityTraffic() {
       window.removeEventListener("resize", recompute);
       window.removeEventListener("orientationchange", recompute);
     };
+
   }, []);
   const [lights, setLights] = useState<TrafficLight[]>([]);
 
@@ -1008,7 +995,7 @@ export default function CityTraffic() {
     <svg
       ref={svgRef}
       viewBox="0 0 1920 1080"
-      preserveAspectRatio="xMidYMid slice"
+      preserveAspectRatio="xMidYMid meet"
       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 3 }}
     >
       <defs>
