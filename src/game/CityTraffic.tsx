@@ -17,9 +17,10 @@ import { PARKING_ZONES, pickFreeZone } from "./parkingZones";
 // 'jce.customPedestrians.changed' pour re-render.
 const getPedPhotoImages = () => getPedestrianPhotoUrls();
 
-// Toutes les routes de la map sont désormais utilisées par le trafic.
-// L'ensemble VILLAGE_PATHS est conservé (vide) pour la compat des autres modules.
-export const VILLAGE_PATHS = new Set<number>();
+// Zone "village" en haut de la carte : on n'y fait PAS rouler de véhicules
+// (ça gâchait le visuel — les voitures avaient l'air de rouler sur les maisons).
+// 1 = petite boucle historique du village, 3 = boulevard nord qui longe le village.
+export const VILLAGE_PATHS = new Set<number>([1, 3]);
 
 // === SÉPARATION DES VOIES (code de la route) ===
 // Demi-largeur d'une route ≈ 23 px. On place chaque véhicule à LANE_HALF px
