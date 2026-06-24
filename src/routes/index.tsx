@@ -23,6 +23,7 @@ import HomeScreen from "@/game/HomeScreen";
 import SplashScreen from "@/game/SplashScreen";
 import GameMenu from "@/game/GameMenu";
 import RadioPlayer from "@/game/RadioPlayer";
+import DebugMapGrid from "@/game/DebugMapGrid";
 
 export const Route = createFileRoute("/")({
   head: () => ({
