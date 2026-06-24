@@ -811,15 +811,19 @@ export default function TaxiTycoon() {
   };
 
 
-  // Mesure des longueurs réelles de chaque path au montage.
+  // Mesure des longueurs réelles de chaque path au montage et à chaque
+  // modification du circuit dessiné par le joueur.
   useEffect(() => {
-    const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
-    pathLensRef.current = lens;
-    if (lens.every((l) => l > 0)) {
-      setPathsReady(true);
-      regenVipCircuit();
-    }
-  }, []);
+    // Laisse le DOM se mettre à jour avant la mesure.
+    const raf = requestAnimationFrame(() => {
+      const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
+      pathLensRef.current = lens;
+      const ready = lens.length > 0 && lens.every((l) => l > 0);
+      setPathsReady(ready);
+      if (ready) regenVipCircuit();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [playerRoads]);
 
   const pathLen = pathLensRef.current[0] ?? 0;
 
