@@ -657,9 +657,34 @@ export default function CityTraffic() {
 
     let last = performance.now();
     let raf = 0;
+    // Densité jour/nuit : recalculée toutes les 4s. La nuit, on cache une grande
+    // partie des voitures pour simuler un trafic clairsemé (comme dans la vraie vie).
+    let lastDensityCheck = 0;
+    let activeCount = states.length;
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000); // clamp à 50ms (onglet inactif)
       last = now;
+
+      if (now - lastDensityCheck > 4000) {
+        lastDensityCheck = now;
+        const gt = getGameTime();
+        // density ≈ 0.15 (nuit) .. 1.55 (rush). On mappe sur 15%..100% du parc.
+        const ratio = Math.max(0.12, Math.min(1, gt.density / 1.2));
+        activeCount = Math.max(1, Math.round(states.length * ratio));
+        for (let i = 0; i < states.length; i++) {
+          const dormant = i >= activeCount;
+          const st = states[i];
+          if (dormant && !st.mission) {
+            if (st.node) st.node.setAttribute("opacity", "0");
+            st.visible = false;
+          } else if (st.node) {
+            st.node.setAttribute("opacity", "1");
+          }
+          (st as CarState & { dormant?: boolean }).dormant = dormant && !st.mission;
+        }
+      }
+
+
 
       // 1) calcul de la vitesse cible (freinage selon distance au véhicule devant)
       //    Les voitures en mission sont retirées de la circulation : on les ignore.
