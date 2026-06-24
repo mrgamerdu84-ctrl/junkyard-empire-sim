@@ -1,6 +1,6 @@
 {
-  "version": "1.0.6",
-  "buildId": "2026-06-24T16:00:00.000Z",
-  "builtAt": 1782318000000,
-  "changelog": "Ambiance consolidée : circuits fluides sur tout le réseau (taxis + rivaux), piétons feu rouge/vert, patrouilles d'urgence rares, flics en civil espacés, braquages/cambriolages actifs — modèles de véhicules inchangés."
+  "version": "1.0.7",
+  "buildId": "2026-06-24T16:15:00.000Z",
+  "builtAt": 1782318900000,
+  "changelog": "Flics en civil : contrôles parkings espacés (3-6 min entre vérifs), pauses d'observation 14-26 s + micro-pauses naturelles."
 }
