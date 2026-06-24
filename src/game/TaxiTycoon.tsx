@@ -2172,9 +2172,9 @@ export default function TaxiTycoon() {
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
       >
         <defs>
-          {ROADS.map((d, i) => (
+          {playerRoads.map((d, i) => (
             <path
-              key={i}
+              key={`${i}-${d.length}`}
               ref={(el) => { pathRefs.current[i] = el; }}
               id={`taxi-road-${i}`}
               d={d}
