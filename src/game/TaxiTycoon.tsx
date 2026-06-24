@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
-import { circuitToSvgPath } from "./circuitPath";
 import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
@@ -499,16 +498,6 @@ export default function TaxiTycoon() {
   const [pathsReady, setPathsReady] = useState(false);
   const admin = useAdminConfig(); // re-render quand l'admin change
 
-  // === Réseau routier dynamique ===
-  // Toutes les voitures (joueur, rivaux, police, etc.) suivent UNIQUEMENT le
-  // circuit dessiné par le joueur dans le panel admin. ROADS reste vide.
-  const playerRoads = useMemo<string[]>(() => {
-    const pts = admin.circuitPoints;
-    if (!pts || pts.length < 2) return [];
-    const d = circuitToSvgPath(pts);
-    return d ? [d] : [];
-  }, [admin.circuitPoints]);
-
   // === Persistent state ===
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
   const [hydrated, setHydrated] = useState(false);
@@ -669,21 +658,6 @@ export default function TaxiTycoon() {
     return { pts, total, offsets };
   }, [admin.circuitPoints]);
 
-  // Mode édition du circuit (admin) : pendant ce mode, on affiche de petits
-  // points discrets pour repérer les clics. En dehors, le tracé est invisible.
-  const [circuitEditMode, setCircuitEditMode] = useState<boolean>(
-    () => Boolean((window as unknown as { __jceCircuitEdit?: boolean }).__jceCircuitEdit),
-  );
-  useEffect(() => {
-    const onChange = (e: Event) => {
-      const d = (e as CustomEvent<boolean>).detail;
-      setCircuitEditMode(Boolean(d));
-    };
-    window.addEventListener("jce:circuit-edit-changed", onChange as EventListener);
-    return () => window.removeEventListener("jce:circuit-edit-changed", onChange as EventListener);
-  }, []);
-
-
   const circuitTaxisRef = useRef<{ id: number; pos: number }[]>([]);
   const circuitInfoRef = useRef(circuitInfo);
   circuitInfoRef.current = circuitInfo;
@@ -811,19 +785,15 @@ export default function TaxiTycoon() {
   };
 
 
-  // Mesure des longueurs réelles de chaque path au montage et à chaque
-  // modification du circuit dessiné par le joueur.
+  // Mesure des longueurs réelles de chaque path au montage.
   useEffect(() => {
-    // Laisse le DOM se mettre à jour avant la mesure.
-    const raf = requestAnimationFrame(() => {
-      const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
-      pathLensRef.current = lens;
-      const ready = lens.length > 0 && lens.every((l) => l > 0);
-      setPathsReady(ready);
-      if (ready) regenVipCircuit();
-    });
-    return () => cancelAnimationFrame(raf);
-  }, [playerRoads]);
+    const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
+    pathLensRef.current = lens;
+    if (lens.every((l) => l > 0)) {
+      setPathsReady(true);
+      regenVipCircuit();
+    }
+  }, []);
 
   const pathLen = pathLensRef.current[0] ?? 0;
 
@@ -2176,9 +2146,9 @@ export default function TaxiTycoon() {
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
       >
         <defs>
-          {playerRoads.map((d, i) => (
+          {ROADS.map((d, i) => (
             <path
-              key={`${i}-${d.length}`}
+              key={i}
               ref={(el) => { pathRefs.current[i] = el; }}
               id={`taxi-road-${i}`}
               d={d}
@@ -2428,19 +2398,28 @@ export default function TaxiTycoon() {
         )}
 
 
-        {/* Circuit dessiné par le joueur — INVISIBLE en jeu normal.
-            Pendant l'édition (mode dessin admin) on n'affiche que de petits
-            points discrets, jamais la ligne reliant ces points. Les taxis
-            suivent la polyligne logique mais le tracé reste caché. */}
-        {circuitEditMode && circuitInfo.pts.map((p, i) => (
-          <circle
-            key={`cp-${i}`}
-            cx={p.x} cy={p.y} r="4"
-            fill="#22c55e" stroke="#0a0c10" strokeWidth="1.2"
-            opacity="0.9"
-          />
-        ))}
-
+        {/* Circuit dessiné par le joueur */}
+        {circuitInfo.pts.length >= 2 && (
+          <g>
+            <polyline
+              points={[...circuitInfo.pts, circuitInfo.pts[0]].map(p => `${p.x},${p.y}`).join(" ")}
+              fill="none" stroke="#22c55e" strokeWidth="6" strokeOpacity="0.35"
+              strokeLinecap="round" strokeLinejoin="round" strokeDasharray="10 8"
+            />
+            <polyline
+              points={[...circuitInfo.pts, circuitInfo.pts[0]].map(p => `${p.x},${p.y}`).join(" ")}
+              fill="none" stroke="#22c55e" strokeWidth="2.5" strokeOpacity="0.9"
+              strokeLinecap="round" strokeLinejoin="round"
+            />
+            {circuitInfo.pts.map((p, i) => (
+              <circle key={i} cx={p.x} cy={p.y} r="6" fill="#0a0c10" stroke="#22c55e" strokeWidth="2" />
+            ))}
+          </g>
+        )}
+        {/* Aperçu pendant le dessin : si un seul point, affiche-le */}
+        {circuitInfo.pts.length === 1 && (
+          <circle cx={circuitInfo.pts[0].x} cy={circuitInfo.pts[0].y} r="7" fill="#0a0c10" stroke="#22c55e" strokeWidth="2" />
+        )}
 
         {/* Taxis qui tournent sur le circuit personnalisé */}
         {circuitInfo.pts.length >= 2 && circuitTaxisRef.current.map((ct) => {

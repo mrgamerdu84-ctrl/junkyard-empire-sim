@@ -12,7 +12,7 @@
 // Évents : jce:armored-spawn / jce:armored-resolved
 // =============================================================
 import { useEffect, useMemo, useRef, useState } from "react";
-import { circuitToSvgPath } from "./circuitPath";
+import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import { useAdminConfig } from "./adminConfig";
 import armoredTruckAsset from "@/assets/armored-truck.png.asset.json";
 
@@ -39,7 +39,7 @@ const RIVAL_SUCCESS = 0.5;
 // Chance qu'un rival tente le braquage à chaque apparition
 const RIVAL_ATTEMPT_CHANCE = 0.35;
 
-// Le camion suit le circuit dessiné par le joueur (un seul path → index 0).
+const TRUCK_ROAD_IDX = ROADS.map((_, i) => i).filter((i) => !VILLAGE_PATHS.has(i));
 
 type Phase = "idle" | "rolling" | "heist" | "done";
 type Heister = { kind: "player" | "rival"; rivalId?: string; color: string } | null;
@@ -70,13 +70,6 @@ export default function ArmoredTruck() {
   const cfg = useAdminConfig();
   const cfgRef = useRef(cfg);
   useEffect(() => { cfgRef.current = cfg; }, [cfg]);
-
-  const dynamicPaths = useMemo(() => {
-    const d = circuitToSvgPath(cfg.circuitPoints);
-    return d ? [d] : [];
-  }, [cfg.circuitPoints]);
-
-
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [pathIdx, setPathIdx] = useState(0);
@@ -134,10 +127,7 @@ export default function ArmoredTruck() {
   };
 
   const spawn = () => {
-    // Aucun circuit dessiné → pas de camion qui spawn.
-    if ((cfgRef.current.circuitPoints?.length ?? 0) < 2) return;
-    const idx = 0;
-
+    const idx = TRUCK_ROAD_IDX[Math.floor(Math.random() * TRUCK_ROAD_IDX.length)] ?? 0;
     const fl = Math.random() < 0.5;
     const amount = Math.round(500 + Math.random() * 1000);
     setPathIdx(idx);
@@ -322,7 +312,7 @@ export default function ArmoredTruck() {
         }}
       >
         <defs>
-          {dynamicPaths.map((d, i) => (
+          {ROADS.map((d, i) => (
             <path
               key={i}
               id={`jce-armored-road-${i}`}
