@@ -97,19 +97,30 @@ export default function RadioPlayer() {
     const onEnded = () => nextTrack();
     const onTime = () => setCurrentTime(audio.currentTime);
     const onLoaded = () => setDuration(audio.duration || 0);
+    const onError = () => {
+      console.warn("[radio] piste illisible, passage à la suivante", track?.url);
+      nextTrack();
+    };
     audio.addEventListener("ended", onEnded);
     audio.addEventListener("timeupdate", onTime);
     audio.addEventListener("loadedmetadata", onLoaded);
+    audio.addEventListener("error", onError);
     return () => {
       audio.removeEventListener("ended", onEnded);
       audio.removeEventListener("timeupdate", onTime);
       audio.removeEventListener("loadedmetadata", onLoaded);
+      audio.removeEventListener("error", onError);
     };
   }, [track?.url, nextTrack]);
 
+  // Recharge explicitement la source quand l'URL change (sinon certains
+  // navigateurs mobiles gardent la piste précédente bloquée).
   useEffect(() => {
-    if (playing && audioRef.current) {
-      audioRef.current.play().catch(() => {});
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.load();
+    if (playing) {
+      audio.play().catch(() => {});
     }
   }, [track?.url, playing]);
 

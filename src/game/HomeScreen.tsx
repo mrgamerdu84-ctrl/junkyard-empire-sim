@@ -294,6 +294,25 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         </button>
       </div>
 
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: "max(6px, env(safe-area-inset-bottom))",
+          textAlign: "center",
+          color: "#fde047",
+          fontSize: 11,
+          fontWeight: 700,
+          textShadow: "0 1px 2px rgba(0,0,0,0.8)",
+          zIndex: 2,
+          pointerEvents: "none",
+          padding: "0 12px",
+        }}
+      >
+        © 2026 My Taxi World Rivalité — Tous droits réservés.
+      </div>
+
       {showTutorial && <TutorialDialog onClose={() => setShowTutorial(false)} />}
       {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}
       {showProfile && <ProfileCard onClose={() => setShowProfile(false)} />}
