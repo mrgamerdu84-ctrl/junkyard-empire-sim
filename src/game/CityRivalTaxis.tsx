@@ -97,11 +97,21 @@ export default function CityRivalTaxis() {
       startedAt: now0 - sp.offset * sp.duration * 1000,
     }));
     let raf = 0;
+    let lastDensityCheck = 0;
+    let activeCount = specs.length;
     const step = (now: number) => {
+      if (now - lastDensityCheck > 4000) {
+        lastDensityCheck = now;
+        const gt = getGameTime();
+        const ratio = Math.max(0.12, Math.min(1, gt.density / 1.2));
+        activeCount = Math.max(1, Math.round(specs.length * ratio));
+      }
       for (let i = 0; i < specs.length; i++) {
         const node = carRefs.current[i];
         const roam = roamRef.current[i];
         if (!node || !roam) continue;
+        if (i >= activeCount) { node.setAttribute("opacity", "0"); continue; }
+        node.setAttribute("opacity", "0.95");
         const path = pathRefs.current[roam.pathIdx];
         if (!path) continue;
         const len = lens[roam.pathIdx];
