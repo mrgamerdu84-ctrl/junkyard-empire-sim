@@ -1,6 +1,6 @@
 {
-  "version": "1.0.10",
-  "buildId": "2026-06-24T15:05:00.000Z",
-  "builtAt": 1782313500000,
-  "changelog": "CityTraffic.ROADS reconstruit depuis mapConfig.ts (4 axes, anciens paths supprimés)"
+  "version": "1.0.0",
+  "buildId": "2026-06-24T15:05:13.988Z",
+  "builtAt": 1782313513988,
+  "changelog": "Mise à jour automatique active"
 }
