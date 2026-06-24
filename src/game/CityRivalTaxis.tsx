@@ -8,6 +8,7 @@
 // =============================================================
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
+import { getGameTime } from "./cityClock";
 
 // Routes utilisables par les taxis rivaux : on exclut les "village paths"
 // (ex: index 1, off-screen en portrait) pour ne pas voir des voitures voler.
