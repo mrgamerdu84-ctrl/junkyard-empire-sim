@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { circuitToSvgPath } from "./circuitPath";
+
 import { useAdminConfig } from "./adminConfig";
 import { getPedestrianPhotoUrls, listCustomVehicles, getCivilCarUrls, GAME_ASSETS, type CustomVehicleCategory } from "./gameAssets";
 import { VehicleSvg, type VehicleSvgKind } from "./vehicles/VehicleSvgs";
