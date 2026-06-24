@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
+import { circuitToSvgPath } from "./circuitPath";
 import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
 import { getAdmin, useAdminConfig } from "./adminConfig";
@@ -498,6 +499,16 @@ export default function TaxiTycoon() {
   const [pathsReady, setPathsReady] = useState(false);
   const admin = useAdminConfig(); // re-render quand l'admin change
 
+  // === Réseau routier dynamique ===
+  // Toutes les voitures (joueur, rivaux, police, etc.) suivent UNIQUEMENT le
+  // circuit dessiné par le joueur dans le panel admin. ROADS reste vide.
+  const playerRoads = useMemo<string[]>(() => {
+    const pts = admin.circuitPoints;
+    if (!pts || pts.length < 2) return [];
+    const d = circuitToSvgPath(pts);
+    return d ? [d] : [];
+  }, [admin.circuitPoints]);
+
   // === Persistent state ===
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
   const [hydrated, setHydrated] = useState(false);
@@ -800,15 +811,19 @@ export default function TaxiTycoon() {
   };
 
 
-  // Mesure des longueurs réelles de chaque path au montage.
+  // Mesure des longueurs réelles de chaque path au montage et à chaque
+  // modification du circuit dessiné par le joueur.
   useEffect(() => {
-    const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
-    pathLensRef.current = lens;
-    if (lens.every((l) => l > 0)) {
-      setPathsReady(true);
-      regenVipCircuit();
-    }
-  }, []);
+    // Laisse le DOM se mettre à jour avant la mesure.
+    const raf = requestAnimationFrame(() => {
+      const lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
+      pathLensRef.current = lens;
+      const ready = lens.length > 0 && lens.every((l) => l > 0);
+      setPathsReady(ready);
+      if (ready) regenVipCircuit();
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [playerRoads]);
 
   const pathLen = pathLensRef.current[0] ?? 0;
 
@@ -2161,9 +2176,9 @@ export default function TaxiTycoon() {
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
       >
         <defs>
-          {ROADS.map((d, i) => (
+          {playerRoads.map((d, i) => (
             <path
-              key={i}
+              key={`${i}-${d.length}`}
               ref={(el) => { pathRefs.current[i] = el; }}
               id={`taxi-road-${i}`}
               d={d}
