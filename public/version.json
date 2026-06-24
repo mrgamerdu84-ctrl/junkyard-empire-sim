@@ -1,6 +1,6 @@
 {
-  "version": "1.0.12",
+  "version": "1.0.13",
   "buildId": "2026-06-24T15:30:00.000Z",
   "builtAt": 1782315000000,
-  "changelog": "Nouveau GameMap : taxis suivent strictement les waypoints calibrés"
+  "changelog": "Tout le trafic (civils, taxis rivaux, police) utilise désormais le graphe routier de GameMap."
 }
