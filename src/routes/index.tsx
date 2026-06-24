@@ -184,6 +184,7 @@ function TaxiTycoonPage() {
         <InterventionDispatcher />
         <TaxiTycoon />
         <ArmoredTruck />
+        <DebugMapGrid />
       </div>
 
       {/* HUD et panneaux hors zoom (toujours nets) */}
