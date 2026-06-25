@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
+import { useNavigate } from "@tanstack/react-router";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
 import { GAME_ASSETS, listCustomVehicles } from "./gameAssets";
 import { shouldStopAhead, nowSeconds, registerAccident, clearAccident, getAccidents, type AccidentZone } from "./trafficLights";
@@ -7,8 +9,11 @@ import { recordEarning, isSpecialTaxiUnlocked } from "@/lib/leaderboard";
 import { pushNews } from "@/lib/radioNews";
 import { useRealWorldEnv, weatherLabelFr, weatherLabelEn, refreshRealWorldEnv } from "@/lib/realWorldEnv";
 import { WeatherNightOverlay } from "@/components/WeatherNightOverlay";
+import LeaderboardPanel from "@/components/LeaderboardPanel";
+import TutorialDialog from "@/components/TutorialDialog";
 import { getLicense, addLicenseXp, rollClientTier, tierFareMult, tierXp } from "@/lib/license";
 import { pickSpecialMission, SPECIAL_COOLDOWN_MS } from "@/lib/specialMissions";
+import { getGameTime, periodLabel } from "./cityClock";
 
 
 
@@ -65,7 +70,7 @@ export const TAXI_PAINTS = [
   { id: "white", name: "Blanc", color: "#f8fafc", filter: "grayscale(1) brightness(1.45) contrast(0.95)" },
 ] as const;
 
-type TaxiMode = "idle" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
+type TaxiMode = "idle" | "roaming" | "to_pickup" | "to_dest" | "returning" | "to_gas" | "refueling" | "depositing";
 type LanePosition = { x: number; y: number; angle: number };
 type Taxi = {
   id: number;
@@ -497,6 +502,17 @@ export default function TaxiTycoon() {
   const containerRef = useRef<SVGSVGElement | null>(null);
   const [pathsReady, setPathsReady] = useState(false);
   const admin = useAdminConfig(); // re-render quand l'admin change
+  const navigate = useNavigate();
+  const realEnv = useRealWorldEnv();
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [clock, setClock] = useState(() => getGameTime(undefined, realEnv?.population ?? null));
+  useEffect(() => {
+    const pop = realEnv?.population ?? null;
+    setClock(getGameTime(undefined, pop));
+    const id = window.setInterval(() => setClock(getGameTime(undefined, pop)), 30_000);
+    return () => window.clearInterval(id);
+  }, [realEnv?.population]);
 
   // === Persistent state ===
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
@@ -879,8 +895,7 @@ export default function TaxiTycoon() {
     forceRender((n) => n + 1);
   }, [pathsReady, save.taxis, save.taxiSpeedLvl, admin.taxiSpeedMult, admin.hqX, admin.hqY]);
 
-  // Sync rival AI taxis fleet — l'IA décide elle-même combien de taxis déployer
-  // (aléatoire entre 1 et flotte joueur + 2, rerollé toutes les 35-70s) + balance des taunts.
+  // Sync rival AI taxis fleet — flotte stable : pas de pop/disparition aléatoire.
   useEffect(() => {
     if (!pathsReady) return;
     if (!admin.rivalEnabled) {
@@ -900,7 +915,7 @@ export default function TaxiTycoon() {
     ];
     const rebuildFleet = () => {
       const playerFleet = Math.max(1, save.taxis.length);
-      const target = Math.max(1, Math.min(7, 1 + Math.floor(Math.random() * (playerFleet + 2))));
+      const target = Math.max(3, Math.min(7, playerFleet + 2));
       while (rivalTaxisRef.current.length < target) {
         const pos = closestOnPath(0, admin.rivalHQX, admin.rivalHQY);
         const spawnedRival: RivalTaxi = {
@@ -914,14 +929,12 @@ export default function TaxiTycoon() {
       forceRender((n) => n + 1);
     };
     rebuildFleet();
-    const fleetTimer = window.setInterval(rebuildFleet, 35000 + Math.random() * 35000);
     const tauntTimer = window.setInterval(() => {
       const msg = TAUNTS[Math.floor(Math.random() * TAUNTS.length)];
       setRivalTaunt(msg);
       window.setTimeout(() => setRivalTaunt(null), 5500);
     }, 22000 + Math.random() * 20000);
     return () => {
-      window.clearInterval(fleetTimer);
       window.clearInterval(tauntTimer);
     };
   }, [pathsReady, admin.rivalEnabled, save.taxis.length, admin.rivalHQX, admin.rivalHQY]);
@@ -1023,8 +1036,7 @@ export default function TaxiTycoon() {
           taxi.fuel = Math.max(0, taxi.fuel - adm.fuelConsumption * dt);
         }
 
-        // Idle : check si carburant bas → station. Sinon le taxi reste garé au QG
-        // (il y est déjà retourné via le mode "returning" après sa dernière course).
+        // Idle : jamais invisible/garé longtemps. Le taxi repart patrouiller sur les routes.
         if (taxi.mode === "idle") {
           if (taxi.fuel < FUEL_LOW_THRESHOLD) {
             const pIdx = pickPath(taxi.pathIdx);
@@ -1033,6 +1045,14 @@ export default function TaxiTycoon() {
             taxi.pos = closestOnPath(pIdx, here.x, here.y);
             taxi.target = closestOnPath(pIdx, adm.gasStationX, adm.gasStationY);
             taxi.mode = "to_gas";
+          } else {
+            const pIdx = pickPath(taxi.pathIdx);
+            const here = taxiXY(taxi);
+            taxi.pathIdx = pIdx;
+            taxi.pos = closestOnPath(pIdx, here.x, here.y);
+            const len = pathLensRef.current[pIdx] ?? 0;
+            taxi.target = Math.max(1, Math.min(len - 1, Math.random() * len));
+            taxi.mode = "roaming";
           }
           continue;
         }
@@ -1142,14 +1162,32 @@ export default function TaxiTycoon() {
             }
           } else if (taxi.mode === "returning") {
             if (taxi.mustDeposit) {
-              // arrivé au garage : dépose et attend 5s
-              taxi.mode = "depositing";
-              taxi.depositUntil = Date.now() + DEPOSIT_MS;
+              // arrivé au garage : dépôt instantané puis reprise du roulage.
+              taxi.mode = "idle";
+              taxi.depositUntil = undefined;
+              taxi.mustDeposit = false;
+              taxi.ridesSinceDeposit = 0;
               popFloat("💰 Dépôt", adm.hqX, adm.hqY - 24);
             } else {
               taxi.mode = "idle";
             }
             taxi.jobId = null;
+          } else if (taxi.mode === "roaming") {
+            if (taxi.fuel < FUEL_LOW_THRESHOLD) {
+              const pIdx = pickPath(taxi.pathIdx);
+              const here = taxiXY(taxi);
+              taxi.pathIdx = pIdx;
+              taxi.pos = closestOnPath(pIdx, here.x, here.y);
+              taxi.target = closestOnPath(pIdx, adm.gasStationX, adm.gasStationY);
+              taxi.mode = "to_gas";
+            } else {
+              const pIdx = pickPath(taxi.pathIdx);
+              const here = taxiXY(taxi);
+              taxi.pathIdx = pIdx;
+              taxi.pos = closestOnPath(pIdx, here.x, here.y);
+              const len = pathLensRef.current[pIdx] ?? 0;
+              taxi.target = Math.max(1, Math.min(len - 1, Math.random() * len));
+            }
           } else if (taxi.mode === "to_gas") {
             taxi.mode = "refueling";
             taxi.refuelUntil = Date.now() + FUEL_REFILL_MS;
@@ -1173,7 +1211,7 @@ export default function TaxiTycoon() {
         const nowMs = Date.now();
 
         for (const r of rivalTaxisRef.current) {
-          if (r.mode === "idle") {
+          if (r.mode === "idle" || r.mode === "roaming") {
             // cherche une course offerte assez ancienne pour être sniped
             const candidate = jobsRef.current.find((j) => {
               if (j.status !== "offered") return false;
@@ -1182,8 +1220,9 @@ export default function TaxiTycoon() {
             });
             if (candidate) {
               r.jobId = candidate.id;
+              const here = r.lane ?? getLaneXY(r.pathIdx, r.pos, true);
               r.pathIdx = candidate.pickupPath;
-              r.pos = closestOnPath(candidate.pickupPath, admin.rivalHQX, admin.rivalHQY);
+              r.pos = closestOnPath(candidate.pickupPath, here.x, here.y);
               r.target = candidate.pickup;
               r.mode = "to_pickup";
               // mémorise la course côté rival, puis la retire de la file joueur
@@ -1191,8 +1230,17 @@ export default function TaxiTycoon() {
               setJobs((js) => js.filter((x) => x.id !== candidate.id));
               setRivalStolen((n) => n + 1);
               showToast("⚔️ Course volée par Rival Cabs !");
+              continue;
+            } else if (r.mode === "idle") {
+              const pIdx = pickPath(r.pathIdx);
+              const here = r.lane ?? getLaneXY(r.pathIdx, r.pos, true);
+              r.pathIdx = pIdx;
+              r.pos = closestOnPath(pIdx, here.x, here.y);
+              const len = pathLensRef.current[pIdx] ?? 0;
+              r.target = Math.max(1, Math.min(len - 1, Math.random() * len));
+              r.mode = "roaming";
+              continue;
             }
-            continue;
           }
 
           const diff = r.target - r.pos;
@@ -1220,6 +1268,13 @@ export default function TaxiTycoon() {
               r.mode = "returning";
             } else if (r.mode === "returning") {
               r.mode = "idle";
+            } else if (r.mode === "roaming") {
+              const pIdx = pickPath(r.pathIdx);
+              const here = r.lane ?? getLaneXY(r.pathIdx, r.pos, true);
+              r.pathIdx = pIdx;
+              r.pos = closestOnPath(pIdx, here.x, here.y);
+              const len = pathLensRef.current[pIdx] ?? 0;
+              r.target = Math.max(1, Math.min(len - 1, Math.random() * len));
             }
           } else {
             const forward = diff > 0;
@@ -1858,7 +1913,7 @@ export default function TaxiTycoon() {
   const acceptJob = (id: number) => {
     const job = jobsRef.current.find((j) => j.id === id);
     if (!job || job.status !== "offered") return;
-    const free = taxisRef.current.find((t) => t.mode === "idle");
+    const free = taxisRef.current.find((t) => t.mode === "idle" || t.mode === "roaming");
     if (!free) {
       showToast("🚖 Tous les taxis sont occupés");
       return;
@@ -1931,7 +1986,6 @@ export default function TaxiTycoon() {
 
 
   // === Météo réelle : pousse une brève radio dès qu'on a les données, puis toutes les ~6 min ===
-  const realEnv = useRealWorldEnv();
   useEffect(() => {
     if (!realEnv) return;
     const lang = (() => { try { return localStorage.getItem("mttw.lang") || "fr"; } catch { return "fr"; } })();
@@ -2588,84 +2642,59 @@ export default function TaxiTycoon() {
         ))}
       </svg>
 
-      {/* === HUD HTML === */}
+        {/* === HUD HTML incrusté — rendu hors carte pour rester fixe === */}
+      {typeof document !== "undefined" && createPortal((
       <div className="tt-hud">
-        <div className="tt-top">
-          <div className="tt-stat money">
-            <span className="tt-stat-icon">💰</span>
-            <span className="tt-stat-val">{fmt(save.money)}$</span>
+        <div className="tt-topbar">
+          <button className="tt-round tt-help" onClick={() => setShowTutorial(true)} title="Tutoriel">?</button>
+          <div className="tt-wood-name" />
+          <div className="tt-weather-pill">
+            <span>◷</span>
+            <span>{realEnv ? weatherLabelFr(realEnv.weather) : "météo..."}</span>
+            <span>•</span>
+            <span className="tt-coin">●</span>
+            <b>{fmt(save.money)}$</b>
           </div>
-          <div className="tt-stat">
-            <span className="tt-stat-icon">👥</span>
-            <span className="tt-stat-val">{save.customersServed}</span>
-          </div>
-          <div className="tt-stat">
-            <span className="tt-stat-icon">🚕</span>
-            <span className="tt-stat-val">{taxiCount}/{effectiveMaxTaxis} taxis</span>
-          </div>
-          {admin.rivalEnabled && (() => {
-            const me = save.totalEarned;
-            const them = rivalEarnings;
-            const total = Math.max(1, me + them);
-            const mePct = Math.round((me / total) * 100);
-            const lead = me - them;
-            return (
-              <div
-                className="tt-stat"
-                style={{ color: lead >= 0 ? "#34d399" : "#ff6b7a", flexDirection: "column", alignItems: "stretch", gap: 2, minWidth: 130 }}
-                title={`Toi : ${fmt(me)}$ • Rival : ${fmt(them)}$ • Volées : ${rivalStolen}`}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                  <span>⚔️ DUEL</span>
-                  <span>{lead >= 0 ? `+${fmt(lead)}$` : `${fmt(lead)}$`}</span>
-                </div>
-                <div style={{ display: "flex", height: 6, borderRadius: 3, overflow: "hidden", background: "#1f2127" }}>
-                  <div style={{ width: `${mePct}%`, background: "#34d399" }} />
-                  <div style={{ flex: 1, background: "#ff6b7a" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "#9ca3af" }}>
-                  <span>Toi {fmt(me)}$</span>
-                  <span>Rival {fmt(them)}$ · {rivalStolen} vol.</span>
-                </div>
-              </div>
-            );
-          })()}
-          {(() => {
-            const city = getCityLevel(save.cityFund);
-            const nextT = city.next?.threshold ?? city.threshold;
-            const prevT = city.threshold;
-            const pct = city.next ? Math.min(100, Math.round(((save.cityFund - prevT) / (nextT - prevT)) * 100)) : 100;
-            return (
-              <div className="tt-stat tt-city" title={`Caisse de la ville : ${fmt(save.cityFund)}$ — alimentée par les amendes`}>
-                <span className="tt-stat-icon">{city.emoji}</span>
-                <span className="tt-stat-val">{city.name}</span>
-                <div className="tt-city-bar"><div className="tt-city-fill" style={{ width: `${pct}%` }} /></div>
-              </div>
-            );
-          })()}
-          {saveBlink && (
-            <div className="tt-save-blink">💾 Sauvegardé</div>
-          )}
+          <button className="tt-round tt-settings" onClick={() => setShopOpen(true)} title="Réglages QG">⚙</button>
+        </div>
+
+        <div className="tt-info-card">
+          <b>{clock.label}</b>
+          <span><i /> {periodLabel(clock.period)}</span>
+          <small>{realEnv?.city ?? "Ville"} · Densité ×{clock.density.toFixed(2)}</small>
+        </div>
+
+        <div className="tt-logo-mark" aria-hidden="true">
+          <svg width="64" height="30" viewBox="0 0 64 30">
+            <defs>
+              <linearGradient id="ttCrown" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#ffd07a" />
+                <stop offset="100%" stopColor="#e0651a" />
+              </linearGradient>
+            </defs>
+            <path d="M4 26 L12 6 L22 18 L32 3 L42 18 L52 6 L60 26 Z" fill="url(#ttCrown)" stroke="#7a2f06" strokeWidth="1.6" strokeLinejoin="round" />
+            <circle cx="12" cy="6" r="2.4" fill="#ffe7b8" stroke="#7a2f06" strokeWidth="1" />
+            <circle cx="32" cy="3" r="2.8" fill="#ff9d7a" stroke="#7a2f06" strokeWidth="1" />
+            <circle cx="52" cy="6" r="2.4" fill="#ffe7b8" stroke="#7a2f06" strokeWidth="1" />
+          </svg>
+          <span>MY TAXI<br />WORLD</span>
         </div>
 
 
-        {/* === Bouton flottant Missions (compact) === */}
         {(() => {
           const offeredCount = jobs.filter((j) => j.status === "offered").length;
           const inProgressCount = jobs.filter((j) => j.status !== "offered").length;
           return (
-            <button
-              className="tt-missions-fab"
-              onClick={() => setMissionsOpen(true)}
-              title="Missions, contrats et dépôt"
-            >
-              <span className="tt-mfab-ico">📋</span>
-              <span className="tt-mfab-lbl">Missions</span>
-              {offeredCount > 0 && <span className="tt-mfab-badge">{offeredCount}</span>}
-              {inProgressCount > 0 && <span className="tt-mfab-badge tt-mfab-badge-blue">{inProgressCount}</span>}
+            <button className="tt-mission-wood" onClick={() => setMissionsOpen(true)} title="Missions, contrats et dépôt">
+              <span className="tt-clip">▣</span>
+              <span>Missions</span>
+              {(offeredCount + inProgressCount) > 0 && <b>{offeredCount + inProgressCount}</b>}
             </button>
           );
         })()}
+
+        {saveBlink && <div className="tt-save-blink">💾 Sauvegardé</div>}
+
 
         {/* === Panneau Missions === */}
         {missionsOpen && (
@@ -2704,7 +2733,7 @@ export default function TaxiTycoon() {
                     const remainSec = Math.ceil(remain / 1000);
                     const timePct = isOffered ? Math.max(0, Math.min(1, remain / j.duration)) : 1;
                     const urgent = isOffered && remainSec <= 6;
-                    const freeTaxi = taxisRef.current.some((t) => t.mode === "idle");
+                    const freeTaxi = taxisRef.current.some((t) => t.mode === "idle" || t.mode === "roaming");
                     return (
                       <div
                         key={j.id}
@@ -2764,54 +2793,58 @@ export default function TaxiTycoon() {
             </div>
           </div>
         )}
-
-
-
-
-        <button
-          className="tt-actions-fab"
-          onClick={() => setActionsOpen((v) => !v)}
-          title={actionsOpen ? "Réduire les actions" : "Afficher les actions"}
-          aria-expanded={actionsOpen}
-        >
-          <span className="tt-mfab-ico">{actionsOpen ? "✕" : "🛠️"}</span>
-          <span className="tt-mfab-lbl">{actionsOpen ? "Fermer" : "Actions"}</span>
-        </button>
-
-        {actionsOpen && (
-        <div className="tt-actions">
-          <button className="tt-btn primary" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= effectiveMaxTaxis}>
-            <span className="tt-btn-ico">🚕</span>
-            <span className="tt-btn-lbl">Acheter taxi</span>
-            <span className="tt-btn-cost">{fmt(taxiBuyCost)}$</span>
-          </button>
-          <button className="tt-btn" onClick={upgradeSpeed} disabled={save.money < speedCost}>
-            <span className="tt-btn-ico">⚡</span>
-            <span className="tt-btn-lbl">Vitesse +{save.taxiSpeedLvl + 1}</span>
-            <span className="tt-btn-cost">{fmt(speedCost)}$</span>
-          </button>
-          <button className="tt-btn upgrade" onClick={upgradeDepot} disabled={!nextTier || save.money < (nextTier?.cost ?? 0)}>
-            <span className="tt-btn-ico">🏗️</span>
-            <span className="tt-btn-lbl">{nextTier ? `Améliorer dépôt` : `Dépôt max`}</span>
-            <span className="tt-btn-cost">{nextTier ? `${fmt(nextTier.cost)}$` : "—"}</span>
-          </button>
-          <button
-            className="tt-btn"
-            onClick={repairTaxis}
-            disabled={wearNow <= 0 || save.money < maintenanceCost}
-            title={wearNow >= 70 ? "Usure critique : revenus réduits !" : "Garde ta flotte en forme"}
-          >
-            <span className="tt-btn-ico">{wearNow >= 70 ? "⚠️" : "🔧"}</span>
-            <span className="tt-btn-lbl">Entretien {wearNow}%</span>
-            <span className="tt-btn-cost">{wearNow > 0 ? `${fmt(maintenanceCost)}$` : "OK"}</span>
-          </button>
-          <button className="tt-btn shop" onClick={() => setShopOpen(true)} title="Boutique d'améliorations QG">
-            <span className="tt-btn-ico">🏪</span>
-            <span className="tt-btn-lbl">Boutique QG</span>
-            <span className="tt-btn-cost">Améliorations</span>
-          </button>
+        <div className="tt-console">
+          <div className="tt-console-actions">
+            <button className="tt-wood-btn" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= effectiveMaxTaxis}>
+              <span className="tt-wood-icon">🚕</span><b>GÉRER<br />FLOTTE</b>
+            </button>
+            <button className="tt-wood-btn" onClick={() => setShopOpen(true)}>
+              <span className="tt-wood-icon">🔧</span><b>AMÉLIORATIONS<br />QG</b>
+            </button>
+            <button className="tt-wood-btn" onClick={() => setMissionsOpen(true)}>
+              <span className="tt-wood-icon">📻</span><b>RADIO &<br />MISSIONS</b>
+            </button>
+            <button className="tt-wood-btn" onClick={() => setShowLeaderboard(true)}>
+              <span className="tt-wood-icon">⚔️</span><b>RIVALITÉ</b>
+            </button>
+          </div>
+          <div className="tt-director-band">
+            <button className="tt-director-profile" onClick={() => setGarageOpen(true)} title="Profil directeur et livrées">
+              <span className="tt-avatar-anon">?</span>
+              <span className="tt-director-info">
+                <b>[NOM DU DIRECTEUR]</b>
+                <span className="tt-progress"><span className="tt-progress-fill" style={{ width: `${Math.min(100, (taxiCount / Math.max(1, effectiveMaxTaxis)) * 100)}%` }} /></span>
+                <i>QG NIVEAU {save.depotTier + 1} ({effectiveMaxTaxis} Capacité)</i>
+              </span>
+            </button>
+            <button className="tt-trophy" onClick={() => setShowLeaderboard(true)} title="Classement mondial">
+              <span className="tt-trophy-ico">🏆</span>
+              <small>CLASSEMENT<br />MONDIAL</small>
+            </button>
+            <button className="tt-book" onClick={() => setShowTutorial(true)} title="Contrats et manuels">
+              <span className="tt-book-label">TUTO</span>
+              <small>CONTRATS<br />& MANUELS</small>
+            </button>
+          </div>
+          <div className="tt-director-foot">
+            <span className="tt-foot-left">PROFIL<br/>DIRECTEUR</span>
+            <span className="tt-foot-center">PSEUDO ──── <span className="tt-pen-ico">✒</span></span>
+            <span className="tt-foot-right">CONTRATS<br/>&amp; MANUELS</span>
+          </div>
+          <div className="tt-lower-tools">
+            <button className="tt-apk" onClick={() => navigate({ to: "/download" })}>
+              <span className="tt-apk-ico">🤖</span>
+              <span>TÉLÉCHARGER<br />L'APK</span>
+            </button>
+            <button className="tt-slot" onClick={repairTaxis} disabled={wearNow <= 0 || save.money < maintenanceCost} title="Entretien flotte">
+              <span className="tt-slot-spark">✦</span>
+            </button>
+            <button className="tt-diamond" onClick={triggerSpecialMission} disabled={nowTick < specialCooldownUntil} title="Mission spéciale">
+              <span>✦</span>
+            </button>
+          </div>
         </div>
-        )}
+
 
 
         {/* === Modal Boutique QG === */}
@@ -2860,32 +2893,6 @@ export default function TaxiTycoon() {
           </div>
         )}
 
-        {/* Bouton garage : ouvre le modal de personnalisation */}
-        <button className="tt-garage-fab" onClick={() => setGarageOpen(true)} title="Garage — personnaliser le taxi">
-          🏁
-        </button>
-
-        {/* Bouton MISSION SPÉCIALE — déclenche un client doré */}
-        {(() => {
-          const now = nowTick;
-          const remaining = Math.max(0, specialCooldownUntil - now);
-          const cooling = remaining > 0;
-          const sec = Math.ceil(remaining / 1000);
-          const pct = cooling ? 1 - remaining / SPECIAL_COOLDOWN_MS : 1;
-          return (
-            <button
-              className={`tt-special-fab ${cooling ? "cooling" : "ready"}`}
-              onClick={triggerSpecialMission}
-              disabled={cooling}
-              title={cooling ? `Cooldown ${sec}s` : "Déclencher une mission spéciale"}
-            >
-              <span className="tt-special-ring" style={{ background: `conic-gradient(#fde047 ${pct * 360}deg, rgba(255,255,255,0.15) 0deg)` }} />
-              <span className="tt-special-core">{cooling ? `${sec}s` : "👑"}</span>
-              <span className="tt-special-lbl">Mission</span>
-            </button>
-          );
-        })()}
-
         {/* Musique de fond : gérée globalement par <BackgroundMusic /> dans __root.tsx */}
 
         {garageOpen && (
@@ -2929,33 +2936,137 @@ export default function TaxiTycoon() {
 
 
         {toast && <div className="tt-toast">{toast}</div>}
+        {showLeaderboard && <LeaderboardPanel onClose={() => setShowLeaderboard(false)} />}
+        {showTutorial && <TutorialDialog onClose={() => setShowTutorial(false)} />}
       </div>
+      ), document.body)}
 
       <style>{`
         .tt-hud {
-          position: absolute; inset: 0; z-index: 30;
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          position: fixed; inset: 0; z-index: 9000;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Twemoji Mozilla", sans-serif;
           color: #fff; pointer-events: none;
         }
-        .tt-top {
-          position: absolute; top: 10px; left: 10px; right: 10px;
-          display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;
-        }
-        .tt-stat {
-          display: flex; align-items: center; gap: 6px;
-          background: linear-gradient(180deg, #1f2127 0%, #0d0e12 100%);
-          border: 1px solid #000; border-radius: 10px;
-          padding: 6px 12px;
-          box-shadow: 0 3px 0 rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
-          font-size: 14px; font-weight: 800;
-          pointer-events: auto;
-        }
-        .tt-stat.money { color: #34d399; }
-        .tt-stat.tt-city { color: #fde047; position: relative; padding-right: 10px; }
-        .tt-city-bar { position: absolute; left: 8px; right: 8px; bottom: 2px; height: 3px; background: rgba(255,255,255,0.15); border-radius: 2px; overflow: hidden; }
-        .tt-city-fill { height: 100%; background: linear-gradient(90deg, #fde047, #f97316); transition: width 0.4s ease; }
+        .tt-hud button { font-family: inherit; pointer-events: auto; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
-        .tt-stat-icon { font-size: 16px; }
+        .tt-topbar {
+          position: absolute; top: max(8px, env(safe-area-inset-top)); left: 8px; right: 8px; height: 44px;
+          display: grid; grid-template-columns: 48px 1fr minmax(118px, 156px) 48px; gap: 8px; align-items: center;
+        }
+        .tt-round {
+          width: 44px; height: 44px; border-radius: 50%; border: 2px solid #8f7653;
+          background: radial-gradient(circle at 35% 25%, #8b5131, #3a1b12 70%); color: #f8d9a7;
+          box-shadow: 0 3px 0 #140b08, inset 0 2px 0 rgba(255,255,255,0.2), 0 6px 14px rgba(0,0,0,0.55);
+          font-weight: 900; font-size: 22px; display: grid; place-items: center;
+        }
+        .tt-wood-name, .tt-mission-wood, .tt-wood-btn, .tt-director-band, .tt-apk, .tt-pen, .tt-special-inline {
+          border: 2px solid #4a2b1d;
+          background: linear-gradient(180deg, #8a4d2f 0%, #5b2d1c 46%, #32170f 100%);
+          box-shadow: inset 0 2px 0 rgba(255,220,170,0.25), inset 0 -10px 18px rgba(20,8,3,0.45), 0 4px 0 #1a0c08, 0 8px 16px rgba(0,0,0,0.55);
+        }
+        .tt-wood-name { height: 36px; border-radius: 22px; opacity: 0.95; }
+        .tt-weather-pill {
+          height: 38px; border-radius: 20px; padding: 0 12px; min-width: 0;
+          display: flex; align-items: center; justify-content: center; gap: 7px;
+          background: linear-gradient(180deg, #2a2e37, #0f1117); border: 2px solid #11141b;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.14), 0 4px 12px rgba(0,0,0,0.55);
+          color: #d7d2cc; font-weight: 900; font-size: 13px; white-space: nowrap; overflow: hidden;
+        }
+        .tt-weather-pill span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; }
+        .tt-coin { color: #e0b63d; text-shadow: 0 1px 0 #4b3008; }
+        .tt-info-card {
+          position: absolute; top: max(58px, calc(env(safe-area-inset-top) + 58px)); left: 12px; z-index: 2;
+          min-width: 174px; padding: 10px 12px; border-radius: 9px;
+          background: linear-gradient(180deg, rgba(24,28,38,0.94), rgba(10,12,18,0.94));
+          border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 7px 18px rgba(0,0,0,0.58);
+          display: flex; flex-direction: column; gap: 4px; pointer-events: none;
+        }
+        .tt-info-card b { font-size: 18px; line-height: 1.05; color: #e8dfd4; text-shadow: 0 2px 2px rgba(0,0,0,0.6); }
+        .tt-info-card span { display: flex; align-items: center; gap: 7px; font-size: 16px; color: #d7d0c8; font-weight: 800; }
+        .tt-info-card i { width: 10px; height: 10px; border-radius: 50%; background: #2ed47a; box-shadow: 0 0 10px #2ed47a; display: inline-block; }
+        .tt-info-card small { font-size: 13px; color: #aeb4bd; font-weight: 800; }
+        .tt-logo-mark {
+          position: absolute; top: max(70px, calc(env(safe-area-inset-top) + 70px)); left: 50%; transform: translateX(-50%);
+          text-align: center; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(255,150,60,0.4);
+          font-weight: 900; font-size: 13px; line-height: 1; letter-spacing: 1.2px; pointer-events: none;
+          font-family: "Impact", "Arial Narrow", sans-serif;
+        }
+        .tt-logo-mark svg { display: block; margin: 0 auto 2px; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.7)); }
+        .tt-mission-wood {
+          position: absolute; top: max(76px, calc(env(safe-area-inset-top) + 76px)); right: 10px; height: 50px; min-width: 150px;
+          border-radius: 26px; color: #f7d7aa; display: flex; align-items: center; justify-content: center; gap: 10px;
+          font-weight: 900; font-size: 18px; text-shadow: 0 2px 1px rgba(0,0,0,0.7);
+        }
+        .tt-mission-wood .tt-clip { font-size: 18px; }
+        .tt-mission-wood b { min-width: 24px; height: 24px; border-radius: 50%; background: #d8463c; color: #ffd7d1; display: grid; place-items: center; font-size: 14px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.25); }
+        .tt-console {
+          position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 12px max(10px, env(safe-area-inset-bottom));
+          background: linear-gradient(180deg, #5a4030 0%, #3a2418 100%);
+          border-top: 3px solid #1a0c08; pointer-events: auto; box-shadow: 0 -10px 24px rgba(0,0,0,0.6);
+        }
+        .tt-console-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+        .tt-wood-btn { min-height: 86px; border-radius: 10px; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px 2px; text-align: center; }
+        .tt-wood-btn:disabled { opacity: 0.55; filter: grayscale(0.4); }
+        .tt-wood-icon { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8)); }
+        .tt-wood-btn b { font-size: 11px; line-height: 1.1; letter-spacing: 0.3px; text-shadow: 0 2px 1px rgba(0,0,0,0.9); font-weight: 900; }
+        .tt-director-band {
+          border-radius: 10px; padding: 8px; display: grid; grid-template-columns: minmax(0, 1fr) 80px 84px; gap: 10px; align-items: stretch;
+          background: linear-gradient(180deg, #8a4d2f, #5b2d1c);
+          border: 2px solid #2a140b; box-shadow: inset 0 2px 0 rgba(255,220,170,0.2);
+        }
+        .tt-director-profile {
+          background: linear-gradient(180deg, #d8a974, #a87344);
+          border: 2px solid #2a140b; border-radius: 10px; min-height: 70px;
+          color: #2a140b; display: flex; gap: 10px; align-items: center; padding: 6px 8px; text-align: left;
+          box-shadow: inset 0 2px 0 rgba(255,240,210,0.5);
+        }
+        .tt-avatar-anon { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(180deg,#e8d7bd,#8b7867); color: #3a2a1a; display: grid; place-items: center; font-size: 24px; font-weight: 900; border: 3px solid #2a140b; flex: 0 0 auto; }
+        .tt-director-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+        .tt-director-info b { display: block; font-size: 12px; line-height: 1; color: #2a140b; font-weight: 900; letter-spacing: 0.2px; }
+        .tt-director-info i { display: block; font-size: 10px; color: #2a140b; font-style: normal; font-weight: 700; }
+        .tt-progress { display: block; height: 8px; background: rgba(0,0,0,0.45); border-radius: 5px; border: 1px solid #2a140b; overflow: hidden; }
+        .tt-progress-fill { display: block; height: 100%; background: linear-gradient(180deg, #6ee7a8, #16a34a); box-shadow: 0 0 6px rgba(52,211,153,0.6); }
+        .tt-trophy { background: transparent; border: 0; color: #f1c996; font-weight: 900; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; text-shadow: 0 2px 2px #000; padding: 0; }
+        .tt-trophy-ico { font-size: 40px; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.7)); }
+        .tt-trophy small { font-size: 10px; line-height: 1.1; color: #ffe2b8; font-weight: 800; }
+        .tt-book {
+          background: linear-gradient(135deg, #b87340 0%, #8b4a25 50%, #6b3418 100%);
+          border: 2px solid #2a140b; border-radius: 8px; color: #fff8e8; font-weight: 900;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+          min-height: 70px; padding: 4px; box-shadow: inset 0 2px 0 rgba(255,220,170,0.3), inset -3px 0 0 rgba(0,0,0,0.25);
+        }
+        .tt-book-label { font-size: 18px; letter-spacing: 1px; text-shadow: 0 2px 1px rgba(0,0,0,0.6); }
+        .tt-book small { font-size: 10px; line-height: 1.1; color: #ffe2b8; font-weight: 800; }
+        .tt-director-foot { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; margin-top: 6px; padding: 0 6px; color: #d8a55c; font-size: 9px; font-weight: 800; letter-spacing: 0.5px; }
+        .tt-director-foot .tt-foot-left { text-align: left; }
+        .tt-director-foot .tt-foot-right { text-align: right; }
+        .tt-director-foot .tt-foot-center { color: #e6c39b; font-size: 10px; display: inline-flex; align-items: center; gap: 6px; }
+        .tt-pen-ico { color: #ffd28a; font-size: 18px; transform: rotate(-15deg); display: inline-block; }
+        .tt-lower-tools { display: grid; grid-template-columns: 1.4fr 1fr 50px; gap: 10px; align-items: center; margin-top: 10px; }
+        .tt-apk {
+          border-radius: 26px; min-height: 48px; color: #fff; font-size: 13px; line-height: 1.05; font-weight: 900;
+          background: linear-gradient(180deg, #2a2a2a, #0d0d0d); border: 2px solid #000;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 0 #000;
+        }
+        .tt-apk-ico { font-size: 22px; color: #a4c639; }
+        .tt-slot {
+          border-radius: 26px; min-height: 48px;
+          background: linear-gradient(180deg, #1a1a1a, #050505); border: 2px solid #000;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+        }
+        .tt-slot-spark { color: #888; font-size: 16px; opacity: 0.5; }
+        .tt-diamond {
+          width: 48px; height: 48px; border-radius: 12px; transform: rotate(45deg);
+          background: linear-gradient(135deg, #fef3c7, #f5c542 50%, #b8860b);
+          border: 2px solid #6e5108; color: #5a3a00; font-size: 22px; font-weight: 900;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 4px 10px rgba(245,197,66,0.4);
+        }
+        .tt-diamond > span { transform: rotate(-45deg); display: block; }
+        .tt-diamond:disabled { opacity: 0.55; }
+
 
         .tt-depot-card {
           position: absolute; top: 56px; left: 50%; transform: translateX(-50%);
