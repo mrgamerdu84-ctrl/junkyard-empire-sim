@@ -6,15 +6,19 @@ import CityTraffic from "@/game/CityTraffic";
 import CityCompetitors from "@/game/CityCompetitors";
 import CityRivalTaxis from "@/game/CityRivalTaxis";
 import ArmoredTruck from "@/game/ArmoredTruck";
+import CityHud from "@/game/CityHud";
 import CrimeEvents from "@/game/CrimeEvents";
 import InterventionDispatcher from "@/game/InterventionDispatcher";
 import EmergencyStations from "@/game/EmergencyStations";
 import RadarFlash from "@/game/RadarFlash";
 // AmbientSirens retiré : plus de bruits d'ambulance/pompiers/police en fond.
 import AdminPanel from "@/game/AdminPanel";
+import RulesPanel from "@/game/RulesPanel";
 import VersionBanner from "@/game/VersionBanner";
 import HomeScreen from "@/game/HomeScreen";
 import SplashScreen from "@/game/SplashScreen";
+import GameMenu from "@/game/GameMenu";
+import RadioPlayer from "@/game/RadioPlayer";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -174,11 +178,26 @@ function TaxiTycoonPage() {
       </div>
 
       {/* HUD et panneaux hors zoom (toujours nets) */}
+      <CityHud />
       <RadarFlash />
       {/* <AmbientSirens /> — désactivé sur demande joueur */}
       <AdminPanel />
+      <RulesPanel />
       <VersionBanner />
+      <GameMenu onHome={() => setPhase("home")} />
+      <RadioPlayer />
 
+      <button
+        type="button"
+        className="tt-zoom-btn"
+        onClick={cycleZoom}
+        title={`Zoom ×${zoom}`}
+        aria-label="Changer le zoom"
+        data-no-pan
+      >
+        <span className="ico">🔍</span>
+        <span className="lbl">×{zoom}</span>
+      </button>
     </div>
   );
 }

@@ -37,7 +37,7 @@ type RivalSpec = {
   startPathIdx: number;
 };
 
-type Mode = "roam" | "to_mission" | "on_mission" | "to_dropoff" | "return_hq";
+type Mode = "roam" | "to_mission" | "on_mission" | "to_dropoff" | "return_hq" | "parked";
 
 type RivalState = {
   mode: Mode;
@@ -113,10 +113,7 @@ export default function CityRivalTaxis() {
     return () => window.removeEventListener("jce:competitors-changed", onChange as EventListener);
   }, []);
 
-  // CityCompetitors met à jour la trésorerie toutes les 5s : ne surtout pas
-  // reconstruire les taxis pour ces ticks, sinon ils téléportent/disparaissent.
-  const fleetSignature = comps.map((c) => `${c.id}:${c.color}:${c.bankrupt}:${c.vehicleUrl ?? ""}`).join("|");
-  const specs = useMemo(() => buildSpecs(comps), [fleetSignature]);
+  const specs = useMemo(() => buildSpecs(comps), [comps]);
   const compsRef = useRef<Competitor[]>(comps);
   useEffect(() => { compsRef.current = comps; }, [comps]);
 
@@ -284,14 +281,8 @@ export default function CityRivalTaxis() {
               st.tgtY = c?.y ?? 540;
               st.tgtSpeed = 200;
             } else if (st.mode === "return_hq") {
-              // Retour QG validé, puis reprise immédiate du trafic : les concurrents
-              // ne restent plus plantés/garés sur la carte.
-              st.mode = "roam";
-              st.pathIdx = pickPath();
-              st.flip = Math.random() < 0.5;
-              st.duration = 14 + Math.random() * 10;
-              st.startedAt = now;
-              st.missionId = undefined;
+              st.mode = "parked";
+              st.parkUntil = now + 2000 + Math.random() * 2000;
             }
           } else {
             const move = st.tgtSpeed * dt;
@@ -308,10 +299,20 @@ export default function CityRivalTaxis() {
             st.tgtY = st.dropY ?? st.y;
             st.tgtSpeed = 220;
           }
+        } else if (st.mode === "parked") {
+          if (now >= (st.parkUntil ?? 0)) {
+            // Redémarre en roam depuis la position actuelle
+            st.mode = "roam";
+            st.pathIdx = pickPath();
+            st.flip = Math.random() < 0.5;
+            st.duration = 14 + Math.random() * 10;
+            st.startedAt = now;
+            st.missionId = undefined;
+          }
         }
 
         // Watchdog anti-stuck (hors parking/on_mission)
-        if (st.mode !== "on_mission") {
+        if (st.mode !== "parked" && st.mode !== "on_mission") {
           const moved = Math.hypot(st.x - st.lastX, st.y - st.lastY);
           if (moved > 0.5) { st.lastMoveAt = now; st.lastX = st.x; st.lastY = st.y; }
           else if (now - st.lastMoveAt > 2000) {
