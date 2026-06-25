@@ -2796,32 +2796,55 @@ export default function TaxiTycoon() {
         <div className="tt-console">
           <div className="tt-console-actions">
             <button className="tt-wood-btn" onClick={buyTaxi} disabled={save.money < taxiBuyCost || taxiCount >= effectiveMaxTaxis}>
-              <span className="tt-wood-icon">🚕</span><b>GÉRER<br />FLOTTE</b><small>{fmt(taxiBuyCost)}$</small>
+              <span className="tt-wood-icon">🚕</span><b>GÉRER<br />FLOTTE</b>
             </button>
             <button className="tt-wood-btn" onClick={() => setShopOpen(true)}>
-              <span className="tt-wood-icon">🔧</span><b>AMÉLIORATIONS<br />QG</b><small>Niv. {save.hqCapacityLvl + save.hqProductionLvl + save.hqRevenueLvl}</small>
+              <span className="tt-wood-icon">🔧</span><b>AMÉLIORATIONS<br />QG</b>
             </button>
             <button className="tt-wood-btn" onClick={() => setMissionsOpen(true)}>
-              <span className="tt-wood-icon">📻</span><b>RADIO &<br />MISSIONS</b><small>{jobs.length} appel(s)</small>
+              <span className="tt-wood-icon">📻</span><b>RADIO &<br />MISSIONS</b>
             </button>
             <button className="tt-wood-btn" onClick={() => setShowLeaderboard(true)}>
-              <span className="tt-wood-icon">⚔️</span><b>RIVALITÉ</b><small>{rivalStolen} vol.</small>
+              <span className="tt-wood-icon">⚔️</span><b>RIVALITÉ</b>
             </button>
           </div>
           <div className="tt-director-band">
             <button className="tt-director-profile" onClick={() => setGarageOpen(true)} title="Profil directeur et livrées">
               <span className="tt-avatar-anon">?</span>
-              <span><b>[NOM DU DIRECTEUR]</b><i>QG NIVEAU {save.depotTier + 1} ({effectiveMaxTaxis} Capacité)</i></span>
+              <span className="tt-director-info">
+                <b>[NOM DU DIRECTEUR]</b>
+                <span className="tt-progress"><span className="tt-progress-fill" style={{ width: `${Math.min(100, (taxiCount / Math.max(1, effectiveMaxTaxis)) * 100)}%` }} /></span>
+                <i>QG NIVEAU {save.depotTier + 1} ({effectiveMaxTaxis} Capacité)</i>
+              </span>
             </button>
-            <button className="tt-trophy" onClick={() => setShowLeaderboard(true)} title="Classement mondial">🏆<small>CLASSEMENT<br />MONDIAL</small></button>
-            <button className="tt-book" onClick={() => setShowTutorial(true)} title="Contrats et manuels">TUTO<small>CONTRATS<br />& MANUELS</small></button>
+            <button className="tt-trophy" onClick={() => setShowLeaderboard(true)} title="Classement mondial">
+              <span className="tt-trophy-ico">🏆</span>
+              <small>CLASSEMENT<br />MONDIAL</small>
+            </button>
+            <button className="tt-book" onClick={() => setShowTutorial(true)} title="Contrats et manuels">
+              <span className="tt-book-label">TUTO</span>
+              <small>CONTRATS<br />& MANUELS</small>
+            </button>
+          </div>
+          <div className="tt-director-foot">
+            <span className="tt-foot-left">PROFIL<br/>DIRECTEUR</span>
+            <span className="tt-foot-center">PSEUDO ──── <span className="tt-pen-ico">✒</span></span>
+            <span className="tt-foot-right">CONTRATS<br/>&amp; MANUELS</span>
           </div>
           <div className="tt-lower-tools">
-            <button className="tt-apk" onClick={() => navigate({ to: "/download" })}>🤖 TÉLÉCHARGER<br />L'APK</button>
-            <button className="tt-pen" onClick={repairTaxis} disabled={wearNow <= 0 || save.money < maintenanceCost}>✒️</button>
-            <button className="tt-special-inline" onClick={triggerSpecialMission} disabled={nowTick < specialCooldownUntil}>👑 MISSION</button>
+            <button className="tt-apk" onClick={() => navigate({ to: "/download" })}>
+              <span className="tt-apk-ico">🤖</span>
+              <span>TÉLÉCHARGER<br />L'APK</span>
+            </button>
+            <button className="tt-slot" onClick={repairTaxis} disabled={wearNow <= 0 || save.money < maintenanceCost} title="Entretien flotte">
+              <span className="tt-slot-spark">✦</span>
+            </button>
+            <button className="tt-diamond" onClick={triggerSpecialMission} disabled={nowTick < specialCooldownUntil} title="Mission spéciale">
+              <span>✦</span>
+            </button>
           </div>
         </div>
+
 
 
         {/* === Modal Boutique QG === */}
