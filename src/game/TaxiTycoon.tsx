@@ -16,6 +16,7 @@ import { pickSpecialMission, SPECIAL_COOLDOWN_MS } from "@/lib/specialMissions";
 import { getGameTime, periodLabel } from "./cityClock";
 import RadioPlayer from "./RadioPlayer";
 import { useAuth } from "@/lib/useAuth";
+import { resolveAvatarSrc } from "@/components/ProfileCard";
 import { supabase } from "@/integrations/supabase/client";
 
 
