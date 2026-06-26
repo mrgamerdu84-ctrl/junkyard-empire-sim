@@ -258,11 +258,9 @@ export default function TerritoryWar() {
         preserveAspectRatio={preserveAspectFor(fit)}
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
       >
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
-      >
         {districts.map((d) => {
           const cx = d.x + d.w / 2;
-          const ownerColor = colorFor(d.owner);
+          const ownerColor = colorFor(d.owner, live);
           const total = Object.values(d.weekCounts).reduce((a, b) => a + b, 0);
           const playerScore = d.weekCounts.player ?? 0;
           const leadOwner = Object.entries(d.weekCounts).sort((a, b) => b[1] - a[1])[0];
