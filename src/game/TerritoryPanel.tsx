@@ -25,11 +25,23 @@ function read(): District[] {
   return [];
 }
 
+const MAP_W = 1920;
+const MAP_H = 1080;
+const MIN_ZOOM = 1;     // = vue complète
+const MAX_ZOOM = 6;
+
 export default function TerritoryPanel() {
   const [open, setOpen] = useState(false);
   const [districts, setDistricts] = useState<District[]>(read);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  // viewBox de la mini-carte (pan + zoom)
+  const [view, setView] = useState({ x: 0, y: 0, w: MAP_W, h: MAP_H });
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const pinchStart = useRef<{ dist: number; view: typeof view } | null>(null);
+  const dragMoved = useRef(0);
 
   useEffect(() => {
     const refresh = () => setDistricts(read());
@@ -44,6 +56,34 @@ export default function TerritoryPanel() {
     };
   }, []);
 
+  const clampView = (v: typeof view) => {
+    const w = Math.min(MAP_W, Math.max(MAP_W / MAX_ZOOM, v.w));
+    const h = (w / MAP_W) * MAP_H;
+    const x = Math.min(MAP_W - w, Math.max(0, v.x));
+    const y = Math.min(MAP_H - h, Math.max(0, v.y));
+    return { x, y, w, h };
+  };
+
+  const zoomAt = (factor: number, cx: number, cy: number) => {
+    setView((v) => {
+      const nw = v.w / factor;
+      const nh = v.h / factor;
+      const nx = cx - (cx - v.x) * (nw / v.w);
+      const ny = cy - (cy - v.y) * (nh / v.h);
+      return clampView({ x: nx, y: ny, w: nw, h: nh });
+    });
+  };
+
+  const clientToSvg = (clientX: number, clientY: number) => {
+    const svg = svgRef.current;
+    if (!svg) return { x: 0, y: 0 };
+    const r = svg.getBoundingClientRect();
+    return {
+      x: view.x + ((clientX - r.left) / r.width) * view.w,
+      y: view.y + ((clientY - r.top) / r.height) * view.h,
+    };
+  };
+
   const focusDistrict = (id: string) => {
     setOpen(true);
     setSelectedId(id);
@@ -56,6 +96,7 @@ export default function TerritoryPanel() {
   const owned = districts.filter((d) => d.owned).length;
   const passive = owned * BONUS_PER_DISTRICT;
   const fmtMoney = (n: number) => n.toLocaleString("fr-FR");
+
 
 
 
