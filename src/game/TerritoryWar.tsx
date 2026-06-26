@@ -122,8 +122,21 @@ export default function TerritoryWar() {
   const [toast, setToast] = useState<string | null>(null);
   const [flashIds, setFlashIds] = useState<Record<string, number>>({});
   const [resetDialog, setResetDialog] = useState<{ lost: string[]; gained: string[] } | null>(null);
+  const [live, setLive] = useState<LiveComp[]>(() => readLiveComps());
+  const fit = useMapFit();
   const ownedCountRef = useRef(0);
   const prevOwnerRef = useRef<Record<string, string | null> | null>(null);
+
+  // Re-render quand les concurrents (couleurs/noms) changent côté admin
+  useEffect(() => {
+    const onChange = () => setLive(readLiveComps());
+    window.addEventListener("jce:competitors-changed", onChange);
+    window.addEventListener("jce:competitors-set", onChange);
+    return () => {
+      window.removeEventListener("jce:competitors-changed", onChange);
+      window.removeEventListener("jce:competitors-set", onChange);
+    };
+  }, []);
 
   // --- Persistance + détection de changement d'owner -> event + flash
   useEffect(() => {
