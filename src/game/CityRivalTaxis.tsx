@@ -327,7 +327,7 @@ export default function CityRivalTaxis() {
           if (moved > 0.5) { st.lastMoveAt = now; st.lastX = st.x; st.lastY = st.y; }
           else if (now - st.lastMoveAt > 2000) {
             st.mode = "roam";
-            st.pathIdx = pickPath();
+            st.pathIdx = pickSectorPath(sp.homeDistrictId, roadsByDistrict);
             st.flip = Math.random() < 0.5;
             st.duration = 14 + Math.random() * 10;
             st.startedAt = now;
