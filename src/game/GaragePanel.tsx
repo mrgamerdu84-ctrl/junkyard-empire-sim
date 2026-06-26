@@ -214,6 +214,9 @@ export default function GaragePanel({ onClose }: Props) {
               </g>
             </g>
 
+            {/* sol béton (rendu avant l'équipement pour qu'il apparaisse au sol) */}
+            <rect x="0" y="90" width="400" height="230" fill="url(#floor)" />
+
             {/* === Équipement acheté (rendu dans la scène) === */}
             {eq.tireRack && (
               <g transform="translate(20,140)">
