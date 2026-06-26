@@ -594,3 +594,100 @@ export function resetCompany() {
   state = defaultState();
   saveState(); notify();
 }
+
+// ----------- Atelier : application d'améliorations -----------
+export function applyRepair(taxiId: string, discount = 0): { ok: boolean; cost: number; msg: string } {
+  const t = state.fleet.find(x => x.id === taxiId);
+  if (!t) return { ok: false, cost: 0, msg: "Taxi introuvable" };
+  const missing = Math.max(0, 100 - t.condition);
+  if (missing <= 0) return { ok: false, cost: 0, msg: "Déjà à 100%" };
+  const cost = Math.max(0, Math.round(missing * 50 * (1 - discount)));
+  pushCashToPlayer(-cost, "Réparation atelier");
+  mutate(s => {
+    const tt = s.fleet.find(x => x.id === taxiId);
+    if (tt) { tt.condition = 100; if (tt.status === "broken") tt.status = "garage"; }
+  });
+  return { ok: true, cost, msg: `Réparé pour ${cost} $` };
+}
+
+export function applyUpgrade(
+  taxiId: string,
+  category: "tires" | "engine" | "armor",
+  level: 1 | 2,
+  cost: number,
+): { ok: boolean; msg: string } {
+  const t = state.fleet.find(x => x.id === taxiId);
+  if (!t) return { ok: false, msg: "Taxi introuvable" };
+  if (t.upgrades[category] >= level) return { ok: false, msg: "Niveau déjà installé" };
+  pushCashToPlayer(-cost, `Upgrade ${category}`);
+  mutate(s => {
+    const tt = s.fleet.find(x => x.id === taxiId);
+    if (tt) tt.upgrades[category] = level;
+  });
+  emitFleetUpgraded();
+  return { ok: true, msg: "Installé !" };
+}
+
+export function applyPaint(taxiId: string, color: string, accent: string, cost: number): { ok: boolean } {
+  const t = state.fleet.find(x => x.id === taxiId);
+  if (!t) return { ok: false };
+  pushCashToPlayer(-cost, "Peinture taxi");
+  mutate(s => {
+    const tt = s.fleet.find(x => x.id === taxiId);
+    if (tt) tt.paint = { color, accent };
+  });
+  emitFleetUpgraded();
+  return { ok: true };
+}
+
+export function applySticker(taxiId: string, cost: number): { ok: boolean } {
+  const t = state.fleet.find(x => x.id === taxiId);
+  if (!t) return { ok: false };
+  if (t.upgrades.sticker === "roof") return { ok: false };
+  pushCashToPlayer(-cost, "Sticker toit");
+  mutate(s => {
+    const tt = s.fleet.find(x => x.id === taxiId);
+    if (tt) tt.upgrades.sticker = "roof";
+  });
+  emitFleetUpgraded();
+  return { ok: true };
+}
+
+function emitFleetUpgraded() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("mtw:fleet-upgraded"));
+  }
+}
+
+// Score "Prestige flotte" 0..1 utilisé pour bonus tycoon.
+export function getFleetPrestige(): number {
+  if (state.fleet.length === 0) return 0;
+  let total = 0;
+  for (const t of state.fleet) {
+    total += (t.upgrades.tires + t.upgrades.engine + t.upgrades.armor) / 6;
+  }
+  return total / state.fleet.length;
+}
+
+// Appliquer dégât mafia à un taxi (utilisable par CrimeEvents).
+export function applyMafiaHit(taxiId?: string): { taxiId: string; damage: number; broken: boolean } | null {
+  if (state.fleet.length === 0) return null;
+  const t = taxiId
+    ? state.fleet.find(x => x.id === taxiId)
+    : state.fleet[Math.floor(Math.random() * state.fleet.length)];
+  if (!t) return null;
+  // blindage lourd → bouclier journalier
+  if (t.upgrades.armor >= 2 && !t.mafiaShieldUsed) {
+    mutate(s => { const tt = s.fleet.find(x => x.id === t.id); if (tt) tt.mafiaShieldUsed = true; });
+    return { taxiId: t.id, damage: 0, broken: false };
+  }
+  let dmg = 20 + Math.floor(Math.random() * 20);
+  if (t.upgrades.armor === 1) dmg = Math.round(dmg * 0.6);
+  mutate(s => {
+    const tt = s.fleet.find(x => x.id === t.id);
+    if (!tt) return;
+    tt.condition = Math.max(0, tt.condition - dmg);
+    if (tt.condition <= 0) tt.status = "broken";
+  });
+  return { taxiId: t.id, damage: dmg, broken: t.condition - dmg <= 0 };
+}
