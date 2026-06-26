@@ -182,6 +182,13 @@ export default function TerritoryWar() {
 
               {/* QG du quartier */}
               <g transform={`translate(${d.hqX},${d.hqY})`}>
+                {flashIds[d.id] && (
+                  <circle r="14" fill="none"
+                    stroke={d.owned ? "#fde047" : "#f87171"} strokeWidth="3">
+                    <animate attributeName="r" from="14" to="44" dur="1.1s" fill="freeze" />
+                    <animate attributeName="opacity" from="1" to="0" dur="1.1s" fill="freeze" />
+                  </circle>
+                )}
                 <circle r="14" fill="rgba(12,14,22,0.85)"
                   stroke={d.owned ? "#fde047" : "#cbb98a"} strokeWidth="2" />
                 <text x="0" y="4" textAnchor="middle" fontSize="14" fontWeight="900"
