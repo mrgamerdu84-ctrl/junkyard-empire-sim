@@ -510,13 +510,14 @@ export default function TaxiTycoon() {
   const realEnv = useRealWorldEnv();
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
-  const [clock, setClock] = useState(() => getGameTime(undefined, realEnv?.population ?? null));
+  const [dayOffset, setDayOffset] = useState(0);
+  const [clock, setClock] = useState(() => getGameTime(undefined, realEnv?.population ?? null, 0));
   useEffect(() => {
     const pop = realEnv?.population ?? null;
-    setClock(getGameTime(undefined, pop));
-    const id = window.setInterval(() => setClock(getGameTime(undefined, pop)), 30_000);
+    setClock(getGameTime(undefined, pop, dayOffset));
+    const id = window.setInterval(() => setClock(getGameTime(undefined, pop, dayOffset)), 30_000);
     return () => window.clearInterval(id);
-  }, [realEnv?.population]);
+  }, [realEnv?.population, dayOffset]);
 
   // === Persistent state ===
   const [save, setSave] = useState<SaveData>(DEFAULT_SAVE);
