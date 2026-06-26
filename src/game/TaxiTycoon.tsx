@@ -2743,7 +2743,8 @@ export default function TaxiTycoon() {
             return (
               <g key={taxi.id}>
                 <g
-                  transform={`translate(${p.x},${p.y}) rotate(${angle})`}
+                  transform={`translate(${p.x},${p.y}) rotate(${angle}) scale(${vehicleScale})`}
+
                   filter="url(#taxi-shadow)"
                   style={{ cursor: "pointer", pointerEvents: "auto" }}
                   onClick={(e) => { e.stopPropagation(); honkTaxi(taxi.id); }}
