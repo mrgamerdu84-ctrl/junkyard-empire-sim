@@ -46,6 +46,16 @@ export default function CompanyPanel({ onClose, onOpenGarage }: { onClose: () =>
             <div><b>{s.drivers.length}</b><span>chauffeurs</span></div>
             <div><b>{activeContracts}</b><span>contrats</span></div>
           </div>
+          {onOpenGarage && (
+            <button
+              className="cpv2-x"
+              onClick={onOpenGarage}
+              title="Ouvrir l'atelier 3D"
+              style={{ marginRight: 6, width: "auto", padding: "0 12px", background: "#fde047", color: "#0b0d10", fontWeight: 900 }}
+            >
+              🏭 ATELIER
+            </button>
+          )}
           <button className="cpv2-x" onClick={onClose}>✕</button>
         </header>
 
