@@ -60,12 +60,43 @@ function save(arr: District[]) {
 export default function TerritoryWar() {
   const [districts, setDistricts] = useState<District[]>(load);
   const [toast, setToast] = useState<string | null>(null);
+  const [flashIds, setFlashIds] = useState<Record<string, number>>({});
   const ownedCountRef = useRef(0);
+  const prevOwnedRef = useRef<Record<string, boolean> | null>(null);
 
   useEffect(() => {
     save(districts);
     ownedCountRef.current = districts.filter((d) => d.owned).length;
     (window as unknown as { __mtwTerritory?: District[] }).__mtwTerritory = districts;
+
+    // Détecte les changements de propriétaire (skip 1er rendu) et émet l'événement.
+    if (prevOwnedRef.current === null) {
+      prevOwnedRef.current = Object.fromEntries(districts.map((d) => [d.id, d.owned]));
+    } else {
+      const prev = prevOwnedRef.current;
+      for (const d of districts) {
+        const was = prev[d.id] ?? false;
+        if (was !== d.owned) {
+          window.dispatchEvent(new CustomEvent("mtw:district-owner-changed", {
+            detail: {
+              districtId: d.id,
+              previousOwner: was ? "player" : "neutral",
+              newOwner: d.owned ? "player" : "neutral",
+            },
+          }));
+          setFlashIds((m) => ({ ...m, [d.id]: Date.now() }));
+          window.setTimeout(() => {
+            setFlashIds((m) => {
+              if (!(d.id in m)) return m;
+              const n = { ...m };
+              delete n[d.id];
+              return n;
+            });
+          }, 1200);
+        }
+        prev[d.id] = d.owned;
+      }
+    }
   }, [districts]);
 
   useEffect(() => {
@@ -151,6 +182,13 @@ export default function TerritoryWar() {
 
               {/* QG du quartier */}
               <g transform={`translate(${d.hqX},${d.hqY})`}>
+                {flashIds[d.id] && (
+                  <circle r="14" fill="none"
+                    stroke={d.owned ? "#fde047" : "#f87171"} strokeWidth="3">
+                    <animate attributeName="r" from="14" to="44" dur="1.1s" fill="freeze" />
+                    <animate attributeName="opacity" from="1" to="0" dur="1.1s" fill="freeze" />
+                  </circle>
+                )}
                 <circle r="14" fill="rgba(12,14,22,0.85)"
                   stroke={d.owned ? "#fde047" : "#cbb98a"} strokeWidth="2" />
                 <text x="0" y="4" textAnchor="middle" fontSize="14" fontWeight="900"
