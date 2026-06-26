@@ -1,54 +1,107 @@
-## Objectifs
+# Refonte gameplay — My Taxi World Rivalité v2 (Tycoon Simulation)
 
-1. **QG verrouillés** : poser les QG (joueur + rival) une bonne fois sur la carte et ne plus jamais y toucher (ni admin, ni reset).
-2. **Véhicules à taille constante** quel que soit le zoom / la taille d'écran : un taxi doit faire la même taille en pixels écran qu'on soit dézoomé au max ou plein écran.
-3. **Mode paysage** : quand on tourne le téléphone, la carte doit rester visible (aujourd'hui elle est masquée par le bandeau / la barre du haut).
+On garde la ville, les QG, les territoires, la radio et le moteur véhicules. On change le **cœur de la boucle** : tu ne cliques plus sur des courses une à une, tu **gères une compagnie** qui tourne toute seule pendant que tu prends des décisions stratégiques.
+
+## La nouvelle boucle de jeu
+
+```text
+┌──────────────────────────────────────────────────────────┐
+│  TES TAXIS ROULENT EN AUTONOMIE (passif temps réel)      │
+│           ↓                                              │
+│  Tu DÉCIDES : flotte, tarifs, embauches, contrats        │
+│           ↓                                              │
+│  Événements ville (météo, heure de pointe, grèves…)      │
+│           ↓                                              │
+│  Bilan journalier → réinvestir / s'étendre / saboter     │
+└──────────────────────────────────────────────────────────┘
+```
+
+Tu peux toujours **prendre le volant** d'un taxi quand tu veux (mode "tournée perso" pour booster les revenus du jour), mais ce n'est plus obligatoire.
+
+## Les 5 piliers du nouveau gameplay
+
+### 1. Flotte vivante & autonome
+- Chaque taxi possède : km au compteur, état mécanique (0-100%), niveau de carburant, chauffeur assigné, livrée.
+- Les taxis sortent du QG à l'heure de leur shift, prennent des clients réels sur la carte, rentrent quand fatigués / cassés / pleins.
+- **Tu vois ta flotte tourner sur la carte** comme aujourd'hui, mais c'est **ta gestion** qui détermine si ça rapporte.
+
+### 2. Chauffeurs RH (au lieu d'employés génériques)
+- Chaque chauffeur a : nom, photo, **3 stats** (Conduite / Service client / Endurance), salaire, moral.
+- Bons chauffeurs = + pourboires, - accidents. Mauvais = bouffent la marge.
+- Système de **shifts** (jour/nuit), congés, formations payantes pour upgrader les stats.
+- Risque de **démission** si moral trop bas (paie/horaires).
+
+### 3. Contrats B2B (cœur de la profondeur)
+Au lieu de chasser le client unique, tu signes des **contrats récurrents** :
+- Hôtel 4 étoiles → 30 courses/jour garanties, tarif fixe -10%.
+- Aéroport → grosses courses mais exige 5 taxis dispo H24.
+- Boîte de nuit → courses de nuit uniquement, gros pourboires.
+- Hôpital → priorité absolue, pénalités si retard.
+
+Chaque contrat = **objectifs hebdo** à tenir sinon rupture + perte de réputation.
+
+### 4. Économie & décisions qui pèsent
+- **Tarifs dynamiques** : tu fixes prix de base, surcharge nuit, surcharge pluie. Trop haut = clients vont chez les rivaux.
+- **Carburant** : prix qui fluctue, station essence à acheter pour économiser.
+- **Assurances & taxes** : poste de coût mensuel réel.
+- **Crédit bancaire** : emprunter pour acheter une 2e flotte, avec intérêts.
+- **Bilan journalier** (modal 6h du matin) : recettes / dépenses / bénéf net / cash dispo.
+
+### 5. Expansion par quartier (réutilise les territoires existants)
+- Pour s'implanter dans un quartier : ouvrir une **station-relais** (achat foncier + permis mairie).
+- Plus tu as de stations, plus ta couverture est large, plus tu rafles de courses face aux rivaux.
+- Les rivaux font pareil → vraie guerre économique, pas juste un compteur de courses.
+
+## Événements simulation (ton réaliste)
+
+- **Heure de pointe** matin/soir → demande x3 mais embouteillages.
+- **Pluie/neige** → demande +50% mais risque accident +30%.
+- **Grève transports** → jackpot d'une journée.
+- **Contrôle police** → amendes si chauffeurs en infraction.
+- **Panne mécanique aléatoire** si entretien négligé.
+- **Inspection mairie** → ferme un taxi si pas en règle.
+
+## Ce qu'on garde tel quel
+
+- Carte ville + QG verrouillés + rivaux qui roulent.
+- Radio Célébrer / Droit Libre.
+- Territoires (mais transformés en zones de couverture économique).
+- Mode "je conduis moi-même" (devient un bonus, pas l'obligation).
+- Personnel existant (réutilisé comme base RH).
+- Braquages / camion blindé (deviennent **événements aléatoires** qui menacent tes recettes).
+
+## Ce qui disparaît
+
+- Le clic obligatoire sur chaque course.
+- La compétition hebdo par compte de courses (remplacée par parts de marché €).
+- Le bouton "spawn taxi" instantané.
+
+## Détails techniques
+
+Nouveaux modules :
+- `src/game/company.ts` — état compagnie (cash, dette, réputation, parts de marché).
+- `src/game/fleet.ts` — gestion taxis individuels (état, shift, chauffeur).
+- `src/game/contracts.ts` — moteur de contrats B2B + résolution hebdo.
+- `src/game/economy.ts` — tarifs, carburant, taxes, bilans.
+- `src/game/simTick.ts` — boucle de simulation 1 tick = 1 minute jeu, génère courses auto.
+- `src/game/eventsSim.ts` — événements aléatoires (pluie, grève, panne…).
+
+Refonte UI :
+- Console basse → onglets **FLOTTE / RH / CONTRATS / FINANCES / EXPANSION**.
+- Modal **Bilan 6h** automatique chaque "jour" jeu.
+- Suppression des boutons "course rapide" / "spawn".
+- La carte reste le visuel central, mais devient surtout **informationnelle** (où sont mes taxis, où sont les rivaux, où la demande est forte → heatmap).
+
+## Migration douce
+Pas de wipe : ton cash actuel, ta flotte et tes territoires conquis sont convertis automatiquement (1 taxi possédé = 1 taxi dans la nouvelle flotte avec chauffeur par défaut).
 
 ---
 
-## 1) Geler les QG sur la carte
+**Si tu valides**, j'attaque dans cet ordre :
+1. Moteur de simulation + flotte autonome (le cœur).
+2. RH chauffeurs + contrats B2B.
+3. Économie (tarifs, carburant, bilan journalier).
+4. Expansion stations + événements.
+5. Refonte UI console + heatmap demande.
 
-Fichier : `src/game/TaxiTycoon.tsx`, `src/game/adminConfig.ts`, `src/game/AdminPanel.tsx`.
-
-- Introduire deux constantes figées (ex : `FIXED_PLAYER_HQ = { x: 1030, y: 360, scale: 0.75, rotation: 0 }` et `FIXED_RIVAL_HQ = { x: ..., y: ... }`) utilisées directement par le rendu et par la logique des taxis.
-- Dans `TaxiTycoon.tsx`, remplacer `admin.hqX/hqY/hqScale/hqRotation` et `admin.rivalHQX/rivalHQY` par ces constantes pour le placement visuel du QG joueur, du dépôt rival et du calcul `closestOnPath(...)`.
-- Dans `AdminPanel.tsx`, retirer (ou désactiver/griser) les sliders QG X/Y/Échelle/Rotation et le bouton « poser le QG sur la carte » : un simple texte « QG verrouillé sur la carte » à la place.
-- Dans `adminConfig.ts`, garder les champs pour compat mais les ignorer (forcés aux valeurs fixes au chargement) pour ne pas casser les sauvegardes existantes.
-
-Les QG de quartiers (`TerritoryWar.tsx`) sont déjà figés → rien à faire.
-
-## 2) Véhicules à taille écran constante
-
-Aujourd'hui tout le rendu est dans un seul `<svg viewBox="0 0 1920 1080">` : quand le SVG est dessiné en plus petit (téléphone, paysage, future feature zoom), tout shrink — y compris les voitures.
-
-Approche : compenser l'échelle de rendu sur chaque véhicule.
-
-- Dans `TaxiTycoon.tsx`, mesurer la taille rendue du conteneur via `ResizeObserver` sur `containerRef`, calculer `renderedScale = clientWidth / 1920` (ou min(clientWidth/1920, clientHeight/1080) si on passe en `meet`).
-- Exposer une `vehicleScale = clamp(1 / renderedScale, 0.6, 3)` dans un state.
-- Modifier chaque `<g transform="translate(x,y) rotate(a)">` de véhicule (taxis joueur, rivaux, circulation, urgences, braqueurs, camion blindé, piétons si trop petits) pour ajouter `scale(${vehicleScale})` à la fin du transform → la voiture garde sa taille écran.
-- Faire pareil pour les marqueurs/labels qui doivent rester lisibles (numéro de taxi, icônes). Le QG, les routes et les bâtiments restent à l'échelle du monde (ils doivent bien se dézoomer).
-
-Aucun changement de logique de path/IA — uniquement un facteur d'échelle visuel.
-
-## 3) Carte visible en paysage
-
-Fichier : `src/game/TaxiTycoon.tsx` (CSS du bloc `<style>` en bas + HUD).
-
-- Ajouter une media query `@media (orientation: landscape) and (max-height: 500px)` qui :
-  - masque le bandeau `tt-topbar` / `tt-title-banner` (ou le réduit à un mini-logo en coin),
-  - retire le cadre `box-shadow` interne (`tt-hud`) qui rogne la zone utile,
-  - colle le tableau de bord (console basse) en overlay semi-transparent escamotable (`transform: translateY(...)` + bouton flèche),
-  - force `body, html, #root, .tt-hud { height: 100dvh; }` pour utiliser la vraie hauteur dispo.
-- Passer le SVG carte de `preserveAspectRatio="xMidYMid slice"` à un mode adaptatif : en paysage on garde `slice` (remplit), en portrait étroit on bascule sur `meet` pour ne rien couper. Implémentation simple : un state `aspectMode` mis à jour via `matchMedia('(orientation: landscape)')`.
-- Vérifier que le bouton plein écran ⛶ reste accessible en paysage (coin haut-droit, z-index élevé).
-
-## Validation
-
-- Tourner l'appareil en paysage : la carte occupe toute la zone, le HUD ne la masque pas.
-- Dézoomer (réduire la fenêtre / mobile) : routes et QG rapetissent, les taxis gardent la même taille écran.
-- Ouvrir le panneau admin : les contrôles de position QG ne sont plus là, le QG ne bouge pas.
-
-## Hors scope
-
-- Pas de nouveau système de pinch-zoom utilisateur (l'utilisateur parle bien du zoom déjà existant lié à la taille d'écran/plein écran).
-- Pas de modification des règles de jeu, IA rivaux, économie.
+Dis-moi si je pars là-dessus, ou ce que tu veux ajuster avant.

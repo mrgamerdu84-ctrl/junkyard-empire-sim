@@ -19,6 +19,9 @@ import { getGameTime, periodLabel } from "./cityClock";
 import RadioPlayer from "./RadioPlayer";
 import PersonnelPanel from "./PersonnelPanel";
 import { getMaintenanceDiscount, getTipsBonus, startPersonnelTick } from "./personnel";
+import CompanyPanel from "./CompanyPanel";
+import { startCompanySim } from "./companyV2";
+
 import { useAuth } from "@/lib/useAuth";
 import { resolveAvatarSrc } from "@/components/ProfileCard";
 import { supabase } from "@/integrations/supabase/client";
@@ -1087,7 +1090,7 @@ export default function TaxiTycoon() {
   }, []);
 
   // Démarre le tick salaires/revenus du personnel (une seule fois).
-  useEffect(() => { startPersonnelTick(); }, []);
+  useEffect(() => { startPersonnelTick(); startCompanySim(); }, []);
 
   // Passif des quartiers contrôlés (lecture temps réel).
   const [territoryPassive, setTerritoryPassive] = useState(0);
@@ -1882,6 +1885,8 @@ export default function TaxiTycoon() {
   const [pseudoOpen, setPseudoOpen] = useState(false);
   const [cityInfoOpen, setCityInfoOpen] = useState(false);
   const [personnelOpen, setPersonnelOpen] = useState(false);
+  const [companyOpen, setCompanyOpen] = useState(false);
+
 
   const auth = useAuth();
   const [pseudoDraft, setPseudoDraft] = useState("");
@@ -3000,6 +3005,10 @@ export default function TaxiTycoon() {
             <button className="tt-lcd-key" onClick={() => setPersonnelOpen(true)}>
               <span className="tt-lcd-key-ico">👥</span><b>ÉQUIPE</b>
             </button>
+            <button className="tt-lcd-key tt-lcd-key-company" onClick={() => setCompanyOpen(true)}>
+              <span className="tt-lcd-key-ico">🏢</span><b>COMPAGNIE</b>
+            </button>
+
             <button className="tt-lcd-key" onClick={() => setShowTutorial(true)}>
               <span className="tt-lcd-key-ico">📖</span><b>TUTO</b>
             </button>
@@ -3074,6 +3083,8 @@ export default function TaxiTycoon() {
           money={save.money}
           onHireCharge={(cost) => setSave((s) => ({ ...s, money: Math.max(0, s.money - cost) }))}
         />
+        {companyOpen && <CompanyPanel onClose={() => setCompanyOpen(false)} />}
+
 
 
         {/* Dialog Pseudo */}
