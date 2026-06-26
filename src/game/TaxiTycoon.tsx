@@ -19,6 +19,9 @@ import { getGameTime, periodLabel } from "./cityClock";
 import RadioPlayer from "./RadioPlayer";
 import PersonnelPanel from "./PersonnelPanel";
 import { getMaintenanceDiscount, getTipsBonus, startPersonnelTick } from "./personnel";
+import CompanyPanel from "./CompanyPanel";
+import { startCompanySim } from "./companyV2";
+
 import { useAuth } from "@/lib/useAuth";
 import { resolveAvatarSrc } from "@/components/ProfileCard";
 import { supabase } from "@/integrations/supabase/client";
