@@ -3168,6 +3168,95 @@ export default function TaxiTycoon() {
           font-size: 9px; letter-spacing: 1px; font-weight: 800;
           color: rgba(255,180,60,0.6); margin-top: 2px;
         }
+
+        /* === Console unifiée style LCD === */
+        .tt-console-lcd {
+          background: linear-gradient(180deg, #1a1410 0%, #0a0605 100%);
+          border-top: 3px solid #000;
+          padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+          display: flex; flex-direction: column; gap: 6px;
+        }
+        .tt-console-lcd .tt-dashboard-lcd { margin: 0; }
+        .tt-lcd-row2 { grid-template-columns: repeat(4, 1fr) !important; }
+        .tt-lcd-mini {
+          background: rgba(0,0,0,0.35); border: 1px solid rgba(255,180,60,0.18);
+          border-radius: 6px; box-shadow: inset 0 0 8px rgba(0,0,0,0.6);
+          padding: 4px 4px; cursor: pointer; font-family: "Orbitron","Courier New",monospace;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+        }
+        .tt-lcd-mini:active { transform: translateY(1px); }
+        .tt-lcd-mini-val {
+          font-size: 13px; font-weight: 900; letter-spacing: 1px; line-height: 1;
+          color: #ffb14a; text-shadow: 0 0 6px rgba(255,140,40,0.7);
+          max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .tt-lcd-mini-val.tt-lcd-money { color: #6ee7a8; text-shadow: 0 0 6px rgba(52,211,153,0.6); }
+
+        .tt-lcd-pilot {
+          display: grid; grid-template-columns: 56px 1fr; gap: 10px; align-items: center;
+          padding: 8px 10px; border-radius: 10px;
+          background: linear-gradient(180deg, #0b1410 0%, #04090a 100%);
+          border: 2px solid #1a0c08;
+          box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+        }
+        .tt-pilot-photo {
+          width: 56px; height: 56px; border-radius: 50%; padding: 0;
+          background: radial-gradient(circle, #2a1d14, #050505);
+          border: 3px solid #ffb14a;
+          box-shadow: 0 0 10px rgba(255,140,40,0.5), inset 0 0 6px rgba(0,0,0,0.8);
+          display: grid; place-items: center; overflow: hidden;
+        }
+        .tt-pilot-photo .tt-avatar-photo, .tt-pilot-photo .tt-avatar-anon { width: 46px; height: 46px; border: 0; }
+        .tt-pilot-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-family: "Orbitron","Courier New",monospace; }
+        .tt-pilot-name-row { display: flex; align-items: center; gap: 8px; }
+        .tt-pilot-name {
+          font-size: 14px; font-weight: 900; letter-spacing: 1px;
+          color: #ffd07a; text-shadow: 0 0 6px rgba(255,160,50,0.7);
+          flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .tt-pilot-pen {
+          width: 26px; height: 26px; border-radius: 6px; padding: 0;
+          background: rgba(255,180,60,0.12); border: 1px solid rgba(255,180,60,0.4);
+          color: #ffd07a; font-size: 14px; cursor: pointer;
+        }
+        .tt-pilot-sub { font-size: 9px; letter-spacing: 1px; font-weight: 800; color: rgba(255,180,60,0.6); font-style: normal; }
+
+        .tt-lcd-keys {
+          display: grid; grid-template-columns: repeat(6, 1fr); gap: 5px;
+        }
+        .tt-lcd-key {
+          background: linear-gradient(180deg, #1a1410 0%, #050505 100%);
+          border: 2px solid #2a1810; border-radius: 8px;
+          box-shadow: inset 0 1px 0 rgba(255,180,60,0.15), 0 2px 0 #000, inset 0 0 8px rgba(0,0,0,0.6);
+          padding: 6px 2px; min-height: 58px; cursor: pointer;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+          font-family: "Orbitron","Courier New",monospace;
+        }
+        .tt-lcd-key:active { transform: translateY(1px); box-shadow: inset 0 1px 0 rgba(255,180,60,0.15), 0 0 0 #000; }
+        .tt-lcd-key-ico { font-size: 20px; line-height: 1; filter: drop-shadow(0 0 3px rgba(255,140,40,0.5)); }
+        .tt-lcd-key b {
+          font-size: 9px; letter-spacing: 0.5px; font-weight: 900;
+          color: #ffb14a; text-shadow: 0 0 4px rgba(255,140,40,0.6);
+        }
+
+        .tt-lcd-tools {
+          display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
+        }
+        .tt-lcd-tool {
+          background: linear-gradient(180deg, #1a1410 0%, #050505 100%);
+          border: 2px solid #2a1810; border-radius: 8px;
+          box-shadow: inset 0 1px 0 rgba(255,180,60,0.1), 0 2px 0 #000;
+          padding: 5px 2px; min-height: 44px; cursor: pointer;
+          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+          font-family: "Orbitron","Courier New",monospace;
+        }
+        .tt-lcd-tool:disabled { opacity: 0.4; cursor: not-allowed; }
+        .tt-lcd-tool:active:not(:disabled) { transform: translateY(1px); }
+        .tt-lcd-tool-ico { font-size: 16px; line-height: 1; color: #ffb14a; filter: drop-shadow(0 0 3px rgba(255,140,40,0.5)); }
+        .tt-lcd-tool b { font-size: 8px; letter-spacing: 0.5px; font-weight: 900; color: #ffb14a; }
+        .tt-lcd-tool-gold { border-color: #6e5108; box-shadow: inset 0 1px 0 rgba(255,220,120,0.3), 0 2px 0 #000, 0 0 8px rgba(245,197,66,0.3); }
+        .tt-lcd-tool-gold .tt-lcd-tool-ico, .tt-lcd-tool-gold b { color: #ffd700; text-shadow: 0 0 6px rgba(255,200,40,0.7); }
+
         .tt-lcd-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 18px; margin-top: 2px; }
         .tt-lcd-bar {
           display: block; width: 5px; background: rgba(255,180,60,0.12);
