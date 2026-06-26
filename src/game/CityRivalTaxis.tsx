@@ -148,6 +148,49 @@ export default function CityRivalTaxis() {
     };
   }, []);
 
+  // Réassignation de secteur quand un quartier change de propriétaire.
+  useEffect(() => {
+    const onOwnerChanged = (e: Event) => {
+      const d = (e as CustomEvent<{ districtId: string; newOwner: string }>).detail;
+      if (!d) return;
+      const territory = (window as unknown as { __mtwTerritory?: District[] }).__mtwTerritory ?? DEFAULT_DISTRICTS;
+      for (let i = 0; i < homeIdsRef.current.length; i++) {
+        if (homeIdsRef.current[i] !== d.districtId) continue;
+        const sp = specs[i];
+        const comp = compsRef.current.find((c) => c.id === sp.compId);
+        const originX = comp?.x ?? 960;
+        const originY = comp?.y ?? 540;
+        // Cherche le quartier non détenu par le joueur le plus proche du QG de l'opérateur.
+        let bestId: string | null = null;
+        let bestDist = Infinity;
+        for (const dist of territory) {
+          if (dist.owned) continue; // quartier player → off-limits
+          const cx = dist.x + dist.w / 2;
+          const cy = dist.y + dist.h / 2;
+          const dd = Math.hypot(cx - originX, cy - originY);
+          if (dd < bestDist) { bestDist = dd; bestId = dist.id; }
+        }
+        const newHome = bestId ?? DEFAULT_DISTRICTS[0].id;
+        const st = stateRef.current[i];
+        // Si le rival est en pleine mission, on diffère ; sinon on bascule.
+        if (st && (st.mode === "to_mission" || st.mode === "on_mission" || st.mode === "to_dropoff")) {
+          pendingHomeRef.current[i] = newHome;
+        } else {
+          homeIdsRef.current[i] = newHome;
+          // Reroute immédiat vers le nouveau secteur (mode return_hq pour transition douce).
+          if (st && comp) {
+            st.mode = "return_hq";
+            st.tgtX = comp.x;
+            st.tgtY = comp.y;
+            st.tgtSpeed = 200;
+          }
+        }
+      }
+    };
+    window.addEventListener("mtw:district-owner-changed", onOwnerChanged as EventListener);
+    return () => window.removeEventListener("mtw:district-owner-changed", onOwnerChanged as EventListener);
+  }, [specs]);
+
   useEffect(() => {
     // Mesure des paths : retry tant que pas prêt (évite le freeze "tout disparaît")
     let raf = 0;
