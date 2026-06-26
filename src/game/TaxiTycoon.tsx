@@ -2084,6 +2084,28 @@ export default function TaxiTycoon() {
     }
   };
 
+  // 🚨 Client volé par un rival : si nos taxis n'ont pas encore pickup,
+  // on libère le taxi et on annule la course (le rival a gagné le sprint).
+  useEffect(() => {
+    const onTaken = (e: Event) => {
+      const d = (e as CustomEvent<{ missionId?: number; compId?: string }>).detail;
+      if (!d || typeof d.missionId !== "number") return;
+      const jid = d.missionId;
+      const job = jobsRef.current.find((j) => j.id === jid);
+      if (!job || job.status !== "accepted") return;
+      const taxi = taxisRef.current.find((t) => t.jobId === jid);
+      // Si le taxi a déjà pickup le client, trop tard pour les rivaux.
+      if (!taxi || taxi.mode !== "to_pickup") return;
+      taxi.jobId = undefined;
+      taxi.mode = "roaming";
+      setJobs((js) => js.filter((j) => j.id !== jid));
+      showToast("💢 Client volé par un rival !");
+    };
+    window.addEventListener("jce:mission-taken", onTaken as EventListener);
+    return () => window.removeEventListener("jce:mission-taken", onTaken as EventListener);
+  }, []);
+
+
 
   // === Mission spéciale joueur ===
   // Déclenchée par le bouton HUD. Injecte un client doré dans la file avec
