@@ -152,7 +152,6 @@ export default function CityRivalTaxis() {
     // Mesure des paths : retry tant que pas prêt (évite le freeze "tout disparaît")
     let raf = 0;
     let lens: number[] = [];
-    let roadsByDistrict: Record<string, number[]> = {};
 
     const ensureLens = () => {
       lens = pathRefs.current.map((p) => (p ? p.getTotalLength() : 0));
@@ -169,12 +168,14 @@ export default function CityRivalTaxis() {
         if (!d) continue;
         (by[d.id] ||= []).push(idx);
       }
-      roadsByDistrict = by;
+      roadsByDistrictRef.current = by;
       return true;
     };
 
-    // Init states
+    // Init states + home districts mutables
     const now0 = performance.now();
+    homeIdsRef.current = specs.map((sp) => sp.homeDistrictId);
+    pendingHomeRef.current = specs.map(() => null);
     stateRef.current = specs.map((sp, i) => {
       const comp = compsRef.current.find((c) => c.id === sp.compId);
       return {
