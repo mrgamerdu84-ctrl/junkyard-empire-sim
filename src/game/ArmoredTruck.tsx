@@ -1,70 +1,71 @@
 // =============================================================
-// Camion blindé & braquages
-// Apparaît toutes les 5-8 min, traverse la ville sur une ROAD, transporte
-// 500-1500 $. Cliquable par le joueur → tentative de braquage : un taxi-
-// braqueur (couleur joueur) intercepte le camion, la police arrive, et le
-// taxi tente de rejoindre le QG. Issue probabiliste.
-// Les rivaux peuvent aussi tenter leur chance (chance par compagnie active).
-// - Succès joueur : +butin
-// - Échec joueur : -50% du butin
-// - Succès rival : -15% du cash à chaque autre compagnie (joueur inclus)
-// - Échec rival  : sa trésorerie -50% du butin (géré par CityCompetitors)
-// Évents : jce:armored-spawn / jce:armored-resolved
+// Camion blindé de la MAFIA
+// Le camion appartient désormais à la mafia : il transporte son argent
+// vers leur dépôt, escorté par 2-3 voitures mafia (vrais sprites du jeu
+// teintés en noir, AUCUN nouveau véhicule ajouté).
+// Le joueur peut cliquer sur le camion pour le détourner vers SON QG.
+// Dès lors, l'escorte attaque + des renforts mafia spawn pour
+// l'intercepter. Le joueur doit cliquer chaque voiture mafia pour
+// l'exploser. Quand le camion arrive au QG :
+//   - 0 mafia restante → joueur remporte le butin complet
+//   - >=1 mafia restante → le camion est repris, perte de 50% du butin
+// Events conservés : jce:armored-spawn / jce:armored-resolved
 // =============================================================
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import { useAdminConfig } from "./adminConfig";
+import { getCivilCarUrls } from "./gameAssets";
 import armoredTruckAsset from "@/assets/armored-truck.png.asset.json";
 
 const DEFAULT_ARMORED_SPRITE = armoredTruckAsset.url;
 
-const SAVE_KEY = "taxi-tycoon-v4";
 const ARMORED_SPRITE_KEY = "jce.armored.sprite";
 
 // Plage d'apparition (ms)
 const SPAWN_MIN_MS = 5 * 60_000;
 const SPAWN_MAX_MS = 8 * 60_000;
-// Premier spawn (plus court, pour ne pas attendre 5min après chargement)
 const FIRST_SPAWN_MIN_MS = 60_000;
 const FIRST_SPAWN_MAX_MS = 120_000;
 
-// Durée de traversée du camion (s)
-const TRUCK_TRAVEL_S = 35;
-// Durée de la séquence braquage (s) — interception + retour
-const HEIST_DURATION_S = 14;
+// Camion : durée de traversée vers le dépôt mafia (s)
+const TRUCK_TRAVEL_S = 38;
+// Après détournement : temps pour rejoindre le QG joueur (s)
+const HIJACK_TRAVEL_S = 22;
 
-// Probabilités de succès
-const PLAYER_SUCCESS = 0.6;
-const RIVAL_SUCCESS = 0.5;
-// Chance qu'un rival tente le braquage à chaque apparition
-const RIVAL_ATTEMPT_CHANCE = 0.35;
+// Escorte initiale (vrais sprites tintés noir)
+const ESCORT_COUNT = 3;
+// Renforts mafia pendant la fuite : un nouveau toutes les N secondes
+const REINFORCE_EVERY_S = 5;
+const MAX_MAFIA_ALIVE = 7;
+
+// Récompense par mafieux explosé pendant la séquence
+const MAFIA_KILL_REWARD = 60;
 
 const TRUCK_ROAD_IDX = ROADS.map((_, i) => i).filter((i) => !VILLAGE_PATHS.has(i));
 
-type Phase = "idle" | "rolling" | "heist" | "done";
-type Heister = { kind: "player" | "rival"; rivalId?: string; color: string } | null;
+type Phase = "idle" | "rolling" | "hijacked" | "done";
 
-type Competitor = { id: string; name: string; color: string; bankrupt: boolean };
+type MafiaCar = {
+  id: number;
+  sprite: string;
+  // Offset latéral/longitudinal autour du camion (px en repère monde)
+  offX: number;
+  offY: number;
+  alive: boolean;
+  explodedAt?: number;
+};
 
-function readPlayerMoney(): number {
-  try {
-    const raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return 0;
-    const j = JSON.parse(raw);
-    return Number(j?.money ?? 0);
-  } catch { return 0; }
-}
-
-function adjustPlayerMoney(delta: number) {
-  // Passe par l'event canonique de TaxiTycoon (mise à jour + toast)
+function adjustPlayerMoney(delta: number, label = "Camion mafia") {
   window.dispatchEvent(new CustomEvent("jce.player.cashDelta", {
-    detail: { amount: delta, reason: "armored", label: "Camion blindé" },
+    detail: { amount: delta, reason: "armored", label },
   }));
 }
 
 function fmtMoney(n: number): string {
   return Math.round(n).toLocaleString("fr-FR");
 }
+
+const EXPLOSION_MS = 900;
 
 export default function ArmoredTruck() {
   const cfg = useAdminConfig();
@@ -75,13 +76,14 @@ export default function ArmoredTruck() {
   const [pathIdx, setPathIdx] = useState(0);
   const [flip, setFlip] = useState(false);
   const [loot, setLoot] = useState(0);
-  const [heister, setHeister] = useState<Heister>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [mafia, setMafia] = useState<MafiaCar[]>([]);
+  const mafiaRef = useRef<MafiaCar[]>([]);
+  useEffect(() => { mafiaRef.current = mafia; }, [mafia]);
+
   const [spriteUrl, setSpriteUrl] = useState<string | null>(() => {
     try { return localStorage.getItem(ARMORED_SPRITE_KEY) ?? DEFAULT_ARMORED_SPRITE; } catch { return DEFAULT_ARMORED_SPRITE; }
   });
-
-  // Re-charge le sprite si modifié depuis l'admin
   useEffect(() => {
     const onStorage = () => {
       try { setSpriteUrl(localStorage.getItem(ARMORED_SPRITE_KEY) ?? DEFAULT_ARMORED_SPRITE); } catch { /* noop */ }
@@ -94,21 +96,46 @@ export default function ArmoredTruck() {
     };
   }, []);
 
-  // Refs d'animation
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const truckRef = useRef<SVGGElement | null>(null);
+  const truckPosRef = useRef<{ x: number; y: number; angle: number }>({ x: 0, y: 0, angle: 0 });
 
-  // Position courante du camion (en coords SVG) — pour clic & poursuite
-  const truckPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-
-  // ---------- Cycle d'apparition ----------
   const rolloutStartRef = useRef<number>(0);
-  const heistStartRef = useRef<number>(0);
-  const heistOutcomeRef = useRef<{ winner: "player" | "rival" | "none"; rivalId?: string; success: boolean } | null>(null);
+  const hijackStartRef = useRef<number>(0);
+  const interceptPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const lastReinforceRef = useRef<number>(0);
+  const idCounterRef = useRef(0);
 
   const showToast = (txt: string, ms = 4500) => {
     setToast(txt);
     window.setTimeout(() => setToast((t) => (t === txt ? null : t)), ms);
+  };
+
+  const newId = () => ++idCounterRef.current;
+
+  const buildEscort = (count: number): MafiaCar[] => {
+    const urls = getCivilCarUrls();
+    const list: MafiaCar[] = [];
+    for (let i = 0; i < count; i++) {
+      const sprite = urls.length ? urls[Math.floor(Math.random() * urls.length)] : "";
+      // Disposition : 1 devant, 1 derrière, 1 sur le côté
+      const ring = [
+        { offX: 0, offY: -34 },
+        { offX: 0, offY: 34 },
+        { offX: 26, offY: 0 },
+        { offX: -26, offY: 0 },
+        { offX: 22, offY: 26 },
+      ];
+      const slot = ring[i % ring.length];
+      list.push({
+        id: newId(),
+        sprite,
+        offX: slot.offX,
+        offY: slot.offY,
+        alive: true,
+      });
+    }
+    return list;
   };
 
   const scheduleNext = (first = false) => {
@@ -118,7 +145,6 @@ export default function ArmoredTruck() {
     const ms = (lo + Math.random() * (hi - lo)) * mult;
     return window.setTimeout(() => {
       if (cfgRef.current.armoredAutoSpawn === false) {
-        // auto-spawn désactivé : on re-planifie plus tard
         scheduleNext(false);
         return;
       }
@@ -129,94 +155,60 @@ export default function ArmoredTruck() {
   const spawn = () => {
     const idx = TRUCK_ROAD_IDX[Math.floor(Math.random() * TRUCK_ROAD_IDX.length)] ?? 0;
     const fl = Math.random() < 0.5;
-    const amount = Math.round(500 + Math.random() * 1000);
+    const amount = Math.round(800 + Math.random() * 1500);
     setPathIdx(idx);
     setFlip(fl);
     setLoot(amount);
-    setHeister(null);
-    heistOutcomeRef.current = null;
+    setMafia(buildEscort(ESCORT_COUNT));
     rolloutStartRef.current = performance.now();
     setPhase("rolling");
-    showToast(`🚛 Camion blindé repéré ! Butin : ${fmtMoney(amount)} $`);
-
-    // Tentative IA : un rival peut se lancer après un délai aléatoire
-    const w = window as unknown as { __jceCompetitors?: Competitor[] };
-    const alive = (w.__jceCompetitors ?? []).filter((c) => !c.bankrupt);
-    if (cfgRef.current.rivalsCanHeist !== false && alive.length > 0 && Math.random() < RIVAL_ATTEMPT_CHANCE) {
-      const r = alive[Math.floor(Math.random() * alive.length)];
-      const delay = 2500 + Math.random() * (TRUCK_TRAVEL_S * 1000 - 5000);
-      window.setTimeout(() => {
-        setPhase((p) => {
-          if (p !== "rolling") return p;
-          startHeist({ kind: "rival", rivalId: r.id, color: r.color });
-          return "heist";
-        });
-      }, delay);
-    }
+    showToast(`🚛 Camion de la MAFIA repéré ! Butin : ${fmtMoney(amount)} $ — Tape-le pour le détourner !`, 5500);
   };
 
-  // Démarrer la séquence de braquage
-  const startHeist = (h: NonNullable<Heister>) => {
-    setHeister(h);
-    heistStartRef.current = performance.now();
-    const success = h.kind === "player"
-      ? Math.random() < PLAYER_SUCCESS
-      : Math.random() < RIVAL_SUCCESS;
-    heistOutcomeRef.current = {
-      winner: success ? (h.kind === "player" ? "player" : "rival") : "none",
-      rivalId: h.rivalId,
-      success,
-    };
-  };
-
-  // Clic joueur sur le camion
   const onTruckClick = () => {
     if (phase !== "rolling") return;
-    const playerColor = (window as unknown as { __jcePlayerColor?: string }).__jcePlayerColor ?? "#facc15";
-    startHeist({ kind: "player", color: playerColor });
-    setPhase("heist");
+    interceptPosRef.current = { ...truckPosRef.current };
+    hijackStartRef.current = performance.now();
+    lastReinforceRef.current = performance.now();
+    setPhase("hijacked");
+    showToast(`🎯 Camion détourné ! Ramène-le au QG — explose toutes les voitures mafia !`, 5000);
   };
 
-  // Résolution
-  const resolveHeist = () => {
-    const out = heistOutcomeRef.current;
-    if (!out) { setPhase("done"); return; }
-    if (out.winner === "player") {
-      adjustPlayerMoney(+loot);
-      showToast(`💰 Braquage réussi ! +${fmtMoney(loot)} $`, 5000);
-    } else if (out.winner === "rival") {
-      // -15% à chaque AUTRE compagnie (joueur inclus)
-      const pm = readPlayerMoney();
-      const penalty = Math.round(pm * 0.15);
-      if (penalty > 0) adjustPlayerMoney(-penalty);
-      // Notifie CityCompetitors pour appliquer aux rivaux
+  const explodeMafia = (id: number) => {
+    const now = performance.now();
+    let killed = false;
+    mafiaRef.current = mafiaRef.current.map((m) => {
+      if (m.id === id && m.alive) { killed = true; return { ...m, alive: false, explodedAt: now }; }
+      return m;
+    });
+    setMafia([...mafiaRef.current]);
+    if (killed) adjustPlayerMoney(MAFIA_KILL_REWARD, "Mafia neutralisée");
+  };
+
+  const resolveAtHQ = () => {
+    const aliveMafia = mafiaRef.current.filter((m) => m.alive).length;
+    if (aliveMafia === 0) {
+      adjustPlayerMoney(+loot, "Butin mafia récupéré");
+      showToast(`💰 Butin récupéré au QG ! +${fmtMoney(loot)} $`, 5500);
       window.dispatchEvent(new CustomEvent("jce:armored-resolved", {
-        detail: { winner: "rival", rivalId: out.rivalId, amount: loot, success: true },
+        detail: { winner: "player", amount: loot, success: true },
       }));
-      showToast(`💸 Un rival a braqué le camion ! −${fmtMoney(penalty)} $ (−15 %)`, 5500);
     } else {
-      // Échec
-      if (heister?.kind === "player") {
-        const fine = Math.round(loot * 0.5);
-        adjustPlayerMoney(-fine);
-        showToast(`🚨 Braquage raté — la police t'a chopé ! −${fmtMoney(fine)} $`, 5500);
-      } else {
-        // Rival raté → pénalité gérée par CityCompetitors
-        window.dispatchEvent(new CustomEvent("jce:armored-resolved", {
-          detail: { winner: "none", rivalId: heister?.rivalId, amount: loot, success: false },
-        }));
-        showToast(`🚨 Un rival a tenté le braquage et a échoué !`, 4500);
-      }
+      const fine = Math.round(loot * 0.5);
+      adjustPlayerMoney(-fine, "Camion repris par la mafia");
+      showToast(`🚨 La mafia (${aliveMafia}) a repris le camion devant ton QG ! −${fmtMoney(fine)} $`, 5500);
+      window.dispatchEvent(new CustomEvent("jce:armored-resolved", {
+        detail: { winner: "mafia", amount: loot, success: false },
+      }));
     }
     setPhase("done");
   };
 
-  // ---------- Boucle de planification ----------
   useEffect(() => {
     const t = scheduleNext(true);
     const onManual = () => {
       setPhase((p) => {
-        if (p !== "idle" && p !== "done") return p; // déjà en cours
+        if (p !== "idle" && p !== "done") return p;
         spawn();
         return "rolling";
       });
@@ -229,13 +221,13 @@ export default function ArmoredTruck() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Quand on passe à "done", on relance un cycle
   useEffect(() => {
     if (phase !== "done") return;
     const t = window.setTimeout(() => {
       setPhase("idle");
+      setMafia([]);
       scheduleNext(false);
-    }, 2500);
+    }, 3000);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
@@ -248,46 +240,62 @@ export default function ArmoredTruck() {
     const len = path.getTotalLength();
     if (len <= 1) return;
 
+    const hqX = cfgRef.current.hqX;
+    const hqY = cfgRef.current.hqY;
+
     let raf = 0;
     const step = (now: number) => {
-      // Position camion sur le path
-      let u: number;
+      let tx = 0, ty = 0, ang = 0;
+
       if (phase === "rolling") {
-        u = Math.min(1, (now - rolloutStartRef.current) / (TRUCK_TRAVEL_S * 1000));
+        const u = Math.min(1, (now - rolloutStartRef.current) / (TRUCK_TRAVEL_S * 1000));
         if (u >= 1) {
-          // Atteint la banque sans braquage → cycle terminé
+          // Atteint le dépôt mafia sans détournement → cycle terminé
+          showToast(`📦 Le camion mafia a rejoint son dépôt…`, 3500);
           setPhase("done");
           return;
         }
+        const fwd = flip ? len * (1 - u) : len * u;
+        const p = path.getPointAtLength(fwd);
+        const p2 = path.getPointAtLength(Math.min(len, Math.max(0, fwd + (flip ? -1 : 1))));
+        const tdx = p2.x - p.x, tdy = p2.y - p.y;
+        const L = Math.hypot(tdx, tdy) || 1;
+        ang = (Math.atan2(tdy, tdx) * 180) / Math.PI;
+        const laneSign = flip ? -1 : 1;
+        const ox = (-tdy / L) * 10 * laneSign;
+        const oy = (tdx / L) * 10 * laneSign;
+        tx = p.x + ox; ty = p.y + oy;
       } else {
-        // Heist : le camion est intercepté au point d'interception puis "immobilisé"
-        const tHeist = (now - heistStartRef.current) / 1000;
-        const fracRolling = Math.min(1, (heistStartRef.current - rolloutStartRef.current) / (TRUCK_TRAVEL_S * 1000));
-        u = Math.min(1, fracRolling + Math.min(0.05, tHeist * 0.003));
-        // Résolution
-        if (tHeist >= HEIST_DURATION_S) {
-          resolveHeist();
+        // hijacked : lerp depuis le point d'interception vers le QG
+        const u = Math.min(1, (now - hijackStartRef.current) / (HIJACK_TRAVEL_S * 1000));
+        const from = interceptPosRef.current;
+        tx = from.x + (hqX - from.x) * u;
+        ty = from.y + (hqY - from.y) * u;
+        ang = (Math.atan2(hqY - from.y, hqX - from.x) * 180) / Math.PI;
+
+        // Renforts mafia
+        const aliveCount = mafiaRef.current.filter((m) => m.alive).length;
+        if (
+          aliveCount < MAX_MAFIA_ALIVE &&
+          (now - lastReinforceRef.current) > REINFORCE_EVERY_S * 1000
+        ) {
+          lastReinforceRef.current = now;
+          const newcomers = buildEscort(1);
+          // Place le renfort sur un côté éloigné pour effet "arrivée"
+          newcomers[0].offX = (Math.random() < 0.5 ? -1 : 1) * (40 + Math.random() * 24);
+          newcomers[0].offY = (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 20);
+          mafiaRef.current = [...mafiaRef.current, ...newcomers];
+          setMafia(mafiaRef.current);
+        }
+
+        if (u >= 1) {
+          resolveAtHQ();
           return;
         }
       }
 
-      const fwd = flip ? len * (1 - u) : len * u;
-      const p = path.getPointAtLength(fwd);
-      const p2 = path.getPointAtLength(Math.min(len, Math.max(0, fwd + (flip ? -1 : 1))));
-      const tdx = p2.x - p.x, tdy = p2.y - p.y;
-      const L = Math.hypot(tdx, tdy) || 1;
-      const ang = (Math.atan2(tdy, tdx) * 180) / Math.PI;
-      // Léger lane offset pour rester sur la chaussée
-      const laneSign = flip ? -1 : 1;
-      const ox = (-tdy / L) * 10 * laneSign;
-      const oy = (tdx / L) * 10 * laneSign;
-      const tx = p.x + ox, ty = p.y + oy;
-      truckPosRef.current = { x: tx, y: ty };
+      truckPosRef.current = { x: tx, y: ty, angle: ang };
       truckRef.current?.setAttribute("transform", `translate(${tx.toFixed(2)},${ty.toFixed(2)}) rotate(${ang.toFixed(2)})`);
-
-      // NB : plus aucun véhicule dessiné en dur (braqueur / flics).
-      // Le visuel de poursuite est porté par les taxis du joueur et des rivaux
-      // ainsi que les voitures de police importées via l'admin.
 
       raf = requestAnimationFrame(step);
     };
@@ -296,10 +304,73 @@ export default function ArmoredTruck() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, pathIdx, flip]);
 
-  const showTruck = phase === "rolling" || phase === "heist";
-  void heister;
-
+  const showTruck = phase === "rolling" || phase === "hijacked";
   const lootBadge = useMemo(() => fmtMoney(loot), [loot]);
+
+  // Position calculée des voitures mafia (relative au camion, rotation incluse)
+  const renderMafia = () => {
+    if (!showTruck) return null;
+    const { x: tx, y: ty, angle } = truckPosRef.current;
+    const rad = (angle * Math.PI) / 180;
+    const cos = Math.cos(rad), sin = Math.sin(rad);
+    return mafia.map((m) => {
+      // Si exploding : fade puis disparition
+      if (!m.alive) {
+        const age = (performance.now() - (m.explodedAt ?? 0)) / EXPLOSION_MS;
+        if (age >= 1) return null;
+        const ex = tx + (m.offX * cos - m.offY * sin);
+        const ey = ty + (m.offX * sin + m.offY * cos);
+        const r = 18 + age * 70;
+        const op = 1 - age;
+        return (
+          <g key={m.id} transform={`translate(${ex},${ey})`} pointerEvents="none">
+            <circle r={r} fill="rgba(255,170,40,0.7)" opacity={op} />
+            <circle r={r * 0.55} fill="rgba(255,90,30,0.9)" opacity={op} />
+            <circle r={r * 0.25} fill="rgba(255,240,180,0.95)" opacity={op} />
+            <text y={-r - 4} textAnchor="middle" fontSize={16} fontWeight={900}
+              fill="#fde047" stroke="#1a1306" strokeWidth={1.2} opacity={op}>
+              +{MAFIA_KILL_REWARD}$
+            </text>
+          </g>
+        );
+      }
+      const ex = tx + (m.offX * cos - m.offY * sin);
+      const ey = ty + (m.offX * sin + m.offY * cos);
+      const W = 30, H = 50;
+      return (
+        <g
+          key={m.id}
+          transform={`translate(${ex},${ey}) rotate(${angle})`}
+          style={{ pointerEvents: "auto", cursor: "pointer" }}
+          onClick={(e) => { e.stopPropagation(); explodeMafia(m.id); }}
+          onTouchStart={(e) => { e.preventDefault(); explodeMafia(m.id); }}
+        >
+          {/* hit area */}
+          <rect x={-22} y={-30} width={44} height={60} fill="transparent" />
+          <ellipse cx={0} cy={4} rx={14} ry={4} fill="rgba(0,0,0,0.55)" />
+          <g transform="rotate(90)">
+            {m.sprite ? (
+              <image
+                href={m.sprite}
+                x={-W / 2}
+                y={-H / 2}
+                width={W}
+                height={H}
+                preserveAspectRatio="xMidYMid meet"
+                filter="url(#armored-mafia-black)"
+              />
+            ) : (
+              <rect x={-W / 2} y={-H / 2} width={W} height={H} rx={6} fill="#0a0a0a" />
+            )}
+          </g>
+          <circle r={5} fill="rgba(0,0,0,0.75)" />
+          <text y={2} textAnchor="middle" fontSize={7} fontWeight={900} fill="#b91c1c">M</text>
+        </g>
+      );
+    });
+  };
+
+  const aliveMafiaCount = mafia.filter((m) => m.alive).length;
 
   return (
     <>
@@ -312,6 +383,15 @@ export default function ArmoredTruck() {
         }}
       >
         <defs>
+          <filter id="armored-mafia-black">
+            <feColorMatrix
+              type="matrix"
+              values="0.10 0 0 0 0
+                      0 0.10 0 0 0
+                      0 0 0.12 0 0
+                      0 0 0 1 0"
+            />
+          </filter>
           {ROADS.map((d, i) => (
             <path
               key={i}
@@ -326,21 +406,25 @@ export default function ArmoredTruck() {
 
         {showTruck && (
           <>
+            {renderMafia()}
 
-            {/* Camion blindé — cliquable */}
+            {/* Camion blindé — cliquable pendant "rolling" pour détourner */}
             <g
               ref={truckRef}
               style={{ pointerEvents: "auto", cursor: phase === "rolling" ? "pointer" : "default" }}
               onClick={onTruckClick}
             >
-              {/* Halo pulsant doré (cliquable) */}
               {phase === "rolling" && (
                 <circle cx="0" cy="0" r="22" fill="none" stroke="#fde047" strokeWidth="2" opacity="0.9">
-                  <animate attributeName="r" values="18;28;18" dur="1.2s" repeatCount="indefinite" />
+                  <animate attributeName="r" values="18;30;18" dur="1.2s" repeatCount="indefinite" />
                   <animate attributeName="opacity" values="0.9;0.2;0.9" dur="1.2s" repeatCount="indefinite" />
                 </circle>
               )}
-              {/* Ombre */}
+              {phase === "hijacked" && (
+                <circle cx="0" cy="0" r="24" fill="none" stroke="#22d3ee" strokeWidth="2" opacity="0.85">
+                  <animate attributeName="r" values="20;32;20" dur="1.4s" repeatCount="indefinite" />
+                </circle>
+              )}
               <ellipse cx="0" cy="4" rx="16" ry="4" fill="rgba(0,0,0,0.5)" />
               {spriteUrl ? (
                 <g transform="rotate(90)">
@@ -348,39 +432,17 @@ export default function ArmoredTruck() {
                 </g>
               ) : (
                 <g transform="rotate(90)">
-                  {/* Châssis */}
                   <rect x="-10" y="-20" width="20" height="40" rx="2.5" fill="#3f3f46" stroke="#0b0d10" strokeWidth="1.6" />
-                  {/* Cabine */}
                   <rect x="-9" y="-19" width="18" height="11" rx="1.5" fill="#1f2937" stroke="#0b0d10" strokeWidth="1" />
-                  <rect x="-7" y="-17" width="14" height="5" rx="0.8" fill="rgba(15,23,42,0.85)" />
-                  {/* Coffre */}
                   <rect x="-9" y="-5" width="18" height="22" rx="1.5" fill="#52525b" stroke="#0b0d10" strokeWidth="1" />
-                  <rect x="-7" y="-2" width="14" height="16" rx="1" fill="#3f3f46" />
-                  {/* Rivets */}
-                  {[-5, 0, 5].map((rx) => (
-                    <circle key={`r1-${rx}`} cx={rx} cy="1" r="0.9" fill="#a1a1aa" />
-                  ))}
-                  {[-5, 0, 5].map((rx) => (
-                    <circle key={`r2-${rx}`} cx={rx} cy="11" r="0.9" fill="#a1a1aa" />
-                  ))}
-                  {/* Gyrophare */}
-                  <rect x="-3" y="-21" width="6" height="2" rx="0.6" fill="#fde047">
-                    <animate attributeName="fill" values="#fde047;#ef4444;#fde047" dur="0.8s" repeatCount="indefinite" />
-                  </rect>
-                  {/* Roues */}
-                  <rect x="-11" y="-14" width="2" height="6" fill="#0b0d10" />
-                  <rect x="9" y="-14" width="2" height="6" fill="#0b0d10" />
-                  <rect x="-11" y="10" width="2" height="6" fill="#0b0d10" />
-                  <rect x="9" y="10" width="2" height="6" fill="#0b0d10" />
-                  {/* $ */}
                   <text x="0" y="9" textAnchor="middle" fontSize="9" fontWeight="900" fill="#fde047" fontFamily="system-ui">$</text>
                 </g>
               )}
-              {/* Pastille butin */}
-              <g transform="translate(0,-28)" style={{ pointerEvents: "none" }}>
-                <rect x="-26" y="-8" width="52" height="14" rx="7" fill="rgba(15,23,42,0.92)" stroke="#fde047" strokeWidth="1.2" />
+              {/* Pastille butin + compteur mafia */}
+              <g transform="translate(0,-30)" style={{ pointerEvents: "none" }}>
+                <rect x="-34" y="-9" width="68" height="16" rx="8" fill="rgba(15,23,42,0.92)" stroke="#fde047" strokeWidth="1.2" />
                 <text x="0" y="2" textAnchor="middle" fontSize="9" fontWeight="900" fill="#fde047" fontFamily="system-ui">
-                  💰 {lootBadge}$
+                  💰 {lootBadge}$ {phase === "hijacked" ? `· 🦹${aliveMafiaCount}` : ""}
                 </text>
               </g>
             </g>
