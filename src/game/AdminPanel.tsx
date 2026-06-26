@@ -44,6 +44,8 @@ export default function AdminPanel() {
   const [newCompTreasury, setNewCompTreasury] = useState(15000);
   const [newCompVehicleUrl, setNewCompVehicleUrl] = useState<string>("");
   const [newCompVehicleName, setNewCompVehicleName] = useState<string>("");
+  const [newCompLogoUrl, setNewCompLogoUrl] = useState<string>("");
+  const [newCompLogoName, setNewCompLogoName] = useState<string>("");
 
   const onPickCompVehicle = (file: File | null) => {
     if (!file) { setNewCompVehicleUrl(""); setNewCompVehicleName(""); return; }
@@ -51,6 +53,16 @@ export default function AdminPanel() {
     reader.onload = () => {
       setNewCompVehicleUrl(String(reader.result || ""));
       setNewCompVehicleName(file.name);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onPickCompLogo = (file: File | null) => {
+    if (!file) { setNewCompLogoUrl(""); setNewCompLogoName(""); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setNewCompLogoUrl(String(reader.result || ""));
+      setNewCompLogoName(file.name);
     };
     reader.readAsDataURL(file);
   };
@@ -68,11 +80,14 @@ export default function AdminPanel() {
       taxiCount: 6,
       bankrupt: false,
       vehicleUrl: newCompVehicleUrl || undefined,
+      logoUrl: newCompLogoUrl || undefined,
     };
     setCompetitorsFromCloud([...comps, next]);
     setNewCompName("");
     setNewCompVehicleUrl("");
     setNewCompVehicleName("");
+    setNewCompLogoUrl("");
+    setNewCompLogoName("");
   };
 
   const removeCompetitor = (id: string) => {
