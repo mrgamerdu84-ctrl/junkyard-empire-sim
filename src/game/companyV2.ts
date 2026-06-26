@@ -502,23 +502,27 @@ function simTick() {
   const net = revenueTick - fuelTick - wagesTick - maintTick;
   if (Math.abs(net) > 0.5) pushCashToPlayer(Math.round(net));
 
-  // ---- événements aléatoires ----
-  if (Math.random() < 0.02) {
+  // ---- ambiance météo (flavor) ----
+  if (Math.random() < 0.006) {
     const r = Math.random();
-    if (r < 0.25) logEvent("weather", "🌧 Pluie : demande +50% mais accidents en hausse.");
-    else if (r < 0.4) logEvent("strike", "🚇 Grève des transports en commun ! Jackpot de la journée.");
-    else if (r < 0.55) logEvent("rush", "⚡ Pic de demande inattendu dans le quartier centre.");
-    else if (r < 0.7 && s.fleet.length > 0) {
-      const t = s.fleet[Math.floor(Math.random() * s.fleet.length)];
-      const fine = 80 + Math.floor(Math.random() * 200);
-      pushCashToPlayer(-fine, "Amende contrôle");
-      logEvent("control", `🚓 Contrôle police sur ${t.livery} : amende -${fine} $`, -fine);
-    } else if (r < 0.85) {
-      const insp = 300 + Math.floor(Math.random() * 400);
-      pushCashToPlayer(-insp, "Inspection mairie");
-      logEvent("inspection", `🏛 Inspection mairie : mise aux normes -${insp} $`, -insp);
+    if (r < 0.4) logEvent("weather", "🌧 Pluie : demande +50%, accidents en hausse.");
+    else if (r < 0.7) logEvent("strike", "🚇 Grève des transports : jackpot de la journée.");
+    else logEvent("rush", "⚡ Pic de demande inattendu en centre-ville.");
+  }
+
+  // ---- attaques mafia (gameplay carte) ----
+  // Fréquence : monte avec le revenu journalier + taille de flotte.
+  // Base 0.4%/tick (~1 attaque/4min réelles à 5s/tick), max 3%/tick.
+  if (typeof window !== "undefined" && s.fleet.length > 0) {
+    const revenueFactor = Math.min(1, s.todayRevenue / 3000);
+    const fleetFactor = Math.min(1, s.fleet.length / 10);
+    const p = 0.004 + 0.026 * Math.max(revenueFactor, fleetFactor);
+    if (Math.random() < p) {
+      window.dispatchEvent(new CustomEvent("mtw:mafia-attack-spawn"));
+      logEvent("control", "🕵 Voiture suspecte signalée près de notre flotte !");
     }
   }
+
 
   // ---- fin de jour jeu ----
   if (s.tick % DAY_LENGTH_TICKS === 0) {
