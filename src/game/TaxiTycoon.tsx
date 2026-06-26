@@ -1793,8 +1793,11 @@ export default function TaxiTycoon() {
   };
 
   // 🔧 Entretien : 8 $ par point d'usure, remet la flotte à neuf.
+  // Le mécano embauché réduit la facture (cf. src/game/personnel.ts).
   const wearNow = Math.round(save.taxiWear ?? 0);
-  const maintenanceCost = Math.max(0, wearNow * 8);
+  const maintenanceBase = Math.max(0, wearNow * 8);
+  const maintenanceDiscount = getMaintenanceDiscount();
+  const maintenanceCost = Math.round(maintenanceBase * (1 - maintenanceDiscount));
   const repairTaxis = () => {
     if (wearNow <= 0) { showToast("Flotte déjà en parfait état"); return; }
     if (save.money < maintenanceCost) {
@@ -1802,7 +1805,9 @@ export default function TaxiTycoon() {
       return;
     }
     setSave((s) => ({ ...s, money: s.money - maintenanceCost, taxiWear: 0 }));
-    showToast("🔧 Flotte entretenue, revenus restaurés !");
+    showToast(maintenanceDiscount > 0
+      ? `🔧 Flotte entretenue ! (−${Math.round(maintenanceDiscount * 100)}% mécano)`
+      : "🔧 Flotte entretenue, revenus restaurés !");
   };
 
 
@@ -1815,6 +1820,8 @@ export default function TaxiTycoon() {
   const [radioOpen, setRadioOpen] = useState(false);
   const [pseudoOpen, setPseudoOpen] = useState(false);
   const [cityInfoOpen, setCityInfoOpen] = useState(false);
+  const [personnelOpen, setPersonnelOpen] = useState(false);
+
   const auth = useAuth();
   const [pseudoDraft, setPseudoDraft] = useState("");
   const [pseudoSaving, setPseudoSaving] = useState(false);
