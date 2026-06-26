@@ -9,7 +9,7 @@
 // - Argent débité via cashDelta (companyV2 le fait déjà), upgrades émettent
 //   `mtw:fleet-upgraded` pour propagation à la carte.
 // =============================================================
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   applyPaint,
   applyRepair,
