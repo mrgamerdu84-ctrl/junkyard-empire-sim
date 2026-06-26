@@ -2272,12 +2272,12 @@ export default function TaxiTycoon() {
             <path
               key={`road-dash-${i}`}
               d={d}
-              stroke="#fde047"
-              strokeWidth="1.6"
+              stroke="#ffffff"
+              strokeWidth="2"
               fill="none"
-              strokeDasharray="10 12"
-              strokeLinecap="round"
-              opacity="0.85"
+              strokeDasharray="10 15"
+              strokeLinecap="butt"
+              opacity="0.9"
             />
           ))}
         </g>
