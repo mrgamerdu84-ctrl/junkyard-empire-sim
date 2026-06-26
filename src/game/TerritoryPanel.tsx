@@ -84,9 +84,20 @@ export default function TerritoryPanel() {
     };
   };
 
+  const centerOnDistrict = (id: string, zoom = 2.5) => {
+    const d = districts.find((x) => x.id === id);
+    if (!d) return;
+    const nw = MAP_W / zoom;
+    const nh = MAP_H / zoom;
+    const nx = d.x + d.w / 2 - nw / 2;
+    const ny = d.y + d.h / 2 - nh / 2;
+    setView(clampView({ x: nx, y: ny, w: nw, h: nh }));
+  };
+
   const focusDistrict = (id: string) => {
     setOpen(true);
     setSelectedId(id);
+    centerOnDistrict(id, 2.5);
     requestAnimationFrame(() => {
       cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
     });
