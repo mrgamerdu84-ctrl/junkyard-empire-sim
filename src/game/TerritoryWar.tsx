@@ -255,7 +255,9 @@ export default function TerritoryWar() {
     <>
       <svg
         viewBox="0 0 1920 1080"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio={preserveAspectFor(fit)}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
+      >
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 5 }}
       >
         {districts.map((d) => {
