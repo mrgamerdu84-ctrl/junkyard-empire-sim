@@ -14,6 +14,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import { useAdminConfig } from "./adminConfig";
+import { getVehicleScale } from "./vehicleScale";
+
 import armoredTruckAsset from "@/assets/armored-truck.png.asset.json";
 
 const DEFAULT_ARMORED_SPRITE = armoredTruckAsset.url;
