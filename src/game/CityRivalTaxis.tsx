@@ -251,7 +251,7 @@ export default function CityRivalTaxis() {
           let u = (now - st.startedAt) / (st.duration * 1000);
           if (u >= 1) {
             // Nouvelle route : enchaîner toutes les rues
-            st.pathIdx = pickSectorPath(sp.homeDistrictId, roadsByDistrict);
+            st.pathIdx = pickSectorPath(homeIdsRef.current[i] ?? sp.homeDistrictId, roadsByDistrictRef.current);
             st.flip = Math.random() < 0.5;
             st.duration = 14 + Math.random() * 10;
             st.startedAt = now;
@@ -302,7 +302,7 @@ export default function CityRivalTaxis() {
               // Retour QG validé, puis reprise immédiate du trafic : les concurrents
               // ne restent plus plantés/garés sur la carte.
               st.mode = "roam";
-              st.pathIdx = pickSectorPath(sp.homeDistrictId, roadsByDistrict);
+              st.pathIdx = pickSectorPath(homeIdsRef.current[i] ?? sp.homeDistrictId, roadsByDistrictRef.current);
               st.flip = Math.random() < 0.5;
               st.duration = 14 + Math.random() * 10;
               st.startedAt = now;
@@ -331,7 +331,7 @@ export default function CityRivalTaxis() {
           if (moved > 0.5) { st.lastMoveAt = now; st.lastX = st.x; st.lastY = st.y; }
           else if (now - st.lastMoveAt > 2000) {
             st.mode = "roam";
-            st.pathIdx = pickSectorPath(sp.homeDistrictId, roadsByDistrict);
+            st.pathIdx = pickSectorPath(homeIdsRef.current[i] ?? sp.homeDistrictId, roadsByDistrictRef.current);
             st.flip = Math.random() < 0.5;
             st.duration = 14 + Math.random() * 10;
             st.startedAt = now;
