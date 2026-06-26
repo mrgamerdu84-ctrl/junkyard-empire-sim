@@ -2694,7 +2694,7 @@ export default function TaxiTycoon() {
             <span className="tt-coin">●</span>
             <b>{fmt(save.money)}$</b>
           </button>
-          
+          <button className="tt-admin-top" onClick={() => window.dispatchEvent(new CustomEvent("mtw:open-admin"))} title="Admin" aria-label="Admin">⚙</button>
         </div>
 
 
