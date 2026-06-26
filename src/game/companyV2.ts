@@ -540,7 +540,7 @@ function closeDay() {
   logEvent("bilan", `📊 Bilan jour ${s.dayOfSim} : net ${report.net >= 0 ? "+" : ""}${report.net} $ sur ${report.rides} courses.`, report.net);
   // reset compteurs
   s.todayRevenue = 0; s.todayFuel = 0; s.todayWages = 0; s.todayMaintenance = 0; s.todayRides = 0;
-  for (const t of s.fleet) { t.ridesToday = 0; t.earnedToday = 0; }
+  for (const t of s.fleet) { t.ridesToday = 0; t.earnedToday = 0; t.mafiaShieldUsed = false; }
   // remonte un peu de moral si payé
   for (const d of s.drivers) d.morale = Math.min(100, d.morale + 3);
   // démissions si moral très bas
