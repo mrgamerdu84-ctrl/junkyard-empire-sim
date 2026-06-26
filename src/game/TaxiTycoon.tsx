@@ -2096,7 +2096,7 @@ export default function TaxiTycoon() {
       const taxi = taxisRef.current.find((t) => t.jobId === jid);
       // Si le taxi a déjà pickup le client, trop tard pour les rivaux.
       if (!taxi || taxi.mode !== "to_pickup") return;
-      taxi.jobId = undefined;
+      taxi.jobId = null;
       taxi.mode = "roaming";
       setJobs((js) => js.filter((j) => j.id !== jid));
       showToast("💢 Client volé par un rival !");
