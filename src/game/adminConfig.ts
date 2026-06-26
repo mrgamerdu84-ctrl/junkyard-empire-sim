@@ -106,11 +106,19 @@ function load(): AdminConfig {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULT_ADMIN;
-    return { ...DEFAULT_ADMIN, ...JSON.parse(raw) };
+    const parsed = JSON.parse(raw);
+    // Migration ponctuelle : si l'ancienne position du QG (parking en bas-gauche)
+    // est encore là, on bascule sur la nouvelle (restaurant près du rond-point).
+    if (parsed && parsed.hqX === 230 && parsed.hqY === 900) {
+      parsed.hqX = DEFAULT_ADMIN.hqX;
+      parsed.hqY = DEFAULT_ADMIN.hqY;
+    }
+    return { ...DEFAULT_ADMIN, ...parsed };
   } catch {
     return DEFAULT_ADMIN;
   }
 }
+
 
 // On démarre toujours avec les valeurs par défaut pour rester SSR-safe ;
 // les valeurs persistées sont rechargées après le mount (cf. useAdminConfig).
