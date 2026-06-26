@@ -2681,38 +2681,15 @@ export default function TaxiTycoon() {
 
         {!mapFullscreen && (<>
         <div className="tt-topbar tt-topbar-slim">
-          <button className="tt-round tt-help" onClick={() => setShowTutorial(true)} title="Tutoriel">?</button>
-          <button
-            className="tt-status-pill"
-            onClick={() => setCityInfoOpen(true)}
-            title="Infos ville (heure, météo, trafic)"
-          >
-            <span className="tt-sp-time">{clock.label}</span>
-            <span className="tt-sp-sep">·</span>
-            <span className="tt-sp-weather">{realEnv ? weatherLabelFr(realEnv.weather) : "…"}</span>
-            <span className="tt-sp-sep">·</span>
-            <span className="tt-coin">●</span>
-            <b>{fmt(save.money)}$</b>
-          </button>
-          
+          <div className="tt-title-banner" aria-label="My Taxi World Rivalité">
+            <span className="tt-title-glow">MY TAXI WORLD</span>
+            <span className="tt-title-sub">RIVALITÉ</span>
+          </div>
         </div>
-
-
-
-        {(() => {
-          const offeredCount = jobs.filter((j) => j.status === "offered").length;
-          const inProgressCount = jobs.filter((j) => j.status !== "offered").length;
-          return (
-            <button className="tt-mission-wood" onClick={() => setMissionsOpen(true)} title="Missions, contrats et dépôt">
-              <span className="tt-clip">▣</span>
-              <span>Missions</span>
-              {(offeredCount + inProgressCount) > 0 && <b>{offeredCount + inProgressCount}</b>}
-            </button>
-          );
-        })()}
 
         {saveBlink && <div className="tt-save-blink">💾 Sauvegardé</div>}
         </>)}
+
 
 
         {/* === Panneau Missions === */}
