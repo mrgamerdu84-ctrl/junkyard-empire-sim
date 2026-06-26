@@ -14,6 +14,13 @@
 //     Continuer la conquête ».
 // =============================================================
 import { useEffect, useRef, useState } from "react";
+import { preserveAspectFor, useMapFit } from "./mapView";
+
+type LiveComp = { id: string; color: string; name?: string };
+function readLiveComps(): LiveComp[] {
+  const w = window as unknown as { __jceCompetitors?: LiveComp[] };
+  return Array.isArray(w.__jceCompetitors) ? w.__jceCompetitors : [];
+}
 
 export type District = {
   id: string;
