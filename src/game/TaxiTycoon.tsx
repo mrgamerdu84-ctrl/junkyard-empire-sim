@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "@tanstack/react-router";
 import { ROADS, VILLAGE_PATHS, SIDEWALK_LOCK_OFFSET, lockToSidewalk } from "./CityTraffic";
@@ -565,30 +565,33 @@ export default function TaxiTycoon() {
   // Échelle inverse appliquée aux véhicules pour qu'ils gardent une taille
   // écran constante quel que soit le zoom / la taille du SVG rendu.
   const [vehicleScale, setVehicleScale] = useState(1);
+  // Caméra : zoom + centre (en coordonnées viewBox 1920x1080).
+  const [cam, setCam] = useState({ zoom: 1, cx: 960, cy: 540 });
+  const camRef = useRef(cam);
+  useEffect(() => { camRef.current = cam; }, [cam]);
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const compute = () => {
       const r = el.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return;
-      // Le SVG est rendu en "slice" : il remplit, donc l'échelle effective
-      // utilisée est le max entre w/1920 et h/1080.
       const sx = r.width / 1920;
       const sy = r.height / 1080;
       const rendered = Math.max(sx, sy);
-      // Cible : voiture rendue ~comme si l'écran faisait au moins 900px de large.
       const target = Math.max(rendered, 900 / 1920);
-      const s = Math.max(0.6, Math.min(3, target / rendered));
+      const base = Math.max(0.6, Math.min(3, target / rendered));
+      // Compensation du zoom caméra : véhicules de taille écran constante.
+      const s = base / camRef.current.zoom;
       setVehicleScale((prev) => Math.abs(prev - s) > 0.02 ? s : prev);
       vScaleSet(s);
-
     };
     compute();
     const ro = new ResizeObserver(compute);
     ro.observe(el);
     window.addEventListener("orientationchange", compute);
     return () => { ro.disconnect(); window.removeEventListener("orientationchange", compute); };
-  }, []);
+  }, [cam.zoom]);
+
   const [pathsReady, setPathsReady] = useState(false);
 
   const admin = useAdminConfig(); // re-render quand l'admin change
@@ -2153,17 +2156,87 @@ export default function TaxiTycoon() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [realEnv?.city, realEnv?.weather, realEnv?.isDay]);
 
+  // ===== Caméra : viewBox dynamique =====
+  const camVbW = 1920 / cam.zoom;
+  const camVbH = 1080 / cam.zoom;
+  const camVbX = Math.max(0, Math.min(1920 - camVbW, cam.cx - camVbW / 2));
+  const camVbY = Math.max(0, Math.min(1080 - camVbH, cam.cy - camVbH / 2));
+  const camViewBox = `${camVbX} ${camVbY} ${camVbW} ${camVbH}`;
+
+  // ===== Gestes : pinch / wheel / drag =====
+  const gestureRef = useRef<{ pointers: Map<number, { x: number; y: number }>; lastDist: number; lastMid: { x: number; y: number } | null; dragging: boolean }>({ pointers: new Map(), lastDist: 0, lastMid: null, dragging: false });
+  const screenDeltaToViewBox = useCallback((dx: number, dy: number) => {
+    const el = containerRef.current; if (!el) return { x: 0, y: 0 };
+    const r = el.getBoundingClientRect();
+    const sx = r.width / 1920, sy = r.height / 1080;
+    const rendered = Math.max(sx, sy);
+    const k = 1 / (rendered * cam.zoom);
+    return { x: dx * k, y: dy * k };
+  }, [cam.zoom]);
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault();
+    setCam((c) => {
+      const factor = Math.exp(-e.deltaY * 0.0015);
+      const z = Math.max(1, Math.min(4, c.zoom * factor));
+      return { ...c, zoom: z };
+    });
+  }, []);
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    gestureRef.current.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    gestureRef.current.dragging = gestureRef.current.pointers.size === 1;
+    if (gestureRef.current.pointers.size === 2) {
+      const [a, b] = Array.from(gestureRef.current.pointers.values());
+      gestureRef.current.lastDist = Math.hypot(a.x - b.x, a.y - b.y);
+      gestureRef.current.lastMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    }
+  }, []);
+  const onPointerMove = useCallback((e: React.PointerEvent) => {
+    const g = gestureRef.current;
+    const prev = g.pointers.get(e.pointerId);
+    if (!prev) return;
+    g.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (g.pointers.size === 1 && g.dragging) {
+      const d = screenDeltaToViewBox(prev.x - e.clientX, prev.y - e.clientY);
+      setCam((c) => ({ ...c, cx: Math.max(0, Math.min(1920, c.cx + d.x)), cy: Math.max(0, Math.min(1080, c.cy + d.y)) }));
+    } else if (g.pointers.size === 2) {
+      const [a, b] = Array.from(g.pointers.values());
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (g.lastDist > 0) {
+        const f = dist / g.lastDist;
+        setCam((c) => ({ ...c, zoom: Math.max(1, Math.min(4, c.zoom * f)) }));
+      }
+      g.lastDist = dist;
+    }
+  }, [screenDeltaToViewBox]);
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    gestureRef.current.pointers.delete(e.pointerId);
+    if (gestureRef.current.pointers.size < 2) gestureRef.current.lastDist = 0;
+    if (gestureRef.current.pointers.size === 0) gestureRef.current.dragging = false;
+  }, []);
+
   return (
     <>
       <WeatherNightOverlay />
 
+      {/* === Couche de capture des gestes (pinch / drag / molette) === */}
+      <div
+        style={{ position: "absolute", inset: 0, zIndex: 3, touchAction: "none", background: "transparent" }}
+        onWheel={onWheel}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+      />
+
       {/* === Calque SVG du jeu === */}
       <svg
         ref={containerRef}
-        viewBox="0 0 1920 1080"
+        viewBox={camViewBox}
         preserveAspectRatio="xMidYMid slice"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
       >
+
         <defs>
           {ROADS.map((d, i) => (
             <path
