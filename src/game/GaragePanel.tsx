@@ -90,22 +90,25 @@ export default function GaragePanel({ onClose }: Props) {
   function finishWorking() {
     if (!working || !selected) { setWorking(null); return; }
     const k = working.kind;
-    const cat = working.kind;
+    const eqNow = getGarageEquipment();
+    const tireD = eqNow.tireRack ? 0.10 : 0;
+    const engineD = eqNow.workbench ? 0.10 : 0;
+    const paintD = eqNow.paintBooth ? 0.50 : 0;
     let r: { ok: boolean; msg?: string; cost?: number } = { ok: false };
     if (k === "repair") {
       r = applyRepair(selected.id, getMaintenanceDiscount());
     } else if (k === "tires1" || k === "tires2") {
       const def = defFor(k);
-      r = applyUpgrade(selected.id, "tires", k === "tires2" ? 2 : 1, def.cost);
+      r = applyUpgrade(selected.id, "tires", k === "tires2" ? 2 : 1, Math.round(def.cost * (1 - tireD)));
     } else if (k === "engine1" || k === "engine2") {
       const def = defFor(k);
-      r = applyUpgrade(selected.id, "engine", k === "engine2" ? 2 : 1, def.cost);
+      r = applyUpgrade(selected.id, "engine", k === "engine2" ? 2 : 1, Math.round(def.cost * (1 - engineD)));
     } else if (k === "armor1" || k === "armor2") {
       const def = defFor(k);
       r = applyUpgrade(selected.id, "armor", k === "armor2" ? 2 : 1, def.cost);
     } else if (k === "paint") {
       const p = pendingPaint;
-      if (p) applyPaint(selected.id, p.color, p.accent, defFor("paint").cost);
+      if (p) applyPaint(selected.id, p.color, p.accent, Math.round(defFor("paint").cost * (1 - paintD)));
       r = { ok: true };
     } else if (k === "sticker") {
       applySticker(selected.id, defFor("sticker").cost);
