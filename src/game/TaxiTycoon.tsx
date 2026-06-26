@@ -849,6 +849,30 @@ export default function TaxiTycoon() {
     const baseFare = Math.round((25 + distNorm * 220) * t.fareMult * adm.clientFareMult * revBonus * tMult * districtMult);
 
     const duration = (22 + Math.min(20, baseFare / 30)) * 1000;
+
+    // 🎨 Couleur du client = couleur de la compagnie qui possède le quartier
+    // de pickup. Si neutre → couleur joueur par défaut.
+    let claimedBy: string | undefined;
+    let claimedColor: string | undefined;
+    try {
+      const pPath2 = pathRefs.current[pickupPath];
+      if (pPath2) {
+        const pt2 = pPath2.getPointAtLength(pickup);
+        const terr = (window as unknown as { __mtwTerritory?: { id: string; x: number; y: number; w: number; h: number; owner: string | null }[] }).__mtwTerritory ?? [];
+        const d = terr.find((dd) => pt2.x >= dd.x && pt2.x < dd.x + dd.w && pt2.y >= dd.y && pt2.y < dd.y + dd.h);
+        if (d && d.owner) {
+          claimedBy = d.owner;
+          if (d.owner === "player") {
+            claimedColor = currentPaint.color;
+          } else {
+            const comps = (window as unknown as { __jceCompetitors?: { id: string; color: string }[] }).__jceCompetitors ?? [];
+            const hit = comps.find((c) => c.id === d.owner);
+            claimedColor = hit?.color;
+          }
+        }
+      }
+    } catch {}
+
     return {
       id, pickupPath, pickup, dropoffPath, dropoff, fare: baseFare,
       deadline: now + duration, duration,
@@ -856,8 +880,11 @@ export default function TaxiTycoon() {
       sidePickup,
       sideDrop: Math.random() < 0.5 ? 1 : -1,
       tier,
+      claimedBy,
+      claimedColor,
     };
   };
+
 
 
   // Mesure des longueurs réelles de chaque path au montage.
