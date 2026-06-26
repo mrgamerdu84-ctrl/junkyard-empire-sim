@@ -217,7 +217,9 @@ function loadState(): CompanyState {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultState();
     const parsed = JSON.parse(raw);
-    return { ...defaultState(), ...parsed };
+    const merged = { ...defaultState(), ...parsed } as CompanyState;
+    merged.fleet = (merged.fleet || []).map(ensureTaxiShape);
+    return merged;
   } catch { return defaultState(); }
 }
 function saveState() {
