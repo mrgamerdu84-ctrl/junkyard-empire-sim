@@ -298,7 +298,7 @@ export default function CityRivalTaxis() {
               // Retour QG validé, puis reprise immédiate du trafic : les concurrents
               // ne restent plus plantés/garés sur la carte.
               st.mode = "roam";
-              st.pathIdx = pickPath();
+              st.pathIdx = pickSectorPath(sp.homeDistrictId, roadsByDistrict);
               st.flip = Math.random() < 0.5;
               st.duration = 14 + Math.random() * 10;
               st.startedAt = now;
