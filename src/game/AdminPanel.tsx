@@ -407,79 +407,55 @@ export default function AdminPanel() {
               </>
             )}
 
-            {tab === "rival" && (
-              <>
-                <label className="adm-toggle" style={{ marginBottom: 10 }}>
-                  <input type="checkbox" checked={cfg.rivalEnabled}
-                    onChange={(e) => setAdmin({ rivalEnabled: e.target.checked })} />
-                  Activer l'entreprise concurrente (IA)
-                </label>
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{ font: "600 11px/1.3 ui-sans-serif", color: "#cbd5e1", marginBottom: 4 }}>
-                    Difficulté IA (vol de missions d'urgence)
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    {(["easy","normal","hard"] as const).map(d => (
-                      <button key={d}
-                        onClick={() => setAdmin({ aiDifficulty: d })}
-                        style={{
-                          flex: 1, padding: "6px 8px", borderRadius: 8,
-                          border: `1px solid ${cfg.aiDifficulty === d ? "#22e36a" : "#334155"}`,
-                          background: cfg.aiDifficulty === d ? "#0f3d24" : "#0f172a",
-                          color: "#e8edf5", font: "600 11px ui-sans-serif", cursor: "pointer",
-                        }}>
-                        {d === "easy" ? "😌 Facile" : d === "normal" ? "⚖️ Normal" : "🔥 Coriace"}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="adm-hint" style={{ marginTop: 4 }}>
-                    Facile = l'IA met ~80% plus de temps à voler une mission. Coriace = ~35% plus rapide.
-                  </div>
-                </div>
-                <Slider label="Taxis IA" value={cfg.rivalTaxiCount} min={1} max={6} step={1}
-                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalTaxiCount: v })} />
-                <Slider label="Temps de réaction" hint="Délai avant que l'IA ne vole une course"
-                  value={cfg.rivalReactionTime} min={1} max={15} step={0.5}
-                  format={(v) => v.toFixed(1) + " s"} onChange={(v) => setAdmin({ rivalReactionTime: v })} />
-                <Slider label="Vitesse IA" value={cfg.rivalSpeedMult} min={0.5} max={2.5} step={0.05}
-                  format={(v) => "×" + v.toFixed(2)} onChange={(v) => setAdmin({ rivalSpeedMult: v })} />
-                <Slider label="QG Rival — X" value={cfg.rivalHQX} min={0} max={1920} step={1}
-                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalHQX: v })} />
-                <Slider label="QG Rival — Y" value={cfg.rivalHQY} min={0} max={1080} step={1}
-                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalHQY: v })} />
-              </>
-            )}
-            {tab === "concurrents" && (
+            {tab === "mafia" && (
               <>
                 <div className="adm-hint" style={{ marginBottom: 8 }}>
-                  Ajoute jusqu'à 10 entreprises concurrentes. Les taxis rivaux roulent sur la map dans la couleur choisie.
+                  🦹 Configure les familles MAFIA : logo, couleur, voiture. Elles attaqueront tes taxis et escorteront leurs camions blindés.
+                </div>
+
+                <Slider label="Voitures mafia max" hint="Nombre de véhicules envoyés par les familles"
+                  value={cfg.rivalTaxiCount} min={1} max={6} step={1}
+                  format={(v) => v.toFixed(0)} onChange={(v) => setAdmin({ rivalTaxiCount: v })} />
+                <Slider label="Agressivité (temps de réaction)" hint="Plus court = la mafia frappe plus vite"
+                  value={cfg.rivalReactionTime} min={1} max={15} step={0.5}
+                  format={(v) => v.toFixed(1) + " s"} onChange={(v) => setAdmin({ rivalReactionTime: v })} />
+                <Slider label="Vitesse mafia" value={cfg.rivalSpeedMult} min={0.5} max={2.5} step={0.05}
+                  format={(v) => "×" + v.toFixed(2)} onChange={(v) => setAdmin({ rivalSpeedMult: v })} />
+
+                <div style={{ height: 12 }} />
+                <div style={{ fontSize: 12, fontWeight: 800, color: "#f5c542", marginBottom: 6 }}>
+                  Familles mafia ({comps.length}/10)
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
                   {comps.length === 0 && (
-                    <div className="adm-hint">Aucun concurrent. Ajoute-en ci-dessous.</div>
+                    <div className="adm-hint">Aucune famille. Ajoute-en ci-dessous.</div>
                   )}
                   {comps.map((c) => (
                     <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 8px", background: "#1f242b", borderRadius: 6, border: "1px solid #2a2f38" }}>
                       <span style={{ width: 14, height: 14, borderRadius: "50%", background: c.color, border: "1px solid #0b0d10", flexShrink: 0 }} />
+                      {c.logoUrl && (
+                        <img src={c.logoUrl} alt="" style={{ width: 24, height: 24, objectFit: "contain", background: "#0b0d10", borderRadius: 4, flexShrink: 0 }} />
+                      )}
                       {c.vehicleUrl && (
                         <img src={c.vehicleUrl} alt="" style={{ width: 24, height: 24, objectFit: "contain", background: "#0b0d10", borderRadius: 4, flexShrink: 0 }} />
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 12, fontWeight: 700, color: "#e8edf2", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.name}</div>
-                        <div style={{ fontSize: 10, color: "#8a8e94" }}>💰 {Math.round(c.treasury).toLocaleString()}$ · ({Math.round(c.x)},{Math.round(c.y)}){c.bankrupt ? " · 💀 faillite" : ""}</div>
+                        <div style={{ fontSize: 10, color: "#8a8e94" }}>💰 {Math.round(c.treasury).toLocaleString()}$ · ({Math.round(c.x)},{Math.round(c.y)}){c.bankrupt ? " · 💀 démantelée" : ""}</div>
                       </div>
                       <button onClick={() => removeCompetitor(c.id)} aria-label="Supprimer"
                         style={{ background: "transparent", border: "1px solid #7f1d1d", color: "#fca5a5", borderRadius: 6, padding: "4px 8px", fontSize: 12, cursor: "pointer" }}>🗑</button>
                     </div>
                   ))}
                 </div>
+
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 10, background: "#0f1318", borderRadius: 8, border: "1px solid #2a2f38" }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f5c542" }}>➕ Nouveau concurrent</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#f5c542" }}>➕ Nouvelle famille mafia</div>
                   <input
                     type="text"
                     value={newCompName}
                     onChange={(e) => setNewCompName(e.target.value)}
-                    placeholder="Nom de l'entreprise"
+                    placeholder="Nom de la famille (ex. Corleone)"
                     style={{ padding: "8px 10px", borderRadius: 6, border: "1px solid #444", background: "#111", color: "#fff", fontSize: 13 }}
                   />
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -496,10 +472,26 @@ export default function AdminPanel() {
                     value={newCompTreasury} min={500} max={100000} step={500}
                     format={(v) => Math.round(v).toLocaleString() + "$"}
                     onChange={(v) => setNewCompTreasury(v)} />
+
                   <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                    <label style={{ fontSize: 11, color: "#c8ccd2" }}>
-                      🚕 Sprite voiture (vue du ciel, optionnel)
-                    </label>
+                    <label style={{ fontSize: 11, color: "#c8ccd2" }}>🦹 Logo / emblème (optionnel)</label>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      onChange={(e) => onPickCompLogo(e.target.files?.[0] ?? null)}
+                      style={{ fontSize: 11, color: "#c8ccd2" }}
+                    />
+                    {newCompLogoUrl && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+                        <img src={newCompLogoUrl} alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "#1f242b", borderRadius: 4, border: "1px solid #2a2f38" }} />
+                        <span style={{ fontSize: 10, color: "#8a8e94", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{newCompLogoName}</span>
+                        <button onClick={() => onPickCompLogo(null)} style={{ background: "transparent", border: "1px solid #7f1d1d", color: "#fca5a5", borderRadius: 4, padding: "2px 6px", fontSize: 10, cursor: "pointer" }}>Retirer</button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                    <label style={{ fontSize: 11, color: "#c8ccd2" }}>🚗 Voiture mafia (vue du ciel, optionnel)</label>
                     <input
                       type="file"
                       accept="image/png,image/jpeg,image/webp,image/svg+xml"
@@ -514,15 +506,16 @@ export default function AdminPanel() {
                       </div>
                     )}
                     <div className="adm-hint" style={{ fontSize: 10 }}>
-                      Si vide, sprite par défaut coloré (damier). PNG transparent recommandé, nez vers le haut.
+                      PNG transparent recommandé, nez vers le haut. Sans sprite, voiture du jeu teintée en noir.
                     </div>
                   </div>
+
                   <button
                     onClick={addCompetitor}
                     disabled={!newCompName.trim() || comps.length >= 10}
                     style={{ padding: "9px 12px", borderRadius: 8, border: "none", background: comps.length >= 10 ? "#3a3f48" : "#22c55e", color: "#fff", fontWeight: 700, cursor: comps.length >= 10 ? "not-allowed" : "pointer", fontSize: 13 }}
                   >
-                    {comps.length >= 10 ? "Cap atteint (10)" : "Ajouter ce concurrent"}
+                    {comps.length >= 10 ? "Cap atteint (10)" : "Ajouter cette famille"}
                   </button>
                 </div>
               </>
