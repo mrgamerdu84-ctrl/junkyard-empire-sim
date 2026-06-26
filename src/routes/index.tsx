@@ -4,6 +4,7 @@ import citymap from "@/assets/citymap2.jpg";
 import TaxiTycoon from "@/game/TaxiTycoon";
 import CityTraffic from "@/game/CityTraffic";
 import CityCompetitors from "@/game/CityCompetitors";
+import TerritoryWar from "@/game/TerritoryWar";
 import CityRivalTaxis from "@/game/CityRivalTaxis";
 import ArmoredTruck from "@/game/ArmoredTruck";
 import CrimeEvents from "@/game/CrimeEvents";
@@ -165,6 +166,7 @@ function TaxiTycoonPage() {
         <div className="tt-vignette" />
         <CityTraffic />
         <CityCompetitors />
+        <TerritoryWar />
         <CityRivalTaxis />
         <EmergencyStations />
         <CrimeEvents />
