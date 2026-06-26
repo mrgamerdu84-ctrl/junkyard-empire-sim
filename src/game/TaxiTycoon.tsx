@@ -3103,6 +3103,20 @@ export default function TaxiTycoon() {
         .tt-director-foot .tt-foot-right { text-align: right; }
         .tt-director-foot .tt-foot-center { color: #e6c39b; font-size: 10px; display: inline-flex; align-items: center; gap: 6px; }
         .tt-pen-ico { color: #ffd28a; font-size: 18px; transform: rotate(-15deg); display: inline-block; }
+        .tt-foot-btn { background: transparent; border: none; padding: 4px 6px; color: inherit; font: inherit; cursor: pointer; border-radius: 6px; }
+        .tt-foot-btn:hover { background: rgba(255,255,255,0.08); }
+        .tt-fs-toggle { position: fixed; top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); z-index: 9000; width: 40px; height: 40px; border-radius: 10px; border: 2px solid #f5c542; background: rgba(15,23,42,0.85); color: #f5c542; font-size: 20px; font-weight: 900; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; }
+        .tt-fs-toggle:active { transform: translateY(1px); }
+        .tt-hud-fs { pointer-events: none; }
+        .tt-hud-fs .tt-fs-toggle { pointer-events: auto; }
+        .tt-pseudo-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px; }
+        .tt-pseudo-dialog { background: linear-gradient(180deg, #1f2937, #111827); border: 2px solid #f5c542; border-radius: 14px; padding: 18px; width: min(360px, 100%); display: flex; flex-direction: column; gap: 12px; }
+        .tt-pseudo-dialog h3 { color: #f5c542; margin: 0; font-size: 16px; }
+        .tt-pseudo-input { padding: 10px 12px; border-radius: 8px; border: 2px solid #374151; background: #0a0c10; color: #fff; font-size: 14px; font-weight: 700; }
+        .tt-pseudo-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .tt-pseudo-actions button { padding: 8px 14px; border-radius: 8px; border: 2px solid #374151; background: #1f2937; color: #d1d5db; font-weight: 800; cursor: pointer; }
+        .tt-pseudo-actions button.primary { background: linear-gradient(180deg, #f5c542, #e0a92a); color: #1a1208; border-color: #fde047; }
+        .tt-pseudo-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
         .tt-lower-tools { display: grid; grid-template-columns: 1.4fr 1fr 50px; gap: 10px; align-items: center; margin-top: 10px; }
         .tt-apk {
           border-radius: 26px; min-height: 48px; color: #fff; font-size: 13px; line-height: 1.05; font-weight: 900;
