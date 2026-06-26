@@ -2831,7 +2831,12 @@ export default function TaxiTycoon() {
           </div>
           <div className="tt-director-band">
             <button className="tt-director-profile" onClick={() => setGarageOpen(true)} title="Profil directeur et livrées">
-              <span className="tt-avatar-anon">{(auth.pseudo || "?").charAt(0).toUpperCase()}</span>
+              {(() => {
+                const src = resolveAvatarSrc(auth.avatarKind, auth.avatarUrl);
+                return src
+                  ? <img className="tt-avatar-photo" src={src} alt="Chauffeur" />
+                  : <span className="tt-avatar-anon">{(auth.pseudo || "?").charAt(0).toUpperCase()}</span>;
+              })()}
               <span className="tt-director-info">
                 <b>{auth.pseudo || "DIRECTEUR"}</b>
                 <span className="tt-progress"><span className="tt-progress-fill" style={{ width: `${Math.min(100, (taxiCount / Math.max(1, effectiveMaxTaxis)) * 100)}%` }} /></span>
