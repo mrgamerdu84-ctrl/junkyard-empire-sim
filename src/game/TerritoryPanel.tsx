@@ -134,21 +134,24 @@ export default function TerritoryPanel() {
                 ))}
                 {districts.map((d) => {
                   const fill = d.owned ? "#fde047" : "#2a2f3d";
-                  const stroke = d.owned ? "#fff7a0" : "#4a5160";
+                  const isSel = selectedId === d.id;
+                  const stroke = isSel ? "#ffffff" : d.owned ? "#fff7a0" : "#4a5160";
                   return (
-                    <g key={d.id}>
+                    <g key={d.id} style={{ cursor: "pointer" }}
+                      onClick={() => focusDistrict(d.id)}>
                       <rect x={d.x + 10} y={d.y + 10} width={d.w - 20} height={d.h - 20}
                         rx="22" fill={fill} fillOpacity={d.owned ? 0.85 : 0.45}
-                        stroke={stroke} strokeWidth="4" />
+                        stroke={stroke} strokeWidth={isSel ? 8 : 4} />
                       {d.owned && (
                         <text x={d.x + d.w / 2} y={d.y + d.h / 2 + 8} textAnchor="middle"
                           fontSize="40" fontWeight="900" fill="#1a1306"
-                          fontFamily="system-ui, sans-serif">🚕</text>
+                          fontFamily="system-ui, sans-serif" pointerEvents="none">🚕</text>
                       )}
                       <text x={d.x + d.w / 2} y={d.y + d.h - 30} textAnchor="middle"
                         fontSize="34" fontWeight="900"
                         fill={d.owned ? "#1a1306" : "#cbb98a"}
-                        fontFamily="system-ui, sans-serif" letterSpacing="2">
+                        fontFamily="system-ui, sans-serif" letterSpacing="2"
+                        pointerEvents="none">
                         {d.name.toUpperCase()}
                       </text>
                     </g>
