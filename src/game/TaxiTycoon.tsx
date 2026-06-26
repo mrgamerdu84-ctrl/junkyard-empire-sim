@@ -575,6 +575,8 @@ export default function TaxiTycoon() {
       const target = Math.max(rendered, 900 / 1920);
       const s = Math.max(0.6, Math.min(3, target / rendered));
       setVehicleScale((prev) => Math.abs(prev - s) > 0.02 ? s : prev);
+      vScaleSet(s);
+
     };
     compute();
     const ro = new ResizeObserver(compute);
