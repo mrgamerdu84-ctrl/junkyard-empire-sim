@@ -66,13 +66,14 @@ export const DEFAULT_ADMIN: AdminConfig = {
   maxActiveTaxis: 6,
   taxiSpawnCooldown: 1.5,
 
-  // QG compact ancré en bas-gauche (parking + petit bâtiment).
-  // Grossit visuellement via les upgrades (capLvl/revLvl/prodLvl).
+  // QG incrusté à la place du petit restaurant juste au-dessus du rond-point
+  // (à côté de la route du camion blindé). Coords dans le repère SVG 1920×1080.
   hqUseFreePos: true,
-  hqX: 230,
-  hqY: 900,
+  hqX: 1030,
+  hqY: 360,
   hqScale: 0.75,
   hqRotation: 0,
+
 
   fuelConsumption: 0.6,
   gasStationX: 1450,
