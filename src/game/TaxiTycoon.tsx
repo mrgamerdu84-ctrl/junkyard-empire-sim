@@ -2254,6 +2254,36 @@ export default function TaxiTycoon() {
           </filter>
         </defs>
 
+        {/* === Overlay routes en pointillés (axe central propre, type plan tycoon) === */}
+        <g pointerEvents="none" className="mtw-roads-dashed">
+          {ROADS.map((d, i) => (
+            <path
+              key={`road-base-${i}`}
+              d={d}
+              stroke="#1f2329"
+              strokeWidth="14"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              opacity="0.55"
+            />
+          ))}
+          {ROADS.map((d, i) => (
+            <path
+              key={`road-dash-${i}`}
+              d={d}
+              stroke="#fde047"
+              strokeWidth="1.6"
+              fill="none"
+              strokeDasharray="10 12"
+              strokeLinecap="round"
+              opacity="0.85"
+            />
+          ))}
+        </g>
+
+
+
 
 
         {/* Station-service — vraie station avec auvent, deux pompes, boutique */}
