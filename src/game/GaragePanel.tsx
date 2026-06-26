@@ -123,10 +123,16 @@ export default function GaragePanel({ onClose }: Props) {
   function startWork(kind: UpgradeKind) {
     if (!selected || working) return;
     const def = defFor(kind);
-    setWorking({ kind, endsAt: Date.now() + def.durationMs, mode: modeFor(kind) });
+    const speedMul = getRepairSpeedMul();
+    const dur = kind === "repair" ? def.durationMs * speedMul : def.durationMs;
+    setWorking({ kind, endsAt: Date.now() + dur, mode: modeFor(kind) });
   }
 
   const prestige = getFleetPrestige();
+  const eq = getGarageEquipment();
+  const tireDisc = eq.tireRack ? 0.10 : 0;
+  const engineDisc = eq.workbench ? 0.10 : 0;
+  const paintDisc = eq.paintBooth ? 0.50 : 0;
 
   return (
     <div className="garage-overlay" role="dialog" aria-label="Atelier">
