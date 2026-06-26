@@ -86,6 +86,14 @@ function pickPath(): number {
   return RIVAL_ROAD_IDX[Math.floor(Math.random() * RIVAL_ROAD_IDX.length)] ?? 0;
 }
 
+function pickSectorPath(homeId: string, roadsByDistrict: Record<string, number[]>): number {
+  const list = roadsByDistrict[homeId];
+  if (list && list.length > 0 && Math.random() < SECTOR_BIAS) {
+    return list[Math.floor(Math.random() * list.length)];
+  }
+  return pickPath();
+}
+
 export default function CityRivalTaxis() {
   const [comps, setComps] = useState<Competitor[]>(() => {
     const w = window as unknown as { __jceCompetitors?: Competitor[] };
