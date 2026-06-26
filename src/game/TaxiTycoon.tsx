@@ -2825,6 +2825,9 @@ export default function TaxiTycoon() {
             <button className="tt-wood-btn" onClick={() => setShowLeaderboard(true)}>
               <span className="tt-wood-icon">⚔️</span><b>RIVALITÉ</b>
             </button>
+            <button className="tt-wood-btn" onClick={() => setCityInfoOpen(true)}>
+              <span className="tt-wood-icon">🌆</span><b>INFOS<br />VILLE</b>
+            </button>
           </div>
           <div className="tt-director-band">
             <button className="tt-director-profile" onClick={() => setGarageOpen(true)} title="Profil directeur et livrées">
