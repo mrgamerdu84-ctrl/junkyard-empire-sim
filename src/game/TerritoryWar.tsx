@@ -60,12 +60,43 @@ function save(arr: District[]) {
 export default function TerritoryWar() {
   const [districts, setDistricts] = useState<District[]>(load);
   const [toast, setToast] = useState<string | null>(null);
+  const [flashIds, setFlashIds] = useState<Record<string, number>>({});
   const ownedCountRef = useRef(0);
+  const prevOwnedRef = useRef<Record<string, boolean> | null>(null);
 
   useEffect(() => {
     save(districts);
     ownedCountRef.current = districts.filter((d) => d.owned).length;
     (window as unknown as { __mtwTerritory?: District[] }).__mtwTerritory = districts;
+
+    // Détecte les changements de propriétaire (skip 1er rendu) et émet l'événement.
+    if (prevOwnedRef.current === null) {
+      prevOwnedRef.current = Object.fromEntries(districts.map((d) => [d.id, d.owned]));
+    } else {
+      const prev = prevOwnedRef.current;
+      for (const d of districts) {
+        const was = prev[d.id] ?? false;
+        if (was !== d.owned) {
+          window.dispatchEvent(new CustomEvent("mtw:district-owner-changed", {
+            detail: {
+              districtId: d.id,
+              previousOwner: was ? "player" : "neutral",
+              newOwner: d.owned ? "player" : "neutral",
+            },
+          }));
+          setFlashIds((m) => ({ ...m, [d.id]: Date.now() }));
+          window.setTimeout(() => {
+            setFlashIds((m) => {
+              if (!(d.id in m)) return m;
+              const n = { ...m };
+              delete n[d.id];
+              return n;
+            });
+          }, 1200);
+        }
+        prev[d.id] = d.owned;
+      }
+    }
   }, [districts]);
 
   useEffect(() => {
