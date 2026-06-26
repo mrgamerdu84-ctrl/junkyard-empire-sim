@@ -2855,22 +2855,17 @@ export default function TaxiTycoon() {
             </div>
           </div>
 
-          {/* Rangée 4 — TOUCHES PRINCIPALES */}
-          <div className="tt-lcd-keys">
+          {/* Rangée 4 — TOUCHES PRINCIPALES + ÉCRAN RADIO TACTILE */}
+          <div className="tt-lcd-keys tt-lcd-keys-radio">
+            <RadioLcd onOpen={() => setRadioOpen(true)} />
             <button className="tt-lcd-key" onClick={() => setGarageOpen(true)}>
               <span className="tt-lcd-key-ico">🚕</span><b>FLOTTE</b>
             </button>
             <button className="tt-lcd-key" onClick={() => setShopOpen(true)}>
               <span className="tt-lcd-key-ico">🔧</span><b>QG</b>
             </button>
-            <button className="tt-lcd-key" onClick={() => setRadioOpen(true)}>
-              <span className="tt-lcd-key-ico">📻</span><b>RADIO</b>
-            </button>
             <button className="tt-lcd-key" onClick={() => setShowLeaderboard(true)}>
               <span className="tt-lcd-key-ico">⚔️</span><b>RIVALITÉ</b>
-            </button>
-            <button className="tt-lcd-key" onClick={() => setShowLeaderboard(true)}>
-              <span className="tt-lcd-key-ico">🏆</span><b>CLASS.</b>
             </button>
             <button className="tt-lcd-key" onClick={() => setShowTutorial(true)}>
               <span className="tt-lcd-key-ico">📖</span><b>TUTO</b>
@@ -2878,7 +2873,16 @@ export default function TaxiTycoon() {
           </div>
 
           {/* Rangée 5 — OUTILS */}
-          <div className="tt-lcd-tools">
+          <div className="tt-lcd-tools tt-lcd-tools-5">
+            {(() => {
+              const missionsCount = jobs.filter((j) => j.status === "offered").length + jobs.filter((j) => j.status !== "offered").length;
+              return (
+                <button className="tt-lcd-tool tt-lcd-tool-missions" onClick={() => setMissionsOpen(true)} title="Missions & courses">
+                  <span className="tt-lcd-tool-ico">📋</span><b>MISSIONS</b>
+                  {missionsCount > 0 && <em className="tt-lcd-tool-badge">{missionsCount}</em>}
+                </button>
+              );
+            })()}
             <button className="tt-lcd-tool" onClick={repairTaxis} disabled={wearNow <= 0 || save.money < maintenanceCost} title="Entretien flotte">
               <span className="tt-lcd-tool-ico">✦</span><b>ENTRETIEN</b>
             </button>
@@ -2892,6 +2896,7 @@ export default function TaxiTycoon() {
               <span className="tt-lcd-tool-ico">⚙</span><b>ADMIN</b>
             </button>
           </div>
+
         </div>
         )}
 
