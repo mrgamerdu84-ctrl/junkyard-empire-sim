@@ -166,7 +166,7 @@ function TaxiTycoonPage() {
         <div className="tt-vignette" />
         <CityTraffic />
         <CityCompetitors />
-        <TerritoryWar />
+        <MafiaAttackers />
         <CityRivalTaxis />
         <EmergencyStations />
         <CrimeEvents />
