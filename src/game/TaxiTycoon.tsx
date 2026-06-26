@@ -20,6 +20,7 @@ import RadioPlayer from "./RadioPlayer";
 import PersonnelPanel from "./PersonnelPanel";
 import { getMaintenanceDiscount, getTipsBonus, startPersonnelTick } from "./personnel";
 import CompanyPanel from "./CompanyPanel";
+import GaragePanel from "./GaragePanel";
 import { startCompanySim } from "./companyV2";
 
 import { useAuth } from "@/lib/useAuth";
