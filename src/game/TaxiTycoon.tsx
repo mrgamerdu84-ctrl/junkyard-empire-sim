@@ -2814,7 +2814,31 @@ export default function TaxiTycoon() {
         )}
         {!mapFullscreen && (
         <div className="tt-console">
+          {/* LCD tableau de bord — style voiture */}
+          <div className="tt-dashboard-lcd" onClick={() => setCityInfoOpen(true)} title="Ouvrir Infos Ville">
+            <div className="tt-lcd-seg tt-lcd-day">
+              <span className="tt-lcd-lbl">JOUR</span>
+              <span className="tt-lcd-val">{["DIM","LUN","MAR","MER","JEU","VEN","SAM"][clock.dayOfWeek]}</span>
+            </div>
+            <div className="tt-lcd-seg tt-lcd-clock">
+              <span className="tt-lcd-time">
+                {String(Math.floor(clock.hour)).padStart(2,"0")}
+                <span className="tt-lcd-colon">:</span>
+                {String(clock.minute).padStart(2,"0")}
+              </span>
+              <span className="tt-lcd-period">{periodLabel(clock.period).toUpperCase()}</span>
+            </div>
+            <div className="tt-lcd-seg tt-lcd-gauge">
+              <span className="tt-lcd-lbl">TRAFIC</span>
+              <span className="tt-lcd-bars" aria-hidden="true">
+                {[0,1,2,3,4].map(i => (
+                  <span key={i} className={`tt-lcd-bar ${clock.density >= (i+1)*0.35 ? "on" : ""}`} />
+                ))}
+              </span>
+            </div>
+          </div>
           <div className="tt-console-actions">
+
             <button className="tt-wood-btn" onClick={() => setGarageOpen(true)}>
               <span className="tt-wood-icon">🚕</span><b>GÉRER<br />FLOTTE</b>
             </button>
