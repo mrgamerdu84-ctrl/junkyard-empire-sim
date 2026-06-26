@@ -2678,40 +2678,23 @@ export default function TaxiTycoon() {
         </button>
 
         {!mapFullscreen && (<>
-        <div className="tt-topbar">
+        <div className="tt-topbar tt-topbar-slim">
           <button className="tt-round tt-help" onClick={() => setShowTutorial(true)} title="Tutoriel">?</button>
-          <div className="tt-wood-name" />
-          <div className="tt-weather-pill">
-            <span>◷</span>
-            <span>{realEnv ? weatherLabelFr(realEnv.weather) : "météo..."}</span>
-            <span>•</span>
+          <button
+            className="tt-status-pill"
+            onClick={() => setCityInfoOpen(true)}
+            title="Infos ville (heure, météo, trafic)"
+          >
+            <span className="tt-sp-time">{clock.label}</span>
+            <span className="tt-sp-sep">·</span>
+            <span className="tt-sp-weather">{realEnv ? weatherLabelFr(realEnv.weather) : "…"}</span>
+            <span className="tt-sp-sep">·</span>
             <span className="tt-coin">●</span>
             <b>{fmt(save.money)}$</b>
-          </div>
+          </button>
           <button className="tt-round tt-settings" onClick={() => setShopOpen(true)} title="Réglages QG">⚙</button>
         </div>
 
-        <div className="tt-info-card">
-          <b>{clock.label}</b>
-          <span><i /> {periodLabel(clock.period)}</span>
-          <small>{realEnv?.city ?? "Ville"} · Densité ×{clock.density.toFixed(2)}</small>
-        </div>
-
-        <div className="tt-logo-mark" aria-hidden="true">
-          <svg width="64" height="30" viewBox="0 0 64 30">
-            <defs>
-              <linearGradient id="ttCrown" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ffd07a" />
-                <stop offset="100%" stopColor="#e0651a" />
-              </linearGradient>
-            </defs>
-            <path d="M4 26 L12 6 L22 18 L32 3 L42 18 L52 6 L60 26 Z" fill="url(#ttCrown)" stroke="#7a2f06" strokeWidth="1.6" strokeLinejoin="round" />
-            <circle cx="12" cy="6" r="2.4" fill="#ffe7b8" stroke="#7a2f06" strokeWidth="1" />
-            <circle cx="32" cy="3" r="2.8" fill="#ff9d7a" stroke="#7a2f06" strokeWidth="1" />
-            <circle cx="52" cy="6" r="2.4" fill="#ffe7b8" stroke="#7a2f06" strokeWidth="1" />
-          </svg>
-          <span>MY TAXI<br />WORLD</span>
-        </div>
 
 
         {(() => {
