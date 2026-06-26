@@ -28,6 +28,8 @@ function read(): District[] {
 export default function TerritoryPanel() {
   const [open, setOpen] = useState(false);
   const [districts, setDistricts] = useState<District[]>(read);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
     const refresh = () => setDistricts(read());
@@ -42,9 +44,19 @@ export default function TerritoryPanel() {
     };
   }, []);
 
+  const focusDistrict = (id: string) => {
+    setOpen(true);
+    setSelectedId(id);
+    requestAnimationFrame(() => {
+      cardRefs.current[id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    window.setTimeout(() => setSelectedId((cur) => (cur === id ? null : cur)), 2200);
+  };
+
   const owned = districts.filter((d) => d.owned).length;
   const passive = owned * BONUS_PER_DISTRICT;
   const fmtMoney = (n: number) => n.toLocaleString("fr-FR");
+
 
 
   return (
