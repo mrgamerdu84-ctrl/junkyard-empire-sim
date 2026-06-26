@@ -120,7 +120,6 @@ export default function GaragePanel({ onClose }: Props) {
     setPendingPaint(null);
     // bruit d'attente pour que le state companyV2 se propage
     setTimeout(() => force(n => n + 1), 50);
-    void cat;
   }
 
   function startWork(kind: UpgradeKind) {
