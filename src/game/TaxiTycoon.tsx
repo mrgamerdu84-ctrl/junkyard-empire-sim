@@ -2694,7 +2694,7 @@ export default function TaxiTycoon() {
             <span className="tt-coin">●</span>
             <b>{fmt(save.money)}$</b>
           </button>
-          <button className="tt-admin-top" onClick={() => window.dispatchEvent(new CustomEvent("mtw:open-admin"))} title="Admin" aria-label="Admin">⚙</button>
+          
         </div>
 
 
@@ -2888,9 +2888,12 @@ export default function TaxiTycoon() {
               <span className="tt-apk-ico">🤖</span>
               <span>TÉLÉCHARGER<br />L'APK</span>
             </button>
-            <button className="tt-slot" onClick={repairTaxis} disabled={wearNow <= 0 || save.money < maintenanceCost} title="Entretien flotte">
-              <span className="tt-slot-spark">✦</span>
-            </button>
+            <div className="tt-slot-wrap">
+              <button className="tt-slot" onClick={repairTaxis} disabled={wearNow <= 0 || save.money < maintenanceCost} title="Entretien flotte">
+                <span className="tt-slot-spark">✦</span>
+              </button>
+              <button className="tt-admin-badge" onClick={() => window.dispatchEvent(new CustomEvent("mtw:open-admin"))} title="Admin" aria-label="Admin">⚙</button>
+            </div>
             <button className="tt-diamond" onClick={triggerSpecialMission} disabled={nowTick < specialCooldownUntil} title="Mission spéciale">
               <span>✦</span>
             </button>
