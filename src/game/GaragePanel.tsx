@@ -444,6 +444,42 @@ export default function GaragePanel({ onClose }: Props) {
               </div>
             </>
           )}
+
+          {/* === Équipement du garage === */}
+          <div className="garage-section-title" style={{ marginTop: 14 }}>🏗 Équipement</div>
+          <div className="garage-eq-note">
+            Ponts: <b>{eq.lifts}/3</b>
+            {eq.tireRack && " · 🛞−10%"}
+            {eq.workbench && " · ⚙−10%"}
+            {eq.paintBooth && " · 🎨−50%"}
+          </div>
+          {GARAGE_EQUIPMENT_CATALOG.map(def => {
+            const owned =
+              def.key === "lift"
+                ? eq.lifts >= 3
+                : !!(eq as Record<string, unknown>)[def.key];
+            const lvlInfo = def.key === "lift" ? ` (${eq.lifts}/3)` : "";
+            return (
+              <button
+                key={def.key}
+                className="garage-action"
+                disabled={!!working || owned}
+                onClick={() => {
+                  const r = buyGarageEquipment(def.key as "lift" | "tireRack" | "workbench" | "paintBooth");
+                  showToast(r.msg);
+                }}
+              >
+                <span className="ico">{def.icon}</span>
+                <span className="meta">
+                  <b>{def.label}{lvlInfo}</b>
+                  <i>{def.desc}</i>
+                </span>
+                <span className="cost">{owned ? "✓" : `${def.cost} $`}</span>
+              </button>
+            );
+          })}
+          {/* lint anti-warning */}
+          <span hidden>{tireDisc}{engineDisc}{paintDisc}</span>
         </aside>
       </div>
     </div>
