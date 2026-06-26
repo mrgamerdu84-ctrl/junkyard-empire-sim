@@ -565,30 +565,33 @@ export default function TaxiTycoon() {
   // Échelle inverse appliquée aux véhicules pour qu'ils gardent une taille
   // écran constante quel que soit le zoom / la taille du SVG rendu.
   const [vehicleScale, setVehicleScale] = useState(1);
+  // Caméra : zoom + centre (en coordonnées viewBox 1920x1080).
+  const [cam, setCam] = useState({ zoom: 1, cx: 960, cy: 540 });
+  const camRef = useRef(cam);
+  useEffect(() => { camRef.current = cam; }, [cam]);
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const compute = () => {
       const r = el.getBoundingClientRect();
       if (r.width <= 0 || r.height <= 0) return;
-      // Le SVG est rendu en "slice" : il remplit, donc l'échelle effective
-      // utilisée est le max entre w/1920 et h/1080.
       const sx = r.width / 1920;
       const sy = r.height / 1080;
       const rendered = Math.max(sx, sy);
-      // Cible : voiture rendue ~comme si l'écran faisait au moins 900px de large.
       const target = Math.max(rendered, 900 / 1920);
-      const s = Math.max(0.6, Math.min(3, target / rendered));
+      const base = Math.max(0.6, Math.min(3, target / rendered));
+      // Compensation du zoom caméra : véhicules de taille écran constante.
+      const s = base / camRef.current.zoom;
       setVehicleScale((prev) => Math.abs(prev - s) > 0.02 ? s : prev);
       vScaleSet(s);
-
     };
     compute();
     const ro = new ResizeObserver(compute);
     ro.observe(el);
     window.addEventListener("orientationchange", compute);
     return () => { ro.disconnect(); window.removeEventListener("orientationchange", compute); };
-  }, []);
+  }, [cam.zoom]);
+
   const [pathsReady, setPathsReady] = useState(false);
 
   const admin = useAdminConfig(); // re-render quand l'admin change
