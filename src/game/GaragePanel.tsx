@@ -15,8 +15,12 @@ import {
   applyRepair,
   applySticker,
   applyUpgrade,
+  buyGarageEquipment,
+  GARAGE_EQUIPMENT_CATALOG,
   getCompany,
   getFleetPrestige,
+  getGarageEquipment,
+  getRepairSpeedMul,
   subscribe,
   type Taxi,
 } from "./companyV2";
