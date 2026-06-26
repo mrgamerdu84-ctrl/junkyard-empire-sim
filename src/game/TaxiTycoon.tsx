@@ -21,6 +21,7 @@ import PersonnelPanel from "./PersonnelPanel";
 import { getMaintenanceDiscount, getTipsBonus, startPersonnelTick } from "./personnel";
 import CompanyPanel from "./CompanyPanel";
 import GaragePanel from "./GaragePanel";
+import MafiaAttacks from "./MafiaAttacks";
 import { startCompanySim } from "./companyV2";
 
 import { useAuth } from "@/lib/useAuth";
