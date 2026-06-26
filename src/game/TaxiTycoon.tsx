@@ -498,8 +498,54 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
     </g>
   );
 }
+// ============================================================
+// Écran radio tactile intégré au tableau de bord (rangée 4)
+// ============================================================
+function RadioLcd({ onOpen }: { onOpen: () => void }) {
+  const [state, setState] = useState<{ stationName: string; stationEmoji: string; trackTitle: string; trackArtist: string; playing: boolean }>(
+    { stationName: "Radio", stationEmoji: "📻", trackTitle: "—", trackArtist: "", playing: false }
+  );
+  useEffect(() => {
+    const onState = (e: Event) => {
+      const d = (e as CustomEvent).detail;
+      if (d) setState({
+        stationName: d.stationName ?? "Radio",
+        stationEmoji: d.stationEmoji ?? "📻",
+        trackTitle: d.trackTitle ?? "—",
+        trackArtist: d.trackArtist ?? "",
+        playing: !!d.playing,
+      });
+    };
+    window.addEventListener("mtw:radio-state", onState as EventListener);
+    window.dispatchEvent(new CustomEvent("mtw:radio-request"));
+    return () => window.removeEventListener("mtw:radio-state", onState as EventListener);
+  }, []);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+  return (
+    <button className="tt-lcd-radio" onClick={onOpen} title="Ouvrir la radio">
+      <div className="tt-lcd-radio-head">
+        <span className="tt-lcd-radio-dot" data-on={state.playing ? "1" : "0"} />
+        <span className="tt-lcd-radio-station">{state.stationEmoji} {state.stationName}</span>
+      </div>
+      <div className="tt-lcd-radio-marquee">
+        <span className="tt-lcd-radio-track">
+          {state.trackTitle}{state.trackArtist ? ` — ${state.trackArtist}` : ""}
+        </span>
+      </div>
+      <div className="tt-lcd-radio-controls" onClick={stop}>
+        <span className="tt-lcd-radio-btn" role="button" tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("mtw:radio-prev")); }}>⏮</span>
+        <span className="tt-lcd-radio-btn tt-lcd-radio-play" role="button" tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("mtw:radio-toggle")); }}>{state.playing ? "⏸" : "▶"}</span>
+        <span className="tt-lcd-radio-btn" role="button" tabIndex={0}
+          onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent("mtw:radio-next")); }}>⏭</span>
+      </div>
+    </button>
+  );
+}
 
 export default function TaxiTycoon() {
+
   // Une ref par chemin disponible — permet de varier les trajets des taxis.
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
   const pathLensRef = useRef<number[]>([]);
