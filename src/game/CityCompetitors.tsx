@@ -6,9 +6,34 @@
 // Dès que le joueur les dépasse largement (×3), elles font faillite :
 // le QG vire au gris, un crâne apparaît, et la compagnie est éliminée.
 // =============================================================
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { preserveAspectFor, useMapFit } from "./mapView";
+import playerHqAsset from "@/assets/player-hq.png.asset.json";
 
+const PLAYER_HQ_IMG = playerHqAsset.url;
 const SAVE_KEY = "taxi-tycoon-v4";
+
+// Emplacements fixes des QG concurrents (viewBox 1920x1080).
+// On évite la zone du QG joueur (autour de 1030, 360).
+const FIXED_HQ_SLOTS: { x: number; y: number }[] = [
+  { x:  280, y:  220 },
+  { x: 1620, y:  240 },
+  { x:  480, y:  860 },
+  { x: 1500, y:  860 },
+  { x:  900, y:  150 },
+  { x: 1300, y:  980 },
+  { x:  180, y:  560 },
+  { x: 1780, y:  560 },
+  { x:  760, y: 1000 },
+  { x: 1180, y:  600 },
+];
+
+// Hex (#rrggbb) -> [r,g,b] 0..1 pour feFlood en filtre SVG
+function hexToRgb01(hex: string): [number, number, number] {
+  const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!m) return [1, 1, 1];
+  return [parseInt(m[1], 16) / 255, parseInt(m[2], 16) / 255, parseInt(m[3], 16) / 255];
+}
 
 type Competitor = {
   id: string;
