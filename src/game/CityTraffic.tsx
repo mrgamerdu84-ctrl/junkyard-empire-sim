@@ -700,55 +700,68 @@ export default function CityTraffic() {
         </filter>
       </defs>
 
-      {/* === Routes embellies, alignées sur les axes calibrés ===
-          4 couches : ombre douce → asphalte → bordures blanches → ligne centrale jaune.
-          Largeur unifiée à 48 px (= largeur visible du bitume de citymap3.jpg).
-          Le rond-point est dessiné en dernier pour rester net autour de la fontaine. */}
+      {/* === 4 GRANDS BOULEVARDS — lignes parfaitement droites ===
+          Largeur 72 px (boulevards larges) + bordures blanches + double
+          ligne centrale jaune. Aucun rond-point : intersection franche au
+          centre (960, 540). Les véhicules tournent uniquement au centre. */}
       {/* Ombre sous la chaussée */}
-      <g opacity="0.28">
+      <g opacity="0.32">
         {ROADS.map((d, i) => (
           VILLAGE_PATHS.has(i) ? null : (
-            <path key={`shadow-${i}`} d={d} stroke="#000" strokeWidth={54} fill="none"
-                  strokeLinecap="round" strokeLinejoin="round" filter="url(#jce-soft-shadow)" />
+            <path key={`shadow-${i}`} d={d} stroke="#000" strokeWidth={80} fill="none"
+                  strokeLinecap="butt" filter="url(#jce-soft-shadow)" />
           )
         ))}
       </g>
       {/* Asphalte */}
-      <g opacity="0.55">
+      <g opacity="0.65">
         {ROADS.map((d, i) => (
           VILLAGE_PATHS.has(i) ? null : (
-            <path key={`asphalt-${i}`} d={d} stroke="#1c2024" strokeWidth={48} fill="none"
-                  strokeLinecap="round" strokeLinejoin="round" />
+            <path key={`asphalt-${i}`} d={d} stroke="#1c2024" strokeWidth={72} fill="none"
+                  strokeLinecap="butt" />
           )
         ))}
       </g>
       {/* Bordures blanches (rives) */}
       <g opacity="0.55">
-        {ROADS.map((d, i) => (
-          VILLAGE_PATHS.has(i) ? null : (
-            <path key={`edge-${i}`} d={d} stroke="#f4f5f7" strokeWidth={50} fill="none"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  strokeDasharray="0 0" style={{ mixBlendMode: "screen" as const }} opacity={0.18} />
-          )
+        {ROADS.slice(0, 2).map((d, i) => (
+          <path key={`edge-${i}`} d={d} stroke="#f4f5f7" strokeWidth={2.2} fill="none"
+                strokeDasharray="0 0" opacity={0.55}
+                transform={i === 0 ? "translate(0,-34)" : "translate(-34,0)"} />
+        ))}
+        {ROADS.slice(0, 2).map((d, i) => (
+          <path key={`edge2-${i}`} d={d} stroke="#f4f5f7" strokeWidth={2.2} fill="none"
+                strokeDasharray="0 0" opacity={0.55}
+                transform={i === 0 ? "translate(0,34)" : "translate(34,0)"} />
         ))}
       </g>
-      {/* Ligne centrale jaune en pointillés */}
+      {/* Double ligne centrale jaune en pointillés (axe de chaque boulevard) */}
       <g>
-        {ROADS.map((d, i) => (
-          VILLAGE_PATHS.has(i) ? null : (
-            <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth={2.6}
-                  strokeDasharray="20 16" fill="none" opacity={0.78} strokeLinecap="round" />
-          )
+        {ROADS.slice(0, 2).map((d, i) => (
+          <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth={2.4}
+                strokeDasharray="22 18" fill="none" opacity={0.85} strokeLinecap="butt" />
         ))}
       </g>
-      {/* Anneau du rond-point (autour de la fontaine x=955 y=608 r=60) */}
-      <g pointerEvents="none">
-        <circle cx={955} cy={608} r={92} fill="none" stroke="#1c2024" strokeWidth={48} opacity={0.55} />
-        <circle cx={955} cy={608} r={92} fill="none" stroke="#f6d56a" strokeWidth={2.6}
-                strokeDasharray="14 12" opacity={0.85} />
-        <circle cx={955} cy={608} r={68} fill="none" stroke="#f4f5f7" strokeWidth={2} opacity={0.55} />
-        <circle cx={955} cy={608} r={116} fill="none" stroke="#f4f5f7" strokeWidth={2} opacity={0.45} />
+      {/* Marquage de l'intersection centrale (passages piétons) */}
+      <g pointerEvents="none" opacity={0.85}>
+        {/* Passage piéton Nord */}
+        {[-30, -18, -6, 6, 18, 30].map((dx) => (
+          <rect key={`pn-${dx}`} x={960 + dx - 3} y={540 - 50} width={6} height={14} fill="#f4f5f7" />
+        ))}
+        {/* Passage piéton Sud */}
+        {[-30, -18, -6, 6, 18, 30].map((dx) => (
+          <rect key={`ps-${dx}`} x={960 + dx - 3} y={540 + 36} width={6} height={14} fill="#f4f5f7" />
+        ))}
+        {/* Passage piéton Ouest */}
+        {[-30, -18, -6, 6, 18, 30].map((dy) => (
+          <rect key={`pw-${dy}`} x={960 - 50} y={540 + dy - 3} width={14} height={6} fill="#f4f5f7" />
+        ))}
+        {/* Passage piéton Est */}
+        {[-30, -18, -6, 6, 18, 30].map((dy) => (
+          <rect key={`pe-${dy}`} x={960 + 36} y={540 + dy - 3} width={14} height={6} fill="#f4f5f7" />
+        ))}
       </g>
+
 
 
 
