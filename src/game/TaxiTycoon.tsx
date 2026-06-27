@@ -105,7 +105,7 @@ type Taxi = {
   transitionFromY?: number;
   transitionUntil?: number;
 };
-const TRANSITION_MS = 700;
+const TRANSITION_MS = 1500;
 
 
 // Mécanique : retour au QG tous les N courses, attente de DEPOSIT_MS
@@ -912,6 +912,20 @@ export default function TaxiTycoon() {
     return { x: pt.x, y: pt.y };
   };
 
+  // Démarre un nouveau segment en mémorisant la position visuelle courante
+  // pour que le rendu lerpe doucement (évite les sauts entre routes).
+  const beginSegment = (taxi: Taxi, newPathIdx: number, newPos: number, newTarget: number) => {
+    const visual = taxiXY(taxi);
+    taxi.pathIdx = newPathIdx;
+    taxi.pos = newPos;
+    taxi.target = newTarget;
+    if (visual.x !== 0 || visual.y !== 0) {
+      taxi.transitionFromX = visual.x;
+      taxi.transitionFromY = visual.y;
+      taxi.transitionUntil = performance.now() + TRANSITION_MS;
+    }
+  };
+
   // Choisit aléatoirement un path différent du dernier (variété de trajet),
   // en évitant les paths du village (haut de la map).
   const pickPath = (avoid?: number): number => {
@@ -1120,9 +1134,7 @@ export default function TaxiTycoon() {
           if (taxi.fuel < FUEL_LOW_THRESHOLD) {
             const pIdx = pickPath(taxi.pathIdx);
             const here = taxiXY(taxi);
-            taxi.pathIdx = pIdx;
-            taxi.pos = closestOnPath(pIdx, here.x, here.y);
-            taxi.target = closestOnPath(pIdx, adm.gasStationX, adm.gasStationY);
+            beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.gasStationX, adm.gasStationY));
             taxi.mode = "to_gas";
           } else {
             // S'assure que la position logique est snap au QG.
@@ -1138,12 +1150,10 @@ export default function TaxiTycoon() {
           if (taxi.refuelUntil && Date.now() >= taxi.refuelUntil) {
             taxi.fuel = 100;
             taxi.refuelUntil = undefined;
-            // retour QG
+            // retour QG avec lerp visuel
             const pIdx = pickPath(taxi.pathIdx);
             const here = taxiXY(taxi);
-            taxi.pathIdx = pIdx;
-            taxi.pos = closestOnPath(pIdx, here.x, here.y);
-            taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
+            beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.hqX, adm.hqY));
             taxi.mode = "returning";
           }
           continue;
@@ -1167,18 +1177,13 @@ export default function TaxiTycoon() {
           if (taxi.mode === "to_pickup") {
             const j = jobsRef.current.find((x) => x.id === taxi.jobId);
             if (j) {
-              // Bascule vers le path de la destination
               const here = taxiXY(taxi);
-              taxi.pathIdx = j.dropoffPath;
-              taxi.pos = closestOnPath(j.dropoffPath, here.x, here.y);
-              taxi.target = j.dropoff;
+              beginSegment(taxi, j.dropoffPath, closestOnPath(j.dropoffPath, here.x, here.y), j.dropoff);
               taxi.mode = "to_dest";
             } else {
               const pIdx = pickPath(taxi.pathIdx);
               const here = taxiXY(taxi);
-              taxi.pathIdx = pIdx;
-              taxi.pos = closestOnPath(pIdx, here.x, here.y);
-              taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
+              beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.hqX, adm.hqY));
               taxi.mode = "returning";
               taxi.jobId = null;
             }
@@ -1229,9 +1234,7 @@ export default function TaxiTycoon() {
             taxi.ridesSinceDeposit = (taxi.ridesSinceDeposit ?? 0) + 1;
             const pIdx = pickPath(taxi.pathIdx);
             const here = taxiXY(taxi);
-            taxi.pathIdx = pIdx;
-            taxi.pos = closestOnPath(pIdx, here.x, here.y);
-            taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
+            beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.hqX, adm.hqY));
             taxi.mode = "returning";
             // tous les N courses, doit déposer au QG
             if (taxi.ridesSinceDeposit >= DEPOSIT_EVERY_RIDES) {
@@ -1239,7 +1242,6 @@ export default function TaxiTycoon() {
             }
           } else if (taxi.mode === "returning") {
             if (taxi.mustDeposit) {
-              // arrivé au garage : dépôt instantané puis reprise du roulage.
               taxi.mode = "idle";
               taxi.depositUntil = undefined;
               taxi.mustDeposit = false;
@@ -1253,17 +1255,14 @@ export default function TaxiTycoon() {
             if (taxi.fuel < FUEL_LOW_THRESHOLD) {
               const pIdx = pickPath(taxi.pathIdx);
               const here = taxiXY(taxi);
-              taxi.pathIdx = pIdx;
-              taxi.pos = closestOnPath(pIdx, here.x, here.y);
-              taxi.target = closestOnPath(pIdx, adm.gasStationX, adm.gasStationY);
+              beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.gasStationX, adm.gasStationY));
               taxi.mode = "to_gas";
             } else {
               const pIdx = pickPath(taxi.pathIdx);
               const here = taxiXY(taxi);
-              taxi.pathIdx = pIdx;
-              taxi.pos = closestOnPath(pIdx, here.x, here.y);
+              const newPos = closestOnPath(pIdx, here.x, here.y);
               const len = pathLensRef.current[pIdx] ?? 0;
-              taxi.target = Math.max(1, Math.min(len - 1, Math.random() * len));
+              beginSegment(taxi, pIdx, newPos, Math.max(1, Math.min(len - 1, Math.random() * len)));
             }
           } else if (taxi.mode === "to_gas") {
             taxi.mode = "refueling";

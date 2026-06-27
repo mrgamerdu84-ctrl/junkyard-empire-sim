@@ -558,18 +558,17 @@ export default function CityTraffic() {
         // ===== Trafic normal =====
         const prev = st.s;
         st.s += st.speed * dt;
+        // En bout de path → demi-tour sur place (inversion du sens), pas de saut
+        // à l'autre extrémité de la carte.
         if (st.s >= st.pathLen) {
-          const newSpec = rerollSpec(st.spec);
-          st.spec = newSpec;
-          st.pathLen = lens[newSpec.pathIdx];
-          st.baseSpeed = st.pathLen / newSpec.duration;
-          st.s = 0;
-          st.speed = st.baseSpeed;
-          const newKey = `${newSpec.pathIdx}:${newSpec.flip ? "r" : "f"}`;
+          st.s = st.pathLen;
+          st.spec = { ...st.spec, flip: !st.spec.flip };
+          const newKey = `${st.spec.pathIdx}:${st.spec.flip ? "r" : "f"}`;
           if (newKey !== st.laneKey) {
             st.laneKey = newKey;
             needsRebuild = true;
           }
+          st.s = 0; // repart depuis l'autre bout, mais visuellement c'est le même point (demi-tour)
         } else if (prev > st.s) {
           st.s = st.s % st.pathLen;
         }
