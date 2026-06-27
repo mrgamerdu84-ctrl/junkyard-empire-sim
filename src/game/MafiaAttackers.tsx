@@ -120,9 +120,22 @@ export default function MafiaAttackers() {
     let structuralChange = false;
 
     const tick = (now: number) => {
-      const dt = Math.min(0.05, (now - last) / 1000);
+      const dtMs = now - last;
+      const dt = Math.min(0.05, dtMs / 1000);
       last = now;
       structuralChange = false;
+
+      // Lissage exponentiel du FPS (alpha ~0.05).
+      const inst = dtMs > 0 ? 1000 / dtMs : 60;
+      fpsRef.current = fpsRef.current * 0.95 + inst * 0.05;
+      const fps = fpsRef.current;
+      // Hystérésis pour éviter le yo-yo.
+      const cur = maxCarsRef.current;
+      let next = cur;
+      if (fps < 38 && cur > MAX_CARS_LO) next = MAX_CARS_LO;
+      else if (fps >= 42 && fps < 55 && cur !== MAX_CARS_MID) next = MAX_CARS_MID;
+      else if (fps >= 58 && cur < MAX_CARS_HI) next = MAX_CARS_HI;
+      maxCarsRef.current = next;
 
       const taxis = getPlayerTaxis();
       const onMission = taxis.filter((t) => t.onMission);
@@ -131,7 +144,7 @@ export default function MafiaAttackers() {
 
       if (
         onMission.length > 0 &&
-        carsRef.current.filter((c) => c.state === "hunt").length < MAX_CARS &&
+        carsRef.current.filter((c) => c.state === "hunt").length < maxCarsRef.current &&
         now - lastSpawn.current > spawnEvery
       ) {
         lastSpawn.current = now;
