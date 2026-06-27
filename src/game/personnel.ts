@@ -4,7 +4,7 @@
 // Les mécanos donnent une réduction sur l'entretien (lue par TaxiTycoon).
 // Les managers boostent les pourboires (multiplicateur lu via getTipsBonus).
 
-export type StaffRole = "driver" | "mechanic" | "manager";
+export type StaffRole = "driver" | "mechanic" | "manager" | "secretary";
 
 export type StaffDef = {
   role: StaffRole;
@@ -16,6 +16,7 @@ export type StaffDef = {
   income: number;     // revenu brut généré toutes les 60s (driver uniquement)
   discount: number;   // réduction entretien (mechanic) 0..1
   tipBonus: number;   // bonus pourboire (manager) 0..1
+  missionBonus: number; // bonus % sur le prix des missions (secretary) 0..1
   max: number;        // nombre max embauchable
 };
 
@@ -30,6 +31,7 @@ export const STAFF_CATALOG: StaffDef[] = [
     income: 95,
     discount: 0,
     tipBonus: 0,
+    missionBonus: 0,
     max: 8,
   },
   {
@@ -42,6 +44,7 @@ export const STAFF_CATALOG: StaffDef[] = [
     income: 0,
     discount: 0.15,
     tipBonus: 0,
+    missionBonus: 0,
     max: 3,
   },
   {
@@ -54,6 +57,20 @@ export const STAFF_CATALOG: StaffDef[] = [
     income: 0,
     discount: 0,
     tipBonus: 0.10,
+    missionBonus: 0,
+    max: 2,
+  },
+  {
+    role: "secretary",
+    label: "Secrétaire",
+    icon: "🗂️",
+    desc: "Négocie les contrats : +8 % sur le prix des missions, gère l'agenda.",
+    cost: 2200,
+    wage: 22,
+    income: 0,
+    discount: 0,
+    tipBonus: 0,
+    missionBonus: 0.08,
     max: 2,
   },
 ];
@@ -146,6 +163,12 @@ export function getTipsBonus(): number {
   const list = loadStaff();
   const n = countByRole(list, "manager");
   return Math.min(0.3, n * defFor("manager").tipBonus); // max +30 %
+}
+
+export function getMissionBonus(): number {
+  const list = loadStaff();
+  const n = countByRole(list, "secretary");
+  return Math.min(0.24, n * defFor("secretary").missionBonus); // max +24 %
 }
 
 // Driver de revenu passif. Une seule instance à monter au démarrage du jeu.
