@@ -55,31 +55,25 @@ const LANE_HALF = 11;
  * calées sur les routes même en mobile recadré.
  * ============================================================ */
 
-// === 4 GRANDS BOULEVARDS RECTILIGNES ===
-// L'ancien rond-point a été supprimé : on remplace par une intersection
-// classique au centre de la carte (960, 540). Chaque axe traverse la map
-// en ligne parfaitement droite. Le `flip` du moteur (CarSpec.flip) sert
-// les deux sens de circulation sur chaque axe.
-//   • 0 : horizontal complet (Ouest ↔ Est) y=540
-//   • 1 : vertical, démarre sous le QG (évite HQ_NO_CIVIL_ZONE) (Nord ↔ Sud) x=960
-//   • 2 : duplicata horizontal pour densité de trafic
-//   • 3 : duplicata vertical pour densité de trafic
-// Les véhicules ne dévient JAMAIS : ils suivent l'axe au pixel près, et
-// ne « tournent » qu'au centre en changeant simplement de path.
+// === 2 GRANDS BOULEVARDS EN X (suivent les traits noirs de la carte) ===
+// La carte de fond (citymap4) montre déjà 2 boulevards diagonaux qui se
+// croisent au centre (960, 540). On colle nos waypoints invisibles dessus.
+//   • 0 : diagonale NW ↘ SE
+//   • 1 : diagonale NE ↙ SW
+//   • 2 : duplicata NW↘SE pour densifier le trafic
+//   • 3 : duplicata NE↙SW pour densifier le trafic
+// Les voitures ne dévient JAMAIS et tournent uniquement au centre (intersection).
 export const ROADS = [
-  "M 0 540 L 1920 540",
-  "M 960 460 L 960 1080",
-  "M 0 540 L 1920 540",
-  "M 960 460 L 960 1080",
+  "M 0 0 L 1920 1080",
+  "M 1920 0 L 0 1080",
+  "M 0 0 L 1920 1080",
+  "M 1920 0 L 0 1080",
 ];
 
-// Applique en mémoire une calibration précédemment sauvegardée (admin →
-// « Recalibrer routes »). Mutation in-place pour préserver les imports.
-// Clé v2 : les boulevards rectilignes ne sont plus compatibles avec les
-// calibrages courbés stockés sous la clé v1.
+// Calibration v3 (X diagonal). Les clés v1/v2 (horizontal/vertical) sont obsolètes.
 if (typeof window !== "undefined") {
   try {
-    const raw = window.localStorage?.getItem("jce.roads.calibrated.v2");
+    const raw = window.localStorage?.getItem("jce.roads.calibrated.v3");
     if (raw) {
       const arr = JSON.parse(raw);
       if (Array.isArray(arr) && arr.length === ROADS.length) {
@@ -88,6 +82,7 @@ if (typeof window !== "undefined") {
     }
   } catch { /* noop */ }
 }
+
 
 type VehicleKind = VehicleSvgKind;
 type VehicleVariant = "black" | "red";
