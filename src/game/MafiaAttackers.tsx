@@ -316,6 +316,14 @@ export default function MafiaAttackers() {
           }
         }
 
+        // Verrou QG : hors raid, aucune voiture mafia n'a le droit de rouler
+        // sur le parvis du QG (réservé aux taxis du joueur). On la despawn.
+        if (!raidOn && isInsideHQZone(c.x, c.y)) {
+          groupRefs.current.delete(c.id);
+          structuralChange = true;
+          continue;
+        }
+
         // Mise à jour directe DOM (pas de re-render React).
         const g = groupRefs.current.get(c.id);
         if (g) {
