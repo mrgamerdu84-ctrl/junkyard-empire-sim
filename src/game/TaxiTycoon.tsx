@@ -669,6 +669,9 @@ export default function TaxiTycoon() {
   const taxisRef = useRef<Taxi[]>([]);
   const nextIdRef = useRef(1);
   const lastJobSpawnRef = useRef(0);
+  // Cooldown global entre 2 annonces "📞 course entrante" de la secrétaire
+  // (le pool de jobs continue de se remplir en arrière-plan).
+  const lastOfferAnnouncedRef = useRef(0);
   const lastTaxiDispatchRef = useRef(0);
   const [, forceRender] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
