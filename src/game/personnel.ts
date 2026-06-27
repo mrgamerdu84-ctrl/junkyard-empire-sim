@@ -4,7 +4,7 @@
 // Les mécanos donnent une réduction sur l'entretien (lue par TaxiTycoon).
 // Les managers boostent les pourboires (multiplicateur lu via getTipsBonus).
 
-export type StaffRole = "driver" | "mechanic" | "manager";
+export type StaffRole = "driver" | "mechanic" | "manager" | "secretary";
 
 export type StaffDef = {
   role: StaffRole;
@@ -16,6 +16,7 @@ export type StaffDef = {
   income: number;     // revenu brut généré toutes les 60s (driver uniquement)
   discount: number;   // réduction entretien (mechanic) 0..1
   tipBonus: number;   // bonus pourboire (manager) 0..1
+  missionBonus: number; // bonus % sur le prix des missions (secretary) 0..1
   max: number;        // nombre max embauchable
 };
 
