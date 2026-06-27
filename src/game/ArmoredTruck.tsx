@@ -148,6 +148,11 @@ export default function ArmoredTruck() {
         scheduleNext(false);
         return;
       }
+      // Trêve mafia : le Parrain a rappelé ses convois.
+      if (isMafiaTruceActive()) {
+        scheduleNext(false);
+        return;
+      }
       spawn();
     }, ms);
   };
