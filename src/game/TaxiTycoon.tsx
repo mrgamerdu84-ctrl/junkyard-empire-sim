@@ -108,6 +108,25 @@ type Taxi = {
 };
 const TRANSITION_MS = 1500;
 
+// Rond-point central — coordonnées dans le repère SVG 1920×1080 (citymap3).
+// Aucun véhicule ne doit traverser ce disque : on s'en sert pour bloquer
+// tout lerp qui dessinerait un raccourci visuel par-dessus la fontaine.
+export const ROUNDABOUT = { x: 960, y: 600, r: 78 };
+
+// Test : est-ce que le segment [A,B] coupe le disque (cx,cy,r) ?
+function segmentHitsCircle(
+  ax: number, ay: number, bx: number, by: number,
+  cx: number, cy: number, r: number,
+): boolean {
+  const dx = bx - ax, dy = by - ay;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return Math.hypot(ax - cx, ay - cy) < r;
+  let t = ((cx - ax) * dx + (cy - ay) * dy) / len2;
+  t = Math.max(0, Math.min(1, t));
+  const px = ax + t * dx, py = ay + t * dy;
+  return Math.hypot(px - cx, py - cy) < r;
+}
+
 
 // Mécanique : retour au QG tous les N courses, attente de DEPOSIT_MS
 const DEPOSIT_EVERY_RIDES = 3;
