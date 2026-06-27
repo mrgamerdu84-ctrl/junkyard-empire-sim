@@ -2710,8 +2710,6 @@ export default function TaxiTycoon() {
 
           const renderedTaxis = taxisRef.current.map((taxi) => {
 
-
-          return taxisRef.current.map((taxi) => {
             const movingForward = taxi.target >= taxi.pos;
             const onPath = taxi.lane ?? getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
             const parkInfo = parked.find((q) => q.taxi.id === taxi.id);
