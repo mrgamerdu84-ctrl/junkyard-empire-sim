@@ -117,29 +117,114 @@ export default function AdminPanel() {
   // Mode "placer le QG" — clic sur la map = nouvelle position.
   // On ferme le panneau pendant le placement pour que le clic atteigne la map,
   // et on convertit n'importe quel clic en coordonnées SVG (le SVG du jeu a
-  // pointer-events:none, donc on ne peut pas se fier à svg.contains(target)).
+  // === Mode placement : tap & drag pour déplacer le QG sur la carte ===
+  // (pointer events plutôt qu'un click, pour qu'on puisse faire glisser
+  //  le QG avec le doigt jusqu'à l'endroit parfait.)
+  const placeDragRef = useRef(false);
   useEffect(() => {
     if (!placeMode) return;
-    const onClick = (e: MouseEvent) => {
-      // Ignore les clics sur les contrôles flottants
-      const target = e.target as HTMLElement;
-      if (target.closest(".adm-place-controls")) return;
-      const svg = document.querySelector(".tt-root svg") as SVGSVGElement | null;
-      if (!svg) return;
+    const svg = document.querySelector(".tt-root svg") as SVGSVGElement | null;
+    if (!svg) return;
+    const toSvg = (cx: number, cy: number) => {
       const pt = svg.createSVGPoint();
-      pt.x = e.clientX; pt.y = e.clientY;
+      pt.x = cx; pt.y = cy;
       const ctm = svg.getScreenCTM();
-      if (!ctm) return;
-      const p = pt.matrixTransform(ctm.inverse());
+      if (!ctm) return null;
+      return pt.matrixTransform(ctm.inverse());
+    };
+    const applyAt = (cx: number, cy: number) => {
+      const p = toSvg(cx, cy);
+      if (!p) return;
       const x = Math.max(0, Math.min(1920, p.x));
       const y = Math.max(0, Math.min(1080, p.y));
       setAdmin({ hqUseFreePos: true, hqX: x, hqY: y });
-      e.stopPropagation();
+    };
+    const isUiTarget = (t: EventTarget | null) => {
+      const el = t as HTMLElement | null;
+      return !!(el && (el.closest(".adm-place-controls") || el.closest(".adm-place-banner") || el.closest(".adm-hq-rotator")));
+    };
+    const onDown = (e: PointerEvent) => {
+      if (isUiTarget(e.target)) return;
+      placeDragRef.current = true;
+      applyAt(e.clientX, e.clientY);
       e.preventDefault();
     };
-    window.addEventListener("click", onClick, true);
-    return () => window.removeEventListener("click", onClick, true);
+    const onMove = (e: PointerEvent) => {
+      if (!placeDragRef.current) return;
+      applyAt(e.clientX, e.clientY);
+      e.preventDefault();
+    };
+    const onUp = () => { placeDragRef.current = false; };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointermove", onMove, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("pointercancel", onUp, true);
+    return () => {
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("pointercancel", onUp, true);
+    };
   }, [placeMode]);
+
+  // === Anneau de rotation flottant autour du QG (overlay HTML) ===
+  // On recalcule sa position écran chaque frame depuis la matrice SVG.
+  const rotatorRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!placeMode) return;
+    let raf = 0;
+    const tick = () => {
+      const svg = document.querySelector(".tt-root svg") as SVGSVGElement | null;
+      const el = rotatorRef.current;
+      if (svg && el) {
+        const pt = svg.createSVGPoint();
+        pt.x = cfg.hqX; pt.y = cfg.hqY;
+        const ctm = svg.getScreenCTM();
+        if (ctm) {
+          const p = pt.matrixTransform(ctm);
+          // taille de l'anneau ~ proportionnelle au scale visible
+          const sizePx = Math.max(140, 180 * Math.min(2, cfg.hqScale));
+          el.style.left = `${p.x - sizePx / 2}px`;
+          el.style.top = `${p.y - sizePx / 2}px`;
+          el.style.width = `${sizePx}px`;
+          el.style.height = `${sizePx}px`;
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [placeMode, cfg.hqX, cfg.hqY, cfg.hqScale]);
+
+  // Drag du knob pour tourner le QG : l'angle suit le doigt par rapport au centre.
+  const onRotatorPointerDown = (e: React.PointerEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const el = rotatorRef.current;
+    if (!el) return;
+    (e.target as Element).setPointerCapture?.(e.pointerId);
+    const rect = el.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const handler = (ev: PointerEvent) => {
+      const dx = ev.clientX - cx;
+      const dy = ev.clientY - cy;
+      // 0° = vers la droite ; on garde la même convention que SVG rotate()
+      let deg = (Math.atan2(dy, dx) * 180) / Math.PI;
+      // arrondi doux par pas de 1°
+      deg = Math.round(deg);
+      setAdmin({ hqRotation: deg });
+      ev.preventDefault();
+    };
+    const up = () => {
+      window.removeEventListener("pointermove", handler, true);
+      window.removeEventListener("pointerup", up, true);
+      window.removeEventListener("pointercancel", up, true);
+    };
+    window.addEventListener("pointermove", handler, true);
+    window.addEventListener("pointerup", up, true);
+    window.addEventListener("pointercancel", up, true);
+  };
 
   const startPlacement = () => {
     setPlaceMode(true);
