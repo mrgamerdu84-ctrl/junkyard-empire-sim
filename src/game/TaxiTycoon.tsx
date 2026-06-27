@@ -16,6 +16,7 @@ import { pickSpecialMission, SPECIAL_COOLDOWN_MS } from "@/lib/specialMissions";
 import { getGameTime, periodLabel } from "./cityClock";
 import RadioPlayer from "./RadioPlayer";
 import PersonnelPanel from "./PersonnelPanel";
+import MissionOfferToast from "./MissionOfferToast";
 import { getMaintenanceDiscount, getTipsBonus, startPersonnelTick } from "./personnel";
 import { useAuth } from "@/lib/useAuth";
 import { resolveAvatarSrc } from "@/components/ProfileCard";
@@ -1305,6 +1306,9 @@ export default function TaxiTycoon() {
         lastJobSpawnRef.current = now;
         const job = genJob(cur.depotTier);
         setJobs((js) => [...js, job]);
+        try {
+          window.dispatchEvent(new CustomEvent("jce:mission-offered", { detail: { id: job.id, fare: job.fare } }));
+        } catch {}
       }
 
       // === Mouvement des taxis ===
@@ -2279,7 +2283,24 @@ export default function TaxiTycoon() {
     return () => clearInterval(iv);
   }, []);
 
-  // Le joueur refuse / annule une course proposée
+  // === Écoute le toast secrétaire : accepter/refuser une course depuis la popup
+  useEffect(() => {
+    const onAccept = (e: Event) => {
+      const det = (e as CustomEvent<{ id: number; driver?: string }>).detail;
+      if (det?.id != null) acceptJob(det.id, { bypassCooldown: true });
+    };
+    const onReject = (e: Event) => {
+      const det = (e as CustomEvent<{ id: number }>).detail;
+      if (det?.id != null) rejectJob(det.id);
+    };
+    window.addEventListener("jce:mission-accept", onAccept);
+    window.addEventListener("jce:mission-reject", onReject);
+    return () => {
+      window.removeEventListener("jce:mission-accept", onAccept);
+      window.removeEventListener("jce:mission-reject", onReject);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const rejectJob = (id: number) => {
     setJobs((js) => js.filter((j) => j.id !== id));
   };
@@ -2400,7 +2421,7 @@ export default function TaxiTycoon() {
         ref={containerRef}
         viewBox="0 0 1920 1080"
         preserveAspectRatio="xMidYMid slice"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 4 }}
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: manualMode ? 9500 : 4, touchAction: manualMode ? "none" : undefined }}
       >
         <defs>
           {ROADS.map((d, i) => (
@@ -3208,6 +3229,7 @@ export default function TaxiTycoon() {
         {/* === HUD HTML incrusté — rendu hors carte pour rester fixe === */}
       {typeof document !== "undefined" && createPortal((
       <div className={`tt-hud ${mapFullscreen ? "tt-hud-fs" : ""}`}>
+        <MissionOfferToast />
         {/* Bouton plein écran toujours visible */}
         <button
           className="tt-fs-toggle"
