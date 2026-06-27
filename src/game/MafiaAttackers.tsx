@@ -14,6 +14,7 @@ import { getCivilCarUrls } from "./gameAssets";
 import { ROADS, VILLAGE_PATHS } from "./CityTraffic";
 import { VEHICLE_SIZE } from "./TaxiTycoon";
 import { isMafiaTruceActive } from "./MafiaGodfather";
+import { getAdmin } from "./adminConfig";
 
 type PlayerTaxi = { id: number; x: number; y: number; onMission: boolean };
 type CompetitorLite = {
