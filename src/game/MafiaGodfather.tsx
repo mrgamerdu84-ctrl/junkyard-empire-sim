@@ -180,20 +180,41 @@ export default function MafiaGodfather() {
   const truceActive = truceLeft > 0;
 
   const badge = (
-    <button
-      className="mg-badge"
-      onClick={() => {
-        if (!truceActive) window.dispatchEvent(new CustomEvent("jce.godfather.open"));
-      }}
-      title={truceActive ? "Trêve mafia en cours" : "Le Parrain rôde…"}
-      aria-label="État Parrain"
-    >
-      {truceActive ? (
-        <>🤝 <span>TRÊVE</span> <b>{fmtTime(truceLeft)}</b></>
-      ) : (
-        <>☠ <span>MENACE</span></>
-      )}
-    </button>
+    <>
+      <style>{`
+        .mg-badge {
+          position: fixed; top: 8px; right: 60px; z-index: 9998;
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 4px 8px; border-radius: 999px;
+          background: rgba(12,14,22,0.92);
+          border: 1px solid #dc2626;
+          color: #fca5a5;
+          font-size: 10px; font-weight: 900; letter-spacing: 0.5px;
+          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(0,0,0,0.45);
+          font-family: ui-sans-serif, system-ui, sans-serif;
+        }
+        .mg-badge.mg-truce { border-color: #16a34a; color: #86efac; cursor: default; }
+        .mg-badge b { color: #fde047; margin-left: 2px; font-variant-numeric: tabular-nums; }
+        @media (orientation: landscape) and (max-height: 500px) {
+          .mg-badge { top: 6px; right: 110px; }
+        }
+      `}</style>
+      <button
+        className={`mg-badge ${truceActive ? "mg-truce" : ""}`}
+        onClick={() => {
+          if (!truceActive) window.dispatchEvent(new CustomEvent("jce.godfather.open"));
+        }}
+        title={truceActive ? "Trêve mafia en cours" : "Le Parrain rôde…"}
+        aria-label="État Parrain"
+      >
+        {truceActive ? (
+          <>🤝 <span>TRÊVE</span> <b>{fmtTime(truceLeft)}</b></>
+        ) : (
+          <>☠ <span>MENACE</span></>
+        )}
+      </button>
+    </>
   );
 
   const dialog = open && createPortal((
