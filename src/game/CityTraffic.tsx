@@ -607,8 +607,12 @@ export default function CityTraffic() {
         const tdx = p2.x - p.x, tdy = p2.y - p.y;
         const L = Math.hypot(tdx, tdy) || 1;
         const ang = (Math.atan2(tdy, tdx) * 180) / Math.PI;
-        const ox = (-tdy / L) * LANE_HALF;
-        const oy = (tdx / L) * LANE_HALF;
+        // Lane offset toujours à droite DANS LE SENS DE MARCHE : oncoming
+        // traffic roule sur l'autre voie, et les véhicules ne se croisent
+        // jamais au milieu de la chaussée (rond-points compris).
+        const side = st.spec.flip ? -1 : 1;
+        const ox = (-tdy / L) * LANE_HALF * side;
+        const oy = (tdx / L) * LANE_HALF * side;
         node.setAttribute("transform", `translate(${(p.x + ox).toFixed(2)},${(p.y + oy).toFixed(2)}) rotate(${ang.toFixed(2)})`);
         checkRadars(st, prev);
       }
