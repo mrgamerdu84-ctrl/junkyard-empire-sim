@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import citymap from "@/assets/citymap2.jpg";
+import citymapAsset from "@/assets/citymap3.jpg.asset.json";
+const citymap = citymapAsset.url;
 import TaxiTycoon from "@/game/TaxiTycoon";
 import CityTraffic from "@/game/CityTraffic";
 import MafiaAttackers from "@/game/MafiaAttackers";
