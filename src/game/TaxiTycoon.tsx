@@ -1334,9 +1334,15 @@ export default function TaxiTycoon() {
         lastJobSpawnRef.current = now;
         const job = genJob(cur.depotTier);
         setJobs((js) => [...js, job]);
-        try {
-          window.dispatchEvent(new CustomEvent("jce:mission-offered", { detail: { id: job.id, fare: job.fare } }));
-        } catch {}
+        // Annonce vocale espacée : pas plus d'une proposition toutes les 45 s
+        // pour ne pas saturer le joueur (la course reste disponible dans la file).
+        const OFFER_COOLDOWN_MS = 45_000;
+        if (now - lastOfferAnnouncedRef.current > OFFER_COOLDOWN_MS) {
+          lastOfferAnnouncedRef.current = now;
+          try {
+            window.dispatchEvent(new CustomEvent("jce:mission-offered", { detail: { id: job.id, fare: job.fare } }));
+          } catch {}
+        }
       }
 
       // === Mouvement des taxis ===
