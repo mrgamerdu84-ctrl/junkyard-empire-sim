@@ -3157,7 +3157,26 @@ export default function TaxiTycoon() {
               angle: admin.hqRotation + SLOT_ANGLE_DEG,
             };
           };
-          parked.forEach((p, i) => { p.slot = i; });
+          // Attribution : on place d'abord les taxis ayant une place préférée,
+          // puis on remplit les places libres avec les autres dans l'ordre.
+          const used = new Set<number>();
+          parked.forEach((p) => {
+            const pref = p.taxi.parkSlot;
+            if (pref != null && pref >= 0 && pref < SLOTS_MAX && !used.has(pref)) {
+              p.slot = pref;
+              used.add(pref);
+            } else {
+              p.slot = -1;
+            }
+          });
+          let next = 0;
+          parked.forEach((p) => {
+            if (p.slot >= 0) return;
+            while (used.has(next) && next < SLOTS_MAX) next++;
+            p.slot = next % SLOTS_MAX;
+            used.add(p.slot);
+            next++;
+          });
 
           // Plus de masque "tarmac" : le sol peint du nouvel entrepôt sert de parking.
 
