@@ -1177,18 +1177,13 @@ export default function TaxiTycoon() {
           if (taxi.mode === "to_pickup") {
             const j = jobsRef.current.find((x) => x.id === taxi.jobId);
             if (j) {
-              // Bascule vers le path de la destination
               const here = taxiXY(taxi);
-              taxi.pathIdx = j.dropoffPath;
-              taxi.pos = closestOnPath(j.dropoffPath, here.x, here.y);
-              taxi.target = j.dropoff;
+              beginSegment(taxi, j.dropoffPath, closestOnPath(j.dropoffPath, here.x, here.y), j.dropoff);
               taxi.mode = "to_dest";
             } else {
               const pIdx = pickPath(taxi.pathIdx);
               const here = taxiXY(taxi);
-              taxi.pathIdx = pIdx;
-              taxi.pos = closestOnPath(pIdx, here.x, here.y);
-              taxi.target = closestOnPath(pIdx, adm.hqX, adm.hqY);
+              beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.hqX, adm.hqY));
               taxi.mode = "returning";
               taxi.jobId = null;
             }
