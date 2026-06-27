@@ -106,6 +106,8 @@ export default function MafiaAttackers() {
   const idRef = useRef(0);
   const lastSpawn = useRef(0);
   const startedAt = useRef(Date.now());
+  const fpsRef = useRef(60);
+  const maxCarsRef = useRef(MAX_CARS_MID);
   const pathEls = useMemo(() => buildPathEls(), []);
   const pathLens = useMemo(() => pathEls.map((p) => p.getTotalLength()), [pathEls]);
   // refs DOM par voiture -> mise à jour directe du transform sans re-render
