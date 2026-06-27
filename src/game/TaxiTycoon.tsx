@@ -916,13 +916,32 @@ export default function TaxiTycoon() {
   // pour que le rendu lerpe doucement (évite les sauts entre routes).
   const beginSegment = (taxi: Taxi, newPathIdx: number, newPos: number, newTarget: number) => {
     const visual = taxiXY(taxi);
+    // Position cible sur le nouveau path : on lerpe SEULEMENT si elle est
+    // proche de la position visuelle actuelle (≤ 60 px). Sinon on snappe
+    // pour ne PAS dessiner de diagonale qui traverserait le rond-point /
+    // les bâtiments.
+    const target = pathRefs.current[newPathIdx];
+    const tlen = pathLensRef.current[newPathIdx] ?? 0;
+    let nearX = visual.x, nearY = visual.y, dist = 0;
+    if (target && tlen > 0) {
+      const safe = ((newPos % tlen) + tlen) % tlen;
+      const pt = target.getPointAtLength(safe);
+      nearX = pt.x; nearY = pt.y;
+      dist = Math.hypot(pt.x - visual.x, pt.y - visual.y);
+    }
     taxi.pathIdx = newPathIdx;
     taxi.pos = newPos;
     taxi.target = newTarget;
-    if (visual.x !== 0 || visual.y !== 0) {
+    if ((visual.x !== 0 || visual.y !== 0) && dist <= 60) {
       taxi.transitionFromX = visual.x;
       taxi.transitionFromY = visual.y;
       taxi.transitionUntil = performance.now() + TRANSITION_MS;
+    } else {
+      // Snap : pas de trajet hors route.
+      taxi.transitionFromX = undefined;
+      taxi.transitionFromY = undefined;
+      taxi.transitionUntil = undefined;
+      void nearX; void nearY;
     }
   };
 
