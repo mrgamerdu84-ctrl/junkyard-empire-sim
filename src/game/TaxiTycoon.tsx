@@ -2821,13 +2821,20 @@ export default function TaxiTycoon() {
           const cosR = Math.cos(rot);
           const sinR = Math.sin(rot);
           const K = 320 / 1024; // facteur image → unités monde (pre-scale)
-          // 6 places visibles, centres X approximatifs dans l'image (px).
-          const slotCentersPx = [230, 340, 450, 560, 670, 780];
-          const slotYPx = 395; // y du milieu de la place (un peu sous l'icône peinte)
-          const SLOTS_MAX = slotCentersPx.length;
-          // Centre & largeur du parvis (utilisé pour le mapping logique)
-          const parvisCx = (((slotCentersPx[0] + slotCentersPx[SLOTS_MAX - 1]) / 2) - 512) * K;
-          const parvisCy = (slotYPx - 384) * K;
+          // 7 places peintes sur l'entrepôt (vue isométrique → léger tilt :
+          // y augmente avec x). Positions mesurées sur l'image 1024×768.
+          const slotsPx: Array<{ x: number; y: number }> = [
+            { x: 232, y: 340 },
+            { x: 332, y: 360 },
+            { x: 432, y: 380 },
+            { x: 527, y: 400 },
+            { x: 612, y: 425 },
+            { x: 702, y: 445 },
+            { x: 792, y: 465 },
+          ];
+          const SLOTS_MAX = slotsPx.length;
+          // Angle isométrique des voitures peintes (capot vers le garage = haut-droite)
+          const SLOT_ANGLE_DEG = -18;
           const parked: { taxi: Taxi; slot: number }[] = [];
           const parkedIds = new Set<number>();
           taxisRef.current.forEach((t) => {
@@ -2837,18 +2844,19 @@ export default function TaxiTycoon() {
             }
           });
           const slotWorld = (i: number) => {
-            const safeI = i % SLOTS_MAX;
-            const lx = (slotCentersPx[safeI] - 512) * K;
-            const ly = (slotYPx - 384) * K;
+            const s = slotsPx[i % SLOTS_MAX];
+            const lx = (s.x - 512) * K;
+            const ly = (s.y - 384) * K;
             const sx = lx * scale;
             const sy = ly * scale;
             return {
               x: hqCx + sx * cosR - sy * sinR,
               y: hqCy + sx * sinR + sy * cosR,
-              angle: admin.hqRotation, // aligné comme les taxis peints
+              angle: admin.hqRotation + SLOT_ANGLE_DEG,
             };
           };
           parked.forEach((p, i) => { p.slot = i; });
+
           // Plus de masque "tarmac" : le sol peint du nouvel entrepôt sert de parking.
           void parvisCx; void parvisCy;
 
