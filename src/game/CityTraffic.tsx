@@ -650,17 +650,54 @@ export default function CityTraffic() {
         </filter>
       </defs>
 
-      <g opacity="0.12">
+      {/* === Routes embellies, alignées sur les axes calibrés ===
+          4 couches : ombre douce → asphalte → bordures blanches → ligne centrale jaune.
+          Largeur unifiée à 48 px (= largeur visible du bitume de citymap3.jpg).
+          Le rond-point est dessiné en dernier pour rester net autour de la fontaine. */}
+      {/* Ombre sous la chaussée */}
+      <g opacity="0.28">
         {ROADS.map((d, i) => (
           VILLAGE_PATHS.has(i) ? null : (
-            <path key={i} d={d} stroke="#0b0d10" strokeWidth={i >= 4 ? 34 : 46} fill="none" strokeLinecap="round" />
+            <path key={`shadow-${i}`} d={d} stroke="#000" strokeWidth={54} fill="none"
+                  strokeLinecap="round" strokeLinejoin="round" filter="url(#jce-soft-shadow)" />
           )
         ))}
-        {ROADS.slice(0, 4).map((d, i) => (
+      </g>
+      {/* Asphalte */}
+      <g opacity="0.55">
+        {ROADS.map((d, i) => (
           VILLAGE_PATHS.has(i) ? null : (
-            <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth="2.4" strokeDasharray="18 18" fill="none" opacity="0.72" />
+            <path key={`asphalt-${i}`} d={d} stroke="#1c2024" strokeWidth={48} fill="none"
+                  strokeLinecap="round" strokeLinejoin="round" />
           )
         ))}
+      </g>
+      {/* Bordures blanches (rives) */}
+      <g opacity="0.55">
+        {ROADS.map((d, i) => (
+          VILLAGE_PATHS.has(i) ? null : (
+            <path key={`edge-${i}`} d={d} stroke="#f4f5f7" strokeWidth={50} fill="none"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  strokeDasharray="0 0" style={{ mixBlendMode: "screen" as const }} opacity={0.18} />
+          )
+        ))}
+      </g>
+      {/* Ligne centrale jaune en pointillés */}
+      <g>
+        {ROADS.map((d, i) => (
+          VILLAGE_PATHS.has(i) ? null : (
+            <path key={`dash-${i}`} d={d} stroke="#f6d56a" strokeWidth={2.6}
+                  strokeDasharray="20 16" fill="none" opacity={0.78} strokeLinecap="round" />
+          )
+        ))}
+      </g>
+      {/* Anneau du rond-point (autour de la fontaine x=955 y=608 r=60) */}
+      <g pointerEvents="none">
+        <circle cx={955} cy={608} r={92} fill="none" stroke="#1c2024" strokeWidth={48} opacity={0.55} />
+        <circle cx={955} cy={608} r={92} fill="none" stroke="#f6d56a" strokeWidth={2.6}
+                strokeDasharray="14 12" opacity={0.85} />
+        <circle cx={955} cy={608} r={68} fill="none" stroke="#f4f5f7" strokeWidth={2} opacity={0.55} />
+        <circle cx={955} cy={608} r={116} fill="none" stroke="#f4f5f7" strokeWidth={2} opacity={0.45} />
       </g>
 
 
