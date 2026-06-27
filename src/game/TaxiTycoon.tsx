@@ -1173,7 +1173,7 @@ export default function TaxiTycoon() {
   // Rappel général : tous les taxis rentrent au QG en empruntant les routes.
   const [recallPulse, setRecallPulse] = useState(0);
   const recallAllTaxis = () => {
-    const adm = adminRef.current;
+    const adm = getAdmin();
     let count = 0;
     for (const taxi of taxisRef.current) {
       if (taxi.mode === "to_pickup" || taxi.mode === "to_dest") {
