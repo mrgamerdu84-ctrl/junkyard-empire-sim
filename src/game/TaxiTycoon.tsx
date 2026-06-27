@@ -2858,7 +2858,7 @@ export default function TaxiTycoon() {
           parked.forEach((p, i) => { p.slot = i; });
 
           // Plus de masque "tarmac" : le sol peint du nouvel entrepôt sert de parking.
-          void parvisCx; void parvisCy;
+
 
 
           // Couleur d'état pour le halo (mise à jour en temps réel selon le mode du taxi)
