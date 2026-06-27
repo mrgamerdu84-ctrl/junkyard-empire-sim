@@ -251,8 +251,9 @@ export default function MafiaAttackers() {
         }
       }
       carsRef.current = next;
-      // Limite les re-renders : 1 frame sur 2, ou si le set a changé.
-      if (changed || frame % 2 === 0) setTick((n) => (n + 1) & 0xffff);
+      // Limite les re-renders : 1 frame sur 3, ou si le set a changé.
+      if (changed || frame % 3 === 0) setTick((n) => (n + 1) & 0xffff);
+
 
       raf = requestAnimationFrame(tick);
     };
