@@ -2652,10 +2652,10 @@ export default function TaxiTycoon() {
           return (
             <g
               style={{ cursor: "pointer", pointerEvents: "auto" }}
-              onClick={recallAllTaxis}
+              onClick={() => setHqPanelOpen(true)}
               transform={admin.hqRotation ? `rotate(${admin.hqRotation} ${cx} ${groundY})` : undefined}
             >
-              <title>Entrepôt Taxi — cliquer pour rappeler tous les taxis</title>
+              <title>Entrepôt Taxi — ouvrir le panneau QG</title>
               {/* QG intégré directement à la map (citymap3) — on garde juste une zone cliquable invisible
                   qui couvre l'entrepôt dessiné dans l'image de fond. */}
               <rect
