@@ -31,6 +31,7 @@ export const STAFF_CATALOG: StaffDef[] = [
     income: 95,
     discount: 0,
     tipBonus: 0,
+    missionBonus: 0,
     max: 8,
   },
   {
@@ -43,6 +44,7 @@ export const STAFF_CATALOG: StaffDef[] = [
     income: 0,
     discount: 0.15,
     tipBonus: 0,
+    missionBonus: 0,
     max: 3,
   },
   {
@@ -55,6 +57,20 @@ export const STAFF_CATALOG: StaffDef[] = [
     income: 0,
     discount: 0,
     tipBonus: 0.10,
+    missionBonus: 0,
+    max: 2,
+  },
+  {
+    role: "secretary",
+    label: "Secrétaire",
+    icon: "🗂️",
+    desc: "Négocie les contrats : +8 % sur le prix des missions, gère l'agenda.",
+    cost: 2200,
+    wage: 22,
+    income: 0,
+    discount: 0,
+    tipBonus: 0,
+    missionBonus: 0.08,
     max: 2,
   },
 ];
