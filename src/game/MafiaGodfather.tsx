@@ -232,9 +232,19 @@ export default function MafiaGodfather() {
             <p className="mg-text">{typed}<span className="mg-caret">▍</span></p>
           </div>
         </div>
+        <div className="mg-offer">
+          <div className="mg-offer-row">
+            <span className="mg-offer-k">💰 RANÇON</span>
+            <span className="mg-offer-v">{RANSOM} $</span>
+          </div>
+          <div className="mg-offer-row">
+            <span className="mg-offer-k">🕐 DURÉE DE LA TRÊVE</span>
+            <span className="mg-offer-v">{fmtTime(TRUCE_MS)}</span>
+          </div>
+        </div>
         <div className="mg-meta">
           <span>⏳ Tu as <b>{fmtTime(Math.max(0, deadline - now))}</b> pour répondre.</span>
-          <span>💵 Tes liquidités : <b>{cash} $</b></span>
+          <span>💵 Liquidités : <b>{cash} $</b></span>
         </div>
         <div className="mg-actions">
           <button
@@ -242,12 +252,12 @@ export default function MafiaGodfather() {
             disabled={cash < RANSOM}
             onClick={pay}
           >
-            🟢 PAYER {RANSOM} $
-            <em>1 h de trêve</em>
+            ✅ ACCEPTER — PAYER {RANSOM} $
+            <em>Trêve totale pendant {fmtTime(TRUCE_MS)}</em>
           </button>
           <button className="mg-btn mg-refuse" onClick={refuse}>
-            🔴 REFUSER
-            <em>Raid mafia sur le QG (90 s)</em>
+            ❌ REFUSER
+            <em>Attaque immédiate : 10 voitures sur le QG</em>
           </button>
         </div>
         {cash < RANSOM && (
