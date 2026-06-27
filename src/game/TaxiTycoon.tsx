@@ -1877,6 +1877,40 @@ export default function TaxiTycoon() {
     [admin.hqX, admin.hqY]);
 
 
+  // === Pilote manuel : boucle d'interpolation vers la cible (doigt) ===
+  useEffect(() => {
+    if (!manualMode) return;
+    // Spawn devant le QG au lancement
+    manualPosRef.current = { x: admin.hqX, y: admin.hqY, angle: 0 };
+    manualTargetRef.current = null;
+    let raf = 0;
+    let last = performance.now();
+    const SPEED = 260; // px/s sur viewBox 1920 — vif sans être incontrôlable
+    const tick = () => {
+      const now = performance.now();
+      const dt = Math.min(0.06, (now - last) / 1000);
+      last = now;
+      const cur = manualPosRef.current;
+      const tgt = manualTargetRef.current;
+      if (tgt) {
+        const dx = tgt.x - cur.x;
+        const dy = tgt.y - cur.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+          const step = Math.min(dist, SPEED * dt);
+          const nx = cur.x + (dx / dist) * step;
+          const ny = cur.y + (dy / dist) * step;
+          const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+          manualPosRef.current = { x: nx, y: ny, angle: ang };
+        }
+      }
+      setManualTick((n) => (n + 1) % 1000000);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [manualMode, admin.hqX, admin.hqY]);
+
 
   // === Actions UI ===
   // Suit en temps réel le nombre de chauffeurs embauchés : chaque chauffeur
