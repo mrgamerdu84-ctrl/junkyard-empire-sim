@@ -151,25 +151,13 @@ export default function CrimeEvents() {
     const id = window.setInterval(() => {
       const now = performance.now();
       setEvents(es => {
-        // AI rafle les missions où le joueur n'a pas cliqué à temps
-        const stolen: CrimeEvent[] = [];
+        // (Plus de concurrence IA : gameplay 100% Mafia. Les missions ne sont
+        // plus volées par une "AI rivale" — elles expirent simplement si on
+        // ne les attrape pas à temps.)
         const next: CrimeEvent[] = [];
         for (const e of es) {
           if (now - e.startedAt >= e.ttl) continue; // expiré
-          if (!e.dispatched && !e.stolenByAI && now >= e.aiClaimAt) {
-            stolen.push(e);
-            next.push({ ...e, stolenByAI: true, ttl: Math.min(e.ttl, now - e.startedAt + 2200) });
-          } else {
-            next.push(e);
-          }
-        }
-        for (const s of stolen) {
-          window.dispatchEvent(new CustomEvent("jce.intervention.ai-stole", {
-            detail: { id: s.id, kind: s.kind, label: KIND_META[s.kind].label, category: KIND_META[s.kind].category },
-          }));
-          window.dispatchEvent(new CustomEvent("jce.player.cashDelta", {
-            detail: { amount: -200, reason: "ai-stole", label: KIND_META[s.kind].label },
-          }));
+          next.push(e);
         }
         return next;
       });
