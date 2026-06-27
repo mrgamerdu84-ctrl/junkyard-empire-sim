@@ -634,6 +634,12 @@ export default function TaxiTycoon() {
   const [rivalEarnings, setRivalEarnings] = useState(0);
   const [rivalTaunt, setRivalTaunt] = useState<string | null>(null);
 
+  // === Mode PILOTE : un taxi spécial conduit par le joueur au doigt ===
+  const [manualMode, setManualMode] = useState(false);
+  const manualPosRef = useRef<{ x: number; y: number; angle: number }>({ x: 960, y: 540, angle: 0 });
+  const manualTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const [manualTick, setManualTick] = useState(0);
+
   // === Police ===
   type PoliceCar = {
     id: number;
@@ -1871,6 +1877,40 @@ export default function TaxiTycoon() {
     [admin.hqX, admin.hqY]);
 
 
+  // === Pilote manuel : boucle d'interpolation vers la cible (doigt) ===
+  useEffect(() => {
+    if (!manualMode) return;
+    // Spawn devant le QG au lancement
+    manualPosRef.current = { x: admin.hqX, y: admin.hqY, angle: 0 };
+    manualTargetRef.current = null;
+    let raf = 0;
+    let last = performance.now();
+    const SPEED = 260; // px/s sur viewBox 1920 — vif sans être incontrôlable
+    const tick = () => {
+      const now = performance.now();
+      const dt = Math.min(0.06, (now - last) / 1000);
+      last = now;
+      const cur = manualPosRef.current;
+      const tgt = manualTargetRef.current;
+      if (tgt) {
+        const dx = tgt.x - cur.x;
+        const dy = tgt.y - cur.y;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 1) {
+          const step = Math.min(dist, SPEED * dt);
+          const nx = cur.x + (dx / dist) * step;
+          const ny = cur.y + (dy / dist) * step;
+          const ang = Math.atan2(dy, dx) * 180 / Math.PI;
+          manualPosRef.current = { x: nx, y: ny, angle: ang };
+        }
+      }
+      setManualTick((n) => (n + 1) % 1000000);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [manualMode, admin.hqX, admin.hqY]);
+
 
   // === Actions UI ===
   // Suit en temps réel le nombre de chauffeurs embauchés : chaque chauffeur
@@ -3022,6 +3062,49 @@ export default function TaxiTycoon() {
             </text>
           </g>
         ))}
+
+        {/* === MODE PILOTE === capture du doigt + taxi spécial */}
+        {manualMode && (() => {
+          const p = manualPosRef.current;
+          void manualTick; // re-render à chaque frame
+          const setTargetFromEvent = (evt: React.PointerEvent<SVGRectElement>) => {
+            const svg = (evt.currentTarget.ownerSVGElement) as SVGSVGElement | null;
+            if (!svg) return;
+            const ctm = svg.getScreenCTM();
+            if (!ctm) return;
+            const pt = svg.createSVGPoint();
+            pt.x = evt.clientX; pt.y = evt.clientY;
+            const loc = pt.matrixTransform(ctm.inverse());
+            manualTargetRef.current = { x: loc.x, y: loc.y };
+          };
+          return (
+            <g>
+              <rect
+                x={0} y={0} width={1920} height={1080}
+                fill="transparent"
+                style={{ pointerEvents: "auto", cursor: "crosshair", touchAction: "none" }}
+                onPointerDown={(e) => { (e.currentTarget as Element).setPointerCapture?.(e.pointerId); setTargetFromEvent(e); }}
+                onPointerMove={(e) => { if (e.buttons || e.pointerType === "touch") setTargetFromEvent(e); }}
+                onPointerUp={(e) => { (e.currentTarget as Element).releasePointerCapture?.(e.pointerId); manualTargetRef.current = null; }}
+                onPointerCancel={() => { manualTargetRef.current = null; }}
+              />
+              {manualTargetRef.current && (
+                <circle cx={manualTargetRef.current.x} cy={manualTargetRef.current.y} r={14}
+                  fill="none" stroke="#ec4899" strokeWidth={3} opacity={0.9}>
+                  <animate attributeName="r" values="14;22;14" dur="0.9s" repeatCount="indefinite" />
+                </circle>
+              )}
+              <g transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
+                <circle r={22} fill="#ec4899" opacity={0.25} />
+                <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight}
+                  paintFilter="hue-rotate(290deg) saturate(1.4)" markerColor="#ec4899"
+                  withClient={false} moving={!!manualTargetRef.current} />
+                <text x={0} y={-26} textAnchor="middle" fontSize="9" fontWeight="900"
+                  fill="#fff" stroke="#0a0c10" strokeWidth="2" paintOrder="stroke">PILOTE</text>
+              </g>
+            </g>
+          );
+        })()}
       </svg>
 
         {/* === HUD HTML incrusté — rendu hors carte pour rester fixe === */}
@@ -3235,6 +3318,14 @@ export default function TaxiTycoon() {
             </button>
             <button className="tt-lcd-key" onClick={() => setShowTutorial(true)}>
               <span className="tt-lcd-key-ico">📖</span><b>TUTO</b>
+            </button>
+            <button
+              className="tt-lcd-key"
+              onClick={() => setManualMode((v) => !v)}
+              style={manualMode ? { background: "linear-gradient(180deg,#f472b6,#be185d)", color: "#fff" } : undefined}
+              title="Conduire un taxi au doigt"
+            >
+              <span className="tt-lcd-key-ico">🕹️</span><b>{manualMode ? "STOP" : "PILOTE"}</b>
             </button>
           </div>
 
