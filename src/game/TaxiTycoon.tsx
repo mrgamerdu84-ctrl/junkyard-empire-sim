@@ -1134,9 +1134,7 @@ export default function TaxiTycoon() {
           if (taxi.fuel < FUEL_LOW_THRESHOLD) {
             const pIdx = pickPath(taxi.pathIdx);
             const here = taxiXY(taxi);
-            taxi.pathIdx = pIdx;
-            taxi.pos = closestOnPath(pIdx, here.x, here.y);
-            taxi.target = closestOnPath(pIdx, adm.gasStationX, adm.gasStationY);
+            beginSegment(taxi, pIdx, closestOnPath(pIdx, here.x, here.y), closestOnPath(pIdx, adm.gasStationX, adm.gasStationY));
             taxi.mode = "to_gas";
           } else {
             // S'assure que la position logique est snap au QG.
