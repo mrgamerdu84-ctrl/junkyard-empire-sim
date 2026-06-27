@@ -634,6 +634,12 @@ export default function TaxiTycoon() {
   const [rivalEarnings, setRivalEarnings] = useState(0);
   const [rivalTaunt, setRivalTaunt] = useState<string | null>(null);
 
+  // === Mode PILOTE : un taxi spécial conduit par le joueur au doigt ===
+  const [manualMode, setManualMode] = useState(false);
+  const manualPosRef = useRef<{ x: number; y: number; angle: number }>({ x: 960, y: 540, angle: 0 });
+  const manualTargetRef = useRef<{ x: number; y: number } | null>(null);
+  const [manualTick, setManualTick] = useState(0);
+
   // === Police ===
   type PoliceCar = {
     id: number;
