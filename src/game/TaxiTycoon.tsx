@@ -2047,19 +2047,23 @@ export default function TaxiTycoon() {
       return;
     }
     free.jobId = job.id;
+    // Position visuelle de départ : si le taxi était garé au QG, on part
+    // du QG pour qu'on le voie sortir vraiment (pas un saut sur la route).
+    const wasParked = free.mode === "idle" || free.mode === "depositing";
+    const visualFrom = wasParked ? { x: depotXY.x, y: depotXY.y - 18 } : taxiXY(free);
     // Bascule vers le path du pickup, partant de sa position actuelle.
-    const here = taxiXY(free);
     free.pathIdx = job.pickupPath;
-    free.pos = closestOnPath(job.pickupPath, here.x, here.y);
+    free.pos = closestOnPath(job.pickupPath, visualFrom.x, visualFrom.y);
     free.target = job.pickup;
     free.mode = "to_pickup";
     syncVehicleLane(free);
-    // Transition douce : on mémorise la position actuelle pour interpoler
-    // visuellement vers le nouveau path (évite le « saut » de voie).
-    free.transitionFromX = here.x;
-    free.transitionFromY = here.y;
+    // Transition douce : on mémorise la position visuelle de départ pour
+    // interpoler vers le path (évite le « saut »).
+    free.transitionFromX = visualFrom.x;
+    free.transitionFromY = visualFrom.y;
     free.transitionUntil = performance.now() + TRANSITION_MS;
     setJobs((js) => js.map((j) => j.id === id ? { ...j, status: "accepted", acceptedAt: Date.now() } : j));
+
   };
 
   // === Mission spéciale joueur ===
