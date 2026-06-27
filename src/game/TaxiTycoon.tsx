@@ -1145,6 +1145,23 @@ export default function TaxiTycoon() {
             if (after > before) slots--;
             else break; // cooldown ou aucun taxi libre → on retentera plus tard
           }
+          // Pas (ou plus) de course à prendre : on fait sortir les taxis des
+          // chauffeurs en patrouille pour qu'ils soient visibles en ville.
+          if (slots > 0) {
+            const idleTaxis = taxisRef.current.filter((t) => t.mode === "idle");
+            for (let k = 0; k < Math.min(slots, idleTaxis.length); k++) {
+              const t = idleTaxis[k];
+              const here = taxiXY(t);
+              const pIdx = t.pathIdx;
+              const len = pathLensRef.current[pIdx] ?? 0;
+              if (len <= 2) continue;
+              const start = closestOnPath(pIdx, here.x, here.y);
+              const dest = Math.max(1, Math.min(len - 1, Math.random() * len));
+              beginSegment(t, pIdx, start, dest);
+              t.mode = "roaming";
+            }
+          }
+
         };
         const handle = window.setInterval(tick, 1500);
         return () => window.clearInterval(handle);
