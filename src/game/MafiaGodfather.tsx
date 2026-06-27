@@ -338,22 +338,6 @@ export default function MafiaGodfather() {
         .mg-pay:disabled { background: #4b5563; color: #9ca3af; cursor: not-allowed; }
         .mg-refuse { background: #dc2626; color: #fff1f2; border-color: #450a0a; }
         .mg-warn { margin: 10px 0 0; font-size: 11px; color: #fca5a5; text-align: center; }
-        .mg-badge {
-          position: fixed; top: 8px; right: 60px; z-index: 9998;
-          display: inline-flex; align-items: center; gap: 4px;
-          padding: 4px 8px; border-radius: 999px;
-          background: rgba(12,14,22,0.92);
-          border: 1px solid ${truceActive ? "#16a34a" : "#dc2626"};
-          color: ${truceActive ? "#86efac" : "#fca5a5"};
-          font-size: 10px; font-weight: 900; letter-spacing: 0.5px;
-          cursor: ${truceActive ? "default" : "pointer"};
-          box-shadow: 0 4px 10px rgba(0,0,0,0.45);
-          font-family: ui-sans-serif, system-ui, sans-serif;
-        }
-        .mg-badge b { color: #fde047; margin-left: 2px; font-variant-numeric: tabular-nums; }
-        @media (orientation: landscape) and (max-height: 500px) {
-          .mg-badge { top: 6px; right: 110px; }
-        }
       `}</style>
     </div>
   ), document.body);
