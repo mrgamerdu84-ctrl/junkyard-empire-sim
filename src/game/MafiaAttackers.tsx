@@ -115,11 +115,18 @@ export default function MafiaAttackers() {
   // refs DOM par voiture -> mise à jour directe du transform sans re-render
   const groupRefs = useRef<Map<number, SVGGElement>>(new Map());
   const raidUntilRef = useRef(0);
+  // Suivi du raid : objectif = détruire les 10 voitures du Parrain.
+  const raidSessionRef = useRef<{ active: boolean; spawned: number; destroyed: number }>({
+    active: false, spawned: 0, destroyed: 0,
+  });
+  const RAID_TARGET = 10;
 
   useEffect(() => {
     const onRaid = (ev: Event) => {
       const d = (ev as CustomEvent<{ until: number }>).detail;
       if (d && typeof d.until === "number") raidUntilRef.current = d.until;
+      // Démarre une nouvelle session de raid : compteurs RAZ.
+      raidSessionRef.current = { active: true, spawned: 0, destroyed: 0 };
     };
     window.addEventListener("jce.mafia.raid", onRaid as EventListener);
     return () => window.removeEventListener("jce.mafia.raid", onRaid as EventListener);
