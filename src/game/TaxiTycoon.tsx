@@ -977,12 +977,18 @@ export default function TaxiTycoon() {
     taxi.pathIdx = newPathIdx;
     taxi.pos = newPos;
     taxi.target = newTarget;
-    if ((visual.x !== 0 || visual.y !== 0) && dist <= 60) {
+    // Verrou rond-point : si le segment de lerp passe à travers le rond-point,
+    // on snap pour ne PAS dessiner un raccourci visuel par-dessus la fontaine.
+    const crossesRound = segmentHitsCircle(
+      visual.x, visual.y, nearX, nearY,
+      ROUNDABOUT.x, ROUNDABOUT.y, ROUNDABOUT.r,
+    );
+    if ((visual.x !== 0 || visual.y !== 0) && dist <= 60 && !crossesRound) {
       taxi.transitionFromX = visual.x;
       taxi.transitionFromY = visual.y;
       taxi.transitionUntil = performance.now() + TRANSITION_MS;
     } else {
-      // Snap : pas de trajet hors route.
+      // Snap : pas de trajet hors route ni à travers le rond-point.
       taxi.transitionFromX = undefined;
       taxi.transitionFromY = undefined;
       taxi.transitionUntil = undefined;
