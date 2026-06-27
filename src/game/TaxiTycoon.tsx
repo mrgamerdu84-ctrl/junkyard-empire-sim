@@ -1116,12 +1116,36 @@ export default function TaxiTycoon() {
       (async () => {
         try {
           const { pushCloudSave } = await import("@/lib/cloudSave");
+          lastCloudPushRef.current = Date.now();
           await pushCloudSave(save);
         } catch {}
       })();
     }, 800);
     return () => clearTimeout(id);
   }, [save, hydrated]);
+
+  // Re-tire la sauvegarde cloud quand on revient sur l'onglet (filet de
+  // sécurité si le canal realtime a été coupé pendant la mise en veille).
+  useEffect(() => {
+    const onFocus = async () => {
+      try {
+        const { fetchCloudSave } = await import("@/lib/cloudSave");
+        const cloud = await fetchCloudSave();
+        if (cloud && cloud.data && typeof cloud.data === "object") {
+          const cloudTs = new Date(cloud.updatedAt).getTime();
+          // n'écrase pas un push local très récent
+          if (cloudTs - lastCloudPushRef.current > 2000) {
+            setSave({ ...DEFAULT_SAVE, ...(cloud.data as Partial<SaveData>) });
+          }
+        }
+      } catch {}
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") onFocus();
+    });
+    return () => window.removeEventListener("focus", onFocus);
+  }, []);
 
   const tier = DEPOT_TIERS[save.depotTier];
   const nextTier = DEPOT_TIERS[save.depotTier + 1];
