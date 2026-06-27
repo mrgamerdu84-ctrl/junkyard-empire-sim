@@ -343,7 +343,23 @@ export default function MafiaAttackers() {
     window.dispatchEvent(
       new CustomEvent("jce.player.cashDelta", { detail: { amount: REWARD } }),
     );
+    // Comptage des kills pendant un raid : le Parrain envoie un message
+    // dès que les 10 voitures du raid sont détruites.
+    const session = raidSessionRef.current;
+    if (session.active) {
+      session.destroyed++;
+      if (session.destroyed >= RAID_TARGET) {
+        session.active = false;
+        raidUntilRef.current = 0;
+        window.dispatchEvent(
+          new CustomEvent("jce.godfather.say", {
+            detail: { text: "La prochaine fois, ça sera plus cher." },
+          }),
+        );
+      }
+    }
   };
+
 
   const cars = carsRef.current;
   const S = VEHICLE_SIZE;
