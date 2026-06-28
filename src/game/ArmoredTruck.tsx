@@ -254,8 +254,14 @@ export default function ArmoredTruck() {
     const hqY = cfgRef.current.hqY;
 
     let raf = 0;
+    let last = 0;
+    const MIN_FRAME = 1000 / 30;
     const step = (now: number) => {
+      raf = requestAnimationFrame(step);
+      if (now - last < MIN_FRAME) return;
+      last = now;
       let tx = 0, ty = 0, ang = 0;
+
 
       if (phase === "rolling") {
         const u = Math.min(1, (now - rolloutStartRef.current) / (TRUCK_TRAVEL_S * 1000));
