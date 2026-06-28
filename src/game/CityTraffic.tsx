@@ -653,10 +653,9 @@ export default function CityTraffic() {
         checkRadars(st, prev);
       }
       void needsRebuild;
-
-      raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
+
     return () => {
       cancelAnimationFrame(raf);
     };
