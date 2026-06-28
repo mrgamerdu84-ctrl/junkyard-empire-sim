@@ -1955,9 +1955,12 @@ export default function TaxiTycoon() {
     manualTargetRef.current = null;
     let raf = 0;
     let last = performance.now();
-    const SPEED = 260; // px/s sur viewBox 1920 — vif sans être incontrôlable
+    const MIN_FRAME = 1000 / 30;
+    const SPEED = 260;
     const tick = () => {
+      raf = requestAnimationFrame(tick);
       const now = performance.now();
+      if (now - last < MIN_FRAME) return;
       const dt = Math.min(0.06, (now - last) / 1000);
       last = now;
       const cur = manualPosRef.current;
@@ -1975,9 +1978,9 @@ export default function TaxiTycoon() {
         }
       }
       setManualTick((n) => (n + 1) % 1000000);
-      raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
+
     return () => cancelAnimationFrame(raf);
   }, [manualMode, admin.hqX, admin.hqY]);
 
