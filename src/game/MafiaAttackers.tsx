@@ -329,11 +329,10 @@ export default function MafiaAttackers() {
       }
       carsRef.current = survivors;
       if (structuralChange) setVersion((v) => (v + 1) & 0xffff);
-
-      raf = requestAnimationFrame(tick);
     };
 
     raf = requestAnimationFrame(tick);
+
     return () => cancelAnimationFrame(raf);
   }, [pathEls, pathLens]);
 
