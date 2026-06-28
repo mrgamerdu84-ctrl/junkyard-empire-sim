@@ -430,8 +430,9 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
   // places de parking rouges, antenne radio. Aucun simple cube.
   const W = 220;
   const H = 200;
+  const fx = !reduceMotion();
   return (
-    <g transform={`translate(${x},${y})`} filter="url(#taxi-shadow)">
+    <g transform={`translate(${x},${y})`} filter={fx ? "url(#taxi-shadow)" : undefined}>
       {/* ombre portée */}
       <ellipse cx="0" cy={H / 2 - 8} rx={W / 2 + 4} ry="14" fill="rgba(0,0,0,0.55)" />
 
@@ -2807,7 +2808,7 @@ export default function TaxiTycoon() {
         {circuitInfo.pts.length >= 2 && circuitTaxisRef.current.map((ct) => {
           const p = circuitAt(ct.pos);
           return (
-            <g key={ct.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
+            <g key={ct.id} transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter={reducedFx ? undefined : "url(#taxi-shadow)"}>
               <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} paintFilter={currentPaint.filter} markerColor={currentPaint.color} withClient={false} moving={true} />
             </g>
           );
@@ -2820,7 +2821,7 @@ export default function TaxiTycoon() {
           const angle = p.angle;
           return (
             <g key={r.id}>
-              <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter="url(#taxi-shadow)">
+              <g transform={`translate(${p.x},${p.y}) rotate(${angle})`} filter={reducedFx ? undefined : "url(#taxi-shadow)"}>
                 <TaxiSprite image={TAXI_RED_URL} faceRight={true} withClient={r.mode === "to_dest"} moving={r.mode !== "idle"} />
               </g>
               
