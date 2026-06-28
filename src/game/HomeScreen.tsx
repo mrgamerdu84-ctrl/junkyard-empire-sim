@@ -10,7 +10,7 @@ import { useAuth, signOut } from "@/lib/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import LoadingScreen from "./LoadingScreen";
 
-export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
+export default function HomeScreen({ onPlay, onReplayIntro }: { onPlay: () => void; onReplayIntro?: () => void }) {
   const navigate = useNavigate();
   const { user, pseudo: cloudPseudo, avatarKind, avatarUrl } = useAuth();
   const [showProfile, setShowProfile] = useState(false);
@@ -266,6 +266,11 @@ export default function HomeScreen({ onPlay }: { onPlay: () => void }) {
         <button className="hs-btn" onClick={() => { resetTutorial(); setShowTutorial(true); }}>
           📖 Tuto
         </button>
+        {onReplayIntro && (
+          <button className="hs-btn" onClick={onReplayIntro}>
+            🎬 Histoire
+          </button>
+        )}
         <button
           className="hs-btn"
           style={trialExpired ? { background: "linear-gradient(180deg,#6b7280,#4b5563)", color: "#d1d5db", boxShadow: "0 6px 0 #1f2937, 0 12px 20px rgba(0,0,0,0.5)", opacity: 0.85 } : undefined}

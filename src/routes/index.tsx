@@ -12,9 +12,11 @@ import RadarFlash from "@/game/RadarFlash";
 // AmbientSirens retiré : plus de bruits d'ambulance/pompiers/police en fond.
 import AdminPanel from "@/game/AdminPanel";
 import MafiaGodfather from "@/game/MafiaGodfather";
+import MafiaLimo from "@/game/MafiaLimo";
 import VersionBanner from "@/game/VersionBanner";
 import HomeScreen from "@/game/HomeScreen";
 import SplashScreen from "@/game/SplashScreen";
+import IntroStory, { hasSeenIntro } from "@/game/IntroStory";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -32,7 +34,7 @@ export const Route = createFileRoute("/")({
 const ZOOM_LEVELS = [1, 1.5, 2, 2.75] as const;
 
 function TaxiTycoonPage() {
-  const [phase, setPhase] = useState<"splash" | "home" | "game">("splash");
+  const [phase, setPhase] = useState<"splash" | "intro" | "home" | "game">("splash");
   const [zoomIdx, setZoomIdx] = useState(0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
@@ -86,11 +88,15 @@ function TaxiTycoonPage() {
   };
 
   if (phase === "splash") {
-    return <SplashScreen onDone={() => setPhase("home")} />;
+    return <SplashScreen onDone={() => setPhase(hasSeenIntro() ? "home" : "intro")} />;
+  }
+
+  if (phase === "intro") {
+    return <IntroStory onDone={() => setPhase("home")} />;
   }
 
   if (phase === "home") {
-    return <HomeScreen onPlay={() => setPhase("game")} />;
+    return <HomeScreen onPlay={() => setPhase("game")} onReplayIntro={() => setPhase("intro")} />;
   }
 
   return (
@@ -170,6 +176,7 @@ function TaxiTycoonPage() {
         <InterventionDispatcher />
         <TaxiTycoon />
         <ArmoredTruck />
+        <MafiaLimo />
       </div>
 
       {/* HUD et panneaux hors zoom (toujours nets) */}

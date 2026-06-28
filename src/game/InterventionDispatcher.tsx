@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import type { CustomVehicleCategory } from "./gameAssets";
 
 const ICON: Record<CustomVehicleCategory, string> = {
-  civil: "🚗", taxi: "🚕", police: "🚓", ambulance: "🚑", firetruck: "🚒", service: "🚛", robber: "🦹", armored: "💰",
+  civil: "🚗", taxi: "🚕", police: "🚓", ambulance: "🚑", firetruck: "🚒", service: "🚛", robber: "🦹", armored: "💰", limo: "🥂",
 };
 
 type Toast = { id: number; text: string; tone: "ok" | "warn" };
