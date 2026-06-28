@@ -1,7 +1,9 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { getMyCustomizations, saveMyCustomizations } from "@/lib/customizations.functions";
+
 
 const CUSTOM_VEHICLES_KEY = "jce.customVehicles";
 const CUSTOM_PED_KEY = "jce.customPedestrians";
