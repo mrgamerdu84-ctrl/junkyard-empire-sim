@@ -1,11 +1,57 @@
-// Détection grossière du niveau de l'appareil + helpers de throttling.
-// Joueurs entrée de gamme (Xiaomi Redmi etc.) : on plafonne à 30 fps,
-// 24 fps low-end, et un mode "ultra léger" 20 fps avec très peu de
-// véhicules + animations coupées pour les téléphones vraiment faibles.
+// Détection appareil + helpers de throttling + réglages utilisateur "ultra-fluide".
 
 type Tier = "ultra" | "low" | "mid" | "high";
 
-const LS_KEY = "mtwr.ultraLite"; // "1" force, "0" désactive, sinon auto
+const LS_KEY = "mtwr.ultraLite"; // legacy : "1"/"0"/null
+const LS_SETTINGS = "mtwr.perfSettings.v1";
+
+export type PerfSettings = {
+  ultraFluid: boolean;   // master toggle (préréglage agressif)
+  entityScale: number;   // 0.1 → 1 (multiplicateur sur le nombre d'entités)
+  fpsCap: number;        // 15 → 60
+  fxOff: boolean;        // coupe halos, ombres, animations décoratives
+};
+
+const DEFAULT_SETTINGS: PerfSettings = {
+  ultraFluid: false,
+  entityScale: 1,
+  fpsCap: 60,
+  fxOff: false,
+};
+
+let _settings: PerfSettings | null = null;
+
+function readSettings(): PerfSettings {
+  if (_settings) return _settings;
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(LS_SETTINGS) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      _settings = { ...DEFAULT_SETTINGS, ...parsed };
+      return _settings!;
+    }
+  } catch {}
+  _settings = { ...DEFAULT_SETTINGS };
+  return _settings;
+}
+
+export function perfSettings(): PerfSettings {
+  return readSettings();
+}
+
+export function setPerfSettings(patch: Partial<PerfSettings>) {
+  const next = { ...readSettings(), ...patch };
+  // Si ultraFluid est activé, on applique un préréglage agressif.
+  if (patch.ultraFluid === true) {
+    next.entityScale = Math.min(next.entityScale, 0.3);
+    next.fpsCap = Math.min(next.fpsCap, 20);
+    next.fxOff = true;
+  }
+  _settings = next;
+  try { localStorage.setItem(LS_SETTINGS, JSON.stringify(next)); } catch {}
+  _tier = null;
+  try { window.dispatchEvent(new CustomEvent("mtwr.perf.changed")); } catch {}
+}
 
 function readOverride(): "on" | "off" | null {
   try {
@@ -26,18 +72,17 @@ function detectTier(): Tier {
   const isAndroid = /Android/i.test(ua);
   const isXiaomiLike = /Xiaomi|Redmi|Miui|M210|M200|M190|POCO/i.test(ua);
 
+  // L'option utilisateur "ultra-fluide" l'emporte sur tout.
+  if (readSettings().ultraFluid) return "ultra";
+
   const override = readOverride();
   if (override === "on") return "ultra";
   if (override === "off") {
-    // garder un palier raisonnable même si l'user désactive
     if (mem <= 3 || cpu <= 4) return "low";
     if (mem <= 6 || cpu <= 6 || isMobile) return "mid";
     return "high";
   }
 
-  // Auto : déclenche l'ultra-light sur vraies entrées de gamme.
-  // Les Xiaomi/Redmi annoncent souvent 4 Go mais gardent peu de RAM libre
-  // dans WebView : on les traite plus agressivement pour éviter les freezes.
   if (mem <= 2 || cpu <= 2) return "ultra";
   if (isAndroid && isXiaomiLike) return "ultra";
   if (isAndroid && isMobile && mem <= 4 && cpu <= 4) return "ultra";
@@ -54,7 +99,7 @@ export function perfTier(): Tier {
 }
 
 export function isUltraLite(): boolean {
-  return perfTier() === "ultra";
+  return perfTier() === "ultra" || readSettings().ultraFluid;
 }
 
 export function setUltraLite(on: boolean | null) {
@@ -62,24 +107,31 @@ export function setUltraLite(on: boolean | null) {
     if (on === null) localStorage.removeItem(LS_KEY);
     else localStorage.setItem(LS_KEY, on ? "1" : "0");
   } catch {}
-  _tier = null; // re-détection
+  _tier = null;
 }
 
-export function targetFps(): number {
-  const t = perfTier();
+function tierFps(t: Tier): number {
   if (t === "ultra") return 18;
   if (t === "low") return 22;
   if (t === "mid") return 30;
   return 60;
 }
 
-// Multiplicateur sur les comptages (trafic, piétons, mafia, etc.).
-export function densityMult(): number {
+export function targetFps(): number {
   const t = perfTier();
+  const cap = readSettings().fpsCap;
+  return Math.min(tierFps(t), cap);
+}
+
+function tierDensity(t: Tier): number {
   if (t === "ultra") return 0.08;
   if (t === "low") return 0.25;
   if (t === "mid") return 0.6;
   return 1;
+}
+
+export function densityMult(): number {
+  return tierDensity(perfTier()) * readSettings().entityScale;
 }
 
 export function isMobileLike(): boolean {
@@ -94,15 +146,13 @@ export function preferLiteAssets(): boolean {
 
 export function trafficBudget(defaultCount: number): number {
   const t = perfTier();
-  if (t === "ultra") return Math.min(defaultCount, 5);
-  if (t === "low") return Math.min(defaultCount, 9);
-  if (t === "mid") return Math.min(defaultCount, 16);
-  return defaultCount;
+  const scale = readSettings().entityScale;
+  const tierCap = t === "ultra" ? 5 : t === "low" ? 9 : t === "mid" ? 16 : defaultCount;
+  return Math.max(0, Math.floor(Math.min(defaultCount, tierCap) * scale));
 }
 
-// True si on doit couper les animations purement décoratives
-// (gyrophares clignotants, fumée, halos pulsés, ombres animées...).
 export function reduceMotion(): boolean {
+  if (readSettings().fxOff) return true;
   if (perfTier() === "ultra") return true;
   try {
     return typeof matchMedia !== "undefined"
@@ -112,7 +162,6 @@ export function reduceMotion(): boolean {
   }
 }
 
-// Rate-limiter pour boucles rAF.
 export function makeFrameLimiter(fps = targetFps()) {
   const minDt = 1000 / fps;
   let last = 0;
