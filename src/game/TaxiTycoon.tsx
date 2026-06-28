@@ -3228,7 +3228,7 @@ export default function TaxiTycoon() {
 
 
         {/* Popups gains */}
-        {popups.map((p) => (
+        {!ultraLite && popups.map((p) => (
           <g key={p.id} transform={`translate(${p.x},${p.y})`}>
             <text fontSize="22" fontWeight="900" textAnchor="middle" fill="#34d399" stroke="#0a0c10" strokeWidth="3" paintOrder="stroke">
               {p.text}
