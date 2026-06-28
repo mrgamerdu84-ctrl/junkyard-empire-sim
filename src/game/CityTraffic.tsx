@@ -461,19 +461,22 @@ export default function CityTraffic() {
 
 
   // Cycle jour/nuit 300s (5 minutes). Démarre en plein jour.
+  // PERF : on n'a pas besoin de 60 setState/s pour la nuit ; un rafraîchissement
+  // toutes les 250 ms est totalement invisible à l'œil et libère le main thread.
   useEffect(() => {
-    let raf = 0;
-    const tick = () => {
-      const t = (performance.now() % 300000) / 300000;
-      // décalage π/2 pour partir au midi (sin = 1)
+    let last = 0;
+    const id = window.setInterval(() => {
+      const now = performance.now();
+      if (now - last < 240) return;
+      last = now;
+      const t = (now % 300000) / 300000;
       const daylight = Math.max(0, Math.sin(t * Math.PI * 2 + Math.PI / 2));
       setNight(0.1 + (1 - daylight) * 0.6);
       setLightsTick(v => (v + 1) % 1000000);
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    }, 250);
+    return () => window.clearInterval(id);
   }, []);
+
 
 
   // Boucle de trafic : positions JS pilotées avec freinage progressif.
