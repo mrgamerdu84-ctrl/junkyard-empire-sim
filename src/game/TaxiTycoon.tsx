@@ -1199,8 +1199,10 @@ export default function TaxiTycoon() {
           if (slots <= 0) return;
           // On accepte les courses offertes une par une (acceptJob respecte
           // déjà le cooldown de sortie QG et la dispo des taxis).
+          // Les missions spéciales (tier "special") sont réservées au joueur :
+          // les chauffeurs IA ne les prennent jamais en auto-dispatch.
           const offered = jobsRef.current
-            .filter((j) => j.status === "offered")
+            .filter((j) => j.status === "offered" && j.tier !== "special")
             .sort((a, b) => a.deadline - b.deadline);
           for (const j of offered) {
             if (slots <= 0) break;
