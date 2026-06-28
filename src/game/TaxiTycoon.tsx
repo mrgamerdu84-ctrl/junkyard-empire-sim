@@ -396,7 +396,7 @@ function Depot({ tier, x, y, scale = 1, rotation = 0, capLvl = 0, revLvl = 0, pr
       <path d={`M ${W / 2 - 16} ${H / 2 - 6} l -10 -4 l 10 -4 z`} fill="#f5c542" opacity="0.8" />
 
       {/* Néons bord de toit */}
-      {lit && (
+      {lit && !reduceMotion() && (
         <g>
           <rect x={-W / 2 + 16} y={-H / 2 + 20} width={W - 32} height="2" fill="#ffd84a" opacity={neonOp}>
             <animate attributeName="opacity" values={`${neonOp};${Math.min(1, neonOp + 0.25)};${neonOp}`} dur="2.4s" repeatCount="indefinite" />
@@ -449,7 +449,7 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
       <path d={`M ${-W / 2 + 14} ${-H / 2 + 20} L 0 ${-H / 2 - 8} L ${W / 2 - 14} ${-H / 2 + 20} Z`} fill="#7a1020" stroke="#0a0608" strokeWidth="1.6" />
       <rect x="-6" y={-H / 2 - 28} width="3" height="22" fill="#0a0608" />
       <circle cx="-4.5" cy={-H / 2 - 30} r="2.2" fill="#ff3040">
-        <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite" />
+        {!reduceMotion() && <animate attributeName="opacity" values="1;0.2;1" dur="1.1s" repeatCount="indefinite" />}
       </circle>
 
       {/* Vitrines / fenêtres (2 rangées) */}
