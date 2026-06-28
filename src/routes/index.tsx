@@ -34,7 +34,7 @@ export const Route = createFileRoute("/")({
 const ZOOM_LEVELS = [1, 1.5, 2, 2.75] as const;
 
 function TaxiTycoonPage() {
-  const [phase, setPhase] = useState<"splash" | "home" | "game">("splash");
+  const [phase, setPhase] = useState<"splash" | "intro" | "home" | "game">("splash");
   const [zoomIdx, setZoomIdx] = useState(0);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const dragRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null);
