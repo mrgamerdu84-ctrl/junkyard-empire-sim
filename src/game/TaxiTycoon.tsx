@@ -1318,10 +1318,11 @@ export default function TaxiTycoon() {
         lastJobSpawnRef.current = now;
         const job = genJob(cur.depotTier);
         setJobs((js) => [...js, job]);
-        try {
-          window.dispatchEvent(new CustomEvent("jce:mission-offered", { detail: { id: job.id, fare: job.fare } }));
-        } catch {}
+        // Pas de pop-up pour les courses standard : la secrétaire les dispatche
+        // silencieusement aux chauffeurs. Seules les missions spéciales (VIP)
+        // déclenchent une notification.
       }
+
 
       // === Mouvement des taxis ===
       for (const taxi of taxisRef.current) {
