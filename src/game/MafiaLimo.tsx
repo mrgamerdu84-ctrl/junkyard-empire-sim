@@ -34,8 +34,8 @@ export default function MafiaLimo() {
   const [phase, setPhase] = useState<Phase>("off");
   const [pos, setPos] = useState({ x: MAP_W + 200, y: MAP_H / 2, angle: 180 });
   const [sprite, setSprite] = useState<string>(pickLimoSprite());
-  const rafRef = useRef<number>();
-  const parkTimerRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
+  const parkTimerRef = useRef<number | undefined>(undefined);
   const adm = getAdmin();
   const target = {
     x: Math.min(MAP_W - 80, adm.hqX + PARK_OFFSET.x),
