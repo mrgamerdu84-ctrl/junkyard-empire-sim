@@ -2491,8 +2491,8 @@ export default function TaxiTycoon() {
 
 
         {/* Station-service — vraie station avec auvent, deux pompes, boutique */}
-        {pathsReady && (
-          <g transform={`translate(${admin.gasStationX},${admin.gasStationY})`} filter="url(#taxi-shadow)">
+        {pathsReady && !ultraLite && (
+          <g transform={`translate(${admin.gasStationX},${admin.gasStationY})`} filter={reducedFx ? undefined : "url(#taxi-shadow)"}>
             {/* ombre globale */}
             <ellipse cx="0" cy="34" rx="62" ry="10" fill="rgba(0,0,0,0.55)" />
 
@@ -2540,7 +2540,7 @@ export default function TaxiTycoon() {
 
             {/* Petite enseigne illuminée */}
             <circle cx="-58" cy="-40" r="2.2" fill="#fde68a">
-              <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" />
+              {!reducedFx && <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" />}
             </circle>
           </g>
         )}
