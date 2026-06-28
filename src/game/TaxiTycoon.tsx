@@ -1856,11 +1856,11 @@ export default function TaxiTycoon() {
 
       forceRender((n) => (n + 1) % 1_000_000);
 
-      raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [pathsReady]);
+
 
   // === Helpers de rendu position ===
   const LANE_OFFSET = 12; // px à droite de l'axe de la route, dans le sens de marche
