@@ -95,56 +95,49 @@ export default function CrimeEvents() {
 
   // Génération
   useEffect(() => {
-    let raf = 0;
-    let lastTry = performance.now();
-    const tick = () => {
+    // Generation polled every second — pas besoin de rAF.
+    const id = window.setInterval(() => {
       const now = performance.now();
-      const dt = now - lastTry;
-      if (dt >= 2000) {
-        lastTry = now;
-        const t = getGameTime(now);
-        const isNight = t.period === "night";
-        let p = 0.05;
-        if (t.period === "night") p = 0.35;
-        else if (t.period === "evening") p = 0.18;
-        else if (t.period === "rushAM" || t.period === "rushPM") p = 0.12;
-        else if (t.period === "lunch") p = 0.08;
-        if (t.isWeekend) p *= 0.7;
-        if (t.isHoliday) p *= 0.5;
+      const t = getGameTime(now);
+      const isNight = t.period === "night";
+      let p = 0.05;
+      if (t.period === "night") p = 0.35;
+      else if (t.period === "evening") p = 0.18;
+      else if (t.period === "rushAM" || t.period === "rushPM") p = 0.12;
+      else if (t.period === "lunch") p = 0.08;
+      if (t.isWeekend) p *= 0.7;
+      if (t.isHoliday) p *= 0.5;
 
-        if (Math.random() < p) {
-          const isolatedPool = HOTSPOTS.filter(h => h.isolated);
-          const pool = isNight && Math.random() < 0.6 && isolatedPool.length > 0
-            ? isolatedPool
-            : HOTSPOTS;
-          const spot = pool[Math.floor(Math.random() * pool.length)];
-          const robberyOk = rollRobberyForDay(now);
-          const kind = pickKind(isNight, robberyOk);
-          const ttl = kind === "control" ? 9000 : kind === "accident" ? 14000 : kind === "fire" ? 16000 : 11000;
-          const meta = KIND_META[kind];
-          // Délai avant que l'AI rafle la mission : plus le joueur monte de niveau, plus l'AI est rapide.
-          const tier = readDepotTier();
-          const diff = getAdmin().aiDifficulty;
-          const diffMult = diff === "easy" ? 1.8 : diff === "hard" ? 0.65 : 1;
-          const aiDelay = Math.max(2200, (7500 - tier * 950) * diffMult);
-          const ev: CrimeEvent = {
-            id: nextId++,
-            kind,
-            x: spot.x + (Math.random() - 0.5) * 60,
-            y: spot.y + (Math.random() - 0.5) * 60,
-            startedAt: now,
-            ttl,
-            label: `${meta.label} · ${t.label.split(" ")[1]}`,
-            aiClaimAt: now + aiDelay,
-          };
-          setEvents(es => [...es, ev]);
-        }
+      if (Math.random() < p) {
+        const isolatedPool = HOTSPOTS.filter(h => h.isolated);
+        const pool = isNight && Math.random() < 0.6 && isolatedPool.length > 0
+          ? isolatedPool
+          : HOTSPOTS;
+        const spot = pool[Math.floor(Math.random() * pool.length)];
+        const robberyOk = rollRobberyForDay(now);
+        const kind = pickKind(isNight, robberyOk);
+        const ttl = kind === "control" ? 9000 : kind === "accident" ? 14000 : kind === "fire" ? 16000 : 11000;
+        const meta = KIND_META[kind];
+        const tier = readDepotTier();
+        const diff = getAdmin().aiDifficulty;
+        const diffMult = diff === "easy" ? 1.8 : diff === "hard" ? 0.65 : 1;
+        const aiDelay = Math.max(2200, (7500 - tier * 950) * diffMult);
+        const ev: CrimeEvent = {
+          id: nextId++,
+          kind,
+          x: spot.x + (Math.random() - 0.5) * 60,
+          y: spot.y + (Math.random() - 0.5) * 60,
+          startedAt: now,
+          ttl,
+          label: `${meta.label} · ${t.label.split(" ")[1]}`,
+          aiClaimAt: now + aiDelay,
+        };
+        setEvents(es => [...es, ev]);
       }
-      raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    }, 2000);
+    return () => window.clearInterval(id);
   }, []);
+
 
   // Expiration + résolution + AI qui rafle les missions trop lentes
   useEffect(() => {
