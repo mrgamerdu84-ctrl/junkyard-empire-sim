@@ -1,13 +1,15 @@
 // Overlay visuel : teinte nuit + effets météo (pluie, neige, brouillard, orage).
 // Se superpose au-dessus de la carte mais sous l'UI.
 import { useRealWorldEnv } from "@/lib/realWorldEnv";
+import { isUltraLite, reduceMotion } from "@/lib/perf";
 
-export function WeatherNightOverlay() {
+export function WeatherNightOverlay({ lite = false }: { lite?: boolean }) {
   const env = useRealWorldEnv();
   if (!env) return null;
 
   const night = !env.isDay;
   const w = env.weather;
+  const staticFx = lite || isUltraLite() || reduceMotion();
 
   return (
     <div
@@ -39,16 +41,22 @@ export function WeatherNightOverlay() {
       {/* Pluie / orage */}
       {(w === "rain" || w === "storm") && (
         <>
-          <div className="jce-rain" />
+          {staticFx ? (
+            <div style={{ position: "absolute", inset: 0, background: "rgba(70,95,125,0.16)" }} />
+          ) : (
+            <div className="jce-rain" />
+          )}
           {night || w === "storm" ? (
             <div style={{ position: "absolute", inset: 0, background: "rgba(10,15,25,0.25)" }} />
           ) : null}
-          {w === "storm" && <div className="jce-lightning" />}
+          {w === "storm" && !staticFx && <div className="jce-lightning" />}
         </>
       )}
 
       {/* Neige */}
-      {w === "snow" && <div className="jce-snow" />}
+      {w === "snow" && (staticFx
+        ? <div style={{ position: "absolute", inset: 0, background: "rgba(235,245,255,0.14)" }} />
+        : <div className="jce-snow" />)}
 
       <style>{`
         .jce-rain {

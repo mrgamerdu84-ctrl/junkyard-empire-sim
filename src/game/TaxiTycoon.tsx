@@ -22,6 +22,7 @@ import { useAuth } from "@/lib/useAuth";
 import { resolveAvatarSrc } from "@/components/ProfileCard";
 import { supabase } from "@/integrations/supabase/client";
 import playerHqAsset from "@/assets/taxi-warehouse.png.asset.json";
+import { isUltraLite, perfTier, reduceMotion, targetFps } from "@/lib/perf";
 
 const PLAYER_HQ_IMG = playerHqAsset.url;
 
@@ -554,6 +555,10 @@ function RadioLcd({ onOpen }: { onOpen: () => void }) {
 }
 
 export default function TaxiTycoon() {
+  const perfMode = perfTier();
+  const ultraLite = isUltraLite();
+  const reducedFx = reduceMotion();
+  const frameMs = 1000 / targetFps();
 
   // Une ref par chemin disponible — permet de varier les trajets des taxis.
   const pathRefs = useRef<(SVGPathElement | null)[]>([]);
@@ -1297,7 +1302,7 @@ export default function TaxiTycoon() {
     if (!pathsReady) return;
     let raf = 0;
     let last = performance.now();
-    const MIN_FRAME = 1000 / 30; // 30 fps pour rester fluide même sur Xiaomi low-end
+    const MIN_FRAME = frameMs; // plafonné par le mode performance de l'appareil
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const now = performance.now();
@@ -1311,7 +1316,7 @@ export default function TaxiTycoon() {
       const curTier = DEPOT_TIERS[cur.depotTier];
 
       // === Génération de courses proposées dans la file ===
-      const maxJobs = MAX_JOBS_BASE + adm.maxClientsBonus;
+      const maxJobs = Math.min(MAX_JOBS_BASE + adm.maxClientsBonus, ultraLite ? 1 : perfMode === "low" ? 2 : 4);
       if (
         jobsRef.current.length < maxJobs &&
         now - lastJobSpawnRef.current > curTier.spawnEvery * 1000 * adm.spawnRateMult
@@ -1965,7 +1970,7 @@ export default function TaxiTycoon() {
     manualTargetRef.current = null;
     let raf = 0;
     let last = performance.now();
-    const MIN_FRAME = 1000 / 30;
+    const MIN_FRAME = frameMs;
     const SPEED = 260;
     const tick = () => {
       raf = requestAnimationFrame(tick);
@@ -2200,7 +2205,7 @@ export default function TaxiTycoon() {
         });
       }
       w.__jcePlayerTaxis = arr;
-    }, 220);
+    }, ultraLite ? 800 : perfMode === "low" ? 500 : 220);
     return () => window.clearInterval(iv);
   }, []);
 
@@ -2296,7 +2301,7 @@ export default function TaxiTycoon() {
         }
         return changed ? kept : js;
       });
-    }, 250);
+    }, ultraLite || perfMode === "low" ? 1000 : 500);
     return () => clearInterval(iv);
   }, []);
 
@@ -2459,7 +2464,7 @@ export default function TaxiTycoon() {
 
   return (
     <>
-      <WeatherNightOverlay />
+      {!ultraLite && <WeatherNightOverlay lite={perfMode === "low"} />}
 
       {/* === Calque SVG du jeu === */}
       <svg
@@ -2566,8 +2571,8 @@ export default function TaxiTycoon() {
               {/* halo au sol — plus gros et pulsant pour MISSION SPÉCIALE */}
               {isSpecial && (
                 <circle r="22" fill="none" stroke={ringColor} strokeWidth="2" opacity="0.85">
-                  <animate attributeName="r" values="18;26;18" dur="1.4s" repeatCount="indefinite" />
-                  <animate attributeName="opacity" values="0.9;0.3;0.9" dur="1.4s" repeatCount="indefinite" />
+                  {!reducedFx && <animate attributeName="r" values="18;26;18" dur="1.4s" repeatCount="indefinite" />}
+                  {!reducedFx && <animate attributeName="opacity" values="0.9;0.3;0.9" dur="1.4s" repeatCount="indefinite" />}
                 </circle>
               )}
               <circle r={isSpecial ? 18 : (isStar || isVip ? 16 : 13)} fill={haloColor} opacity={isSpecial ? 0.5 : (isStar || isVip ? 0.35 : 0.22)} />
@@ -2641,7 +2646,7 @@ export default function TaxiTycoon() {
           return (
             <g key={"d" + j.id} transform={`translate(${p.x},${p.y})`}>
               <circle r="11" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeDasharray="4 3" opacity="0.85">
-                <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite" />
+                {!reducedFx && <animateTransform attributeName="transform" type="rotate" from="0" to="360" dur="6s" repeatCount="indefinite" />}
               </circle>
               <circle r="6" fill="#0f172a" stroke="#f59e0b" strokeWidth="1.5" />
               <text y="3" fontSize="9" textAnchor="middle">📍</text>
@@ -2823,7 +2828,7 @@ export default function TaxiTycoon() {
         })}
 
         {/* Radars fixes au bord de la route */}
-        {RADARS.map((rd) => {
+        {!ultraLite && RADARS.map((rd) => {
           const plen = pathLensRef.current[rd.pathIdx] ?? 0;
           if (plen <= 0) return null;
           // Radar ancré sur le trottoir (bord droit de la route), pas sur la voie
@@ -2866,7 +2871,7 @@ export default function TaxiTycoon() {
         })}
 
         {/* Planques police — emplacements de stationnement */}
-        {HIDEOUTS.map((ho) => {
+        {!ultraLite && HIDEOUTS.map((ho) => {
           const occupied = Object.values(stakeoutHideoutRef.current).includes(ho.id);
           return (
             <g key={`hideout-${ho.id}`} transform={`translate(${ho.x},${ho.y})`}>
@@ -3168,7 +3173,7 @@ export default function TaxiTycoon() {
                   opacity={onMission ? 0.85 : 0.45}
                   pointerEvents="none"
                 >
-                  {onMission && (
+                  {onMission && !reducedFx && (
                     <animate attributeName="opacity" values="0.85;0.3;0.85" dur="1.1s" repeatCount="indefinite" />
                   )}
                 </circle>
@@ -3186,7 +3191,7 @@ export default function TaxiTycoon() {
                   <text y="3" textAnchor="middle" fontSize="9" fontWeight="900" fill={ownPaint.color}>{idx + 1}</text>
                 </g>
                 {/* Étiquette d'état au-dessus quand en mission/action */}
-                {taxi.mode !== "idle" && (
+                {taxi.mode !== "idle" && !ultraLite && (
                   <g transform={`translate(${p.x},${p.y - 28})`} pointerEvents="none">
                     <rect x={-26} y={-7} width={52} height={12} rx={3} fill="#0a0c10" opacity="0.82" stroke={status.ring} strokeWidth="0.8" />
                     <text y={2} textAnchor="middle" fontSize="8" fontWeight="900" fill={status.ring}>{status.label}</text>
@@ -3203,10 +3208,10 @@ export default function TaxiTycoon() {
                   </g>
                 )}
                 {/* Mini jauge essence sous le taxi */}
-                <g transform={`translate(${p.x - 12},${p.y + 22})`}>
+                {(!ultraLite || fuelLow) && <g transform={`translate(${p.x - 12},${p.y + 22})`}>
                   <rect x="0" y="0" width="24" height="3" rx="1" fill="#0a0c10" opacity="0.7" />
                   <rect x="0" y="0" width={24 * fuelPct} height="3" rx="1" fill={fuelLow ? "#ef4444" : "#34d399"} />
-                </g>
+                </g>}
               </g>
             );
           });
