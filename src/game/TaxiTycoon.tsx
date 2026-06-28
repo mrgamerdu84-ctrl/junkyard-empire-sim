@@ -3138,7 +3138,16 @@ export default function TaxiTycoon() {
             }
           };
 
-          const renderedTaxis = taxisRef.current.map((taxi, idx) => {
+          // Mode téléphone faible : on garde la logique de toute la flotte,
+          // mais on ne dessine qu'une petite sélection. Dessiner 12+ PNG avec
+          // halos/labels à chaque frame fait ramer les Xiaomi/WebView.
+          const taxiRenderCap = ultraLite ? 6 : perfMode === "low" ? 10 : Number.POSITIVE_INFINITY;
+          const taxiRenderSource = taxisRef.current
+            .map((taxi, idx) => ({ taxi, idx }))
+            .filter(({ taxi }, order) => !ultraLite || taxi.mode !== "idle" || order < 3)
+            .slice(0, taxiRenderCap);
+
+          const renderedTaxis = taxiRenderSource.map(({ taxi, idx }) => {
 
             const movingForward = taxi.target >= taxi.pos;
             const onPath = taxi.lane ?? getLaneXY(taxi.pathIdx, taxi.pos, movingForward);
@@ -3171,18 +3180,20 @@ export default function TaxiTycoon() {
             const onMission = taxi.mode === "to_pickup" || taxi.mode === "to_dest";
             return (
               <g key={taxi.id}>
-                {/* Halo d'état (clignote quand en mission) */}
-                <circle
-                  cx={p.x} cy={p.y} r={onMission ? 22 : 18}
-                  fill="none" stroke={status.ring}
-                  strokeWidth={onMission ? 2.4 : 1.6}
-                  opacity={onMission ? 0.85 : 0.45}
-                  pointerEvents="none"
-                >
-                  {onMission && !reducedFx && (
-                    <animate attributeName="opacity" values="0.85;0.3;0.85" dur="1.1s" repeatCount="indefinite" />
-                  )}
-                </circle>
+                {/* Halo d'état (clignote quand en mission) — coupé en ultra léger */}
+                {!ultraLite && (
+                  <circle
+                    cx={p.x} cy={p.y} r={onMission ? 22 : 18}
+                    fill="none" stroke={status.ring}
+                    strokeWidth={onMission ? 2.4 : 1.6}
+                    opacity={onMission ? 0.85 : 0.45}
+                    pointerEvents="none"
+                  >
+                    {onMission && !reducedFx && (
+                      <animate attributeName="opacity" values="0.85;0.3;0.85" dur="1.1s" repeatCount="indefinite" />
+                    )}
+                  </circle>
+                )}
                 <g
                   transform={`translate(${p.x},${p.y}) rotate(${angle})`}
                   filter={reducedFx ? undefined : "url(#taxi-shadow)"}
@@ -3192,10 +3203,10 @@ export default function TaxiTycoon() {
                   <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight} paintFilter={ownPaint.filter} markerColor={ownPaint.color} withClient={taxi.mode === "to_dest"} moving={taxi.mode !== "idle" && taxi.mode !== "refueling" && taxi.mode !== "depositing"} />
                 </g>
                 {/* Numéro de taxi — toujours visible, ne tourne pas */}
-                <g transform={`translate(${p.x + 14},${p.y - 14})`} pointerEvents="none">
+                {!ultraLite && <g transform={`translate(${p.x + 14},${p.y - 14})`} pointerEvents="none">
                   <circle r="7" fill="#0a0c10" stroke={ownPaint.color} strokeWidth="1.5" />
                   <text y="3" textAnchor="middle" fontSize="9" fontWeight="900" fill={ownPaint.color}>{idx + 1}</text>
-                </g>
+                </g>}
                 {/* Étiquette d'état au-dessus quand en mission/action */}
                 {taxi.mode !== "idle" && !ultraLite && (
                   <g transform={`translate(${p.x},${p.y - 28})`} pointerEvents="none">
