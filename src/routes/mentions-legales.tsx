@@ -208,7 +208,7 @@ function MentionsLegalesPage() {
           </p>
 
           <div className="ml-foot">
-            © 2026 My Taxi World Rivalité — Tous droits réservés.
+            © 2026 My Taxi World : L'Empire des Rues — Tous droits réservés.
           </div>
         </div>
       </div>
