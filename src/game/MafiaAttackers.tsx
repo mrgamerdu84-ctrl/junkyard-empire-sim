@@ -137,12 +137,16 @@ export default function MafiaAttackers() {
     let raf = 0;
     let last = performance.now();
     let structuralChange = false;
+    const MIN_FRAME = 1000 / 30;
 
     const tick = (now: number) => {
+      raf = requestAnimationFrame(tick);
       const dtMs = now - last;
+      if (dtMs < MIN_FRAME) return;
       const dt = Math.min(0.05, dtMs / 1000);
       last = now;
       structuralChange = false;
+
 
       // Lissage exponentiel du FPS (alpha ~0.05).
       const inst = dtMs > 0 ? 1000 / dtMs : 60;
@@ -325,11 +329,10 @@ export default function MafiaAttackers() {
       }
       carsRef.current = survivors;
       if (structuralChange) setVersion((v) => (v + 1) & 0xffff);
-
-      raf = requestAnimationFrame(tick);
     };
 
     raf = requestAnimationFrame(tick);
+
     return () => cancelAnimationFrame(raf);
   }, [pathEls, pathLens]);
 
