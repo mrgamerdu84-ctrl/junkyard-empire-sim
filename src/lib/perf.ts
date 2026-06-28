@@ -24,6 +24,7 @@ function detectTier(): Tier {
   const ua = nav.userAgent || "";
   const isMobile = /Android|iPhone|iPad|Mobile/i.test(ua);
   const isAndroid = /Android/i.test(ua);
+  const isXiaomiLike = /Xiaomi|Redmi|Miui|M210|M200|M190|POCO/i.test(ua);
 
   const override = readOverride();
   if (override === "on") return "ultra";
@@ -38,6 +39,7 @@ function detectTier(): Tier {
   // Les Xiaomi/Redmi annoncent souvent 4 Go mais gardent peu de RAM libre
   // dans WebView : on les traite plus agressivement pour éviter les freezes.
   if (mem <= 2 || cpu <= 2) return "ultra";
+  if (isAndroid && isXiaomiLike) return "ultra";
   if (isAndroid && isMobile && mem <= 4 && cpu <= 4) return "ultra";
   if (isMobile && mem <= 3 && cpu <= 4) return "ultra";
   if (mem <= 3 || cpu <= 4 || (isMobile && mem <= 4)) return "low";
