@@ -141,7 +141,7 @@ export default function CrimeEvents() {
       }
     }, ultraLite ? 5000 : 2000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [ultraLite]);
 
 
   // Expiration + résolution + AI qui rafle les missions trop lentes
@@ -205,7 +205,7 @@ export default function CrimeEvents() {
       window.removeEventListener("jce.intervention.resolved", onResolved as EventListener);
       window.removeEventListener("jce:crime-spawn-now", onManual as EventListener);
     };
-  }, []);
+  }, [ultraLite]);
 
   const handleClick = (e: CrimeEvent) => {
     if (e.dispatched || e.stolenByAI) return;
