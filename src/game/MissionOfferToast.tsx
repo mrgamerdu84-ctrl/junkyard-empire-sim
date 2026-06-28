@@ -75,12 +75,13 @@ export default function MissionOfferToast() {
       speakSecretary(det.fare, name);
       if (expireRef.current) window.clearTimeout(expireRef.current);
       expireRef.current = window.setTimeout(() => {
-        // Auto-acceptation par la secrétaire si le joueur ne répond pas
+        // La secrétaire prend la main : la course est dispatchée auto, pas de pop-up qui traîne
         shutUp();
         const autoName = dc > 0 ? DRIVER_NAMES[pick % DRIVER_NAMES.length] : "Toi (en personne)";
         window.dispatchEvent(new CustomEvent("jce:mission-accept", { detail: { id: det.id, driver: autoName, auto: true } }));
         setOffer(null);
-      }, 8000);
+      }, 3000);
+
 
     };
     window.addEventListener("jce:mission-offered", onOffer);
