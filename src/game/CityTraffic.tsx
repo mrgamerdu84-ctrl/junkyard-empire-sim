@@ -10,6 +10,8 @@ import {
   type TrafficLight,
 } from "./trafficLights";
 import { getGameTime } from "./cityClock";
+import { densityMult } from "@/lib/perf";
+
 
 // Dynamique : inclut les piétons custom uploadés via le panel admin.
 // Recalculé à chaque appel — les composants qui en dépendent écoutent
