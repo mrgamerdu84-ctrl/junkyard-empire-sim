@@ -3016,30 +3016,31 @@ export default function TaxiTycoon() {
 
 
         {(() => {
-          // Places de parking alignées sur les 6 emplacements peints du nouvel
-          // entrepôt « TAXI DEPOT » (image 1024×768 rendue dans une box 320×320
-          // avec preserveAspectRatio=meet → facteur uniforme 320/1024 = 0.3125,
-          // image centrée verticalement dans la box).
-          const hqCx = depotXY.x;
-          const hqCy = depotXY.y - 18;
+          // Places de parking : alignées sur les emplacements peints au sol
+          // devant l'entrepôt. L'image est rendue ancrée par le bas
+          // (preserveAspectRatio="xMidYMax meet") dans une box w×h avec
+          // w=h=320*scale, donc tout pixel (px,py) du PNG 1024×1024 mappe :
+          //   worldX = depotX + (px - 512) * (w/1024)
+          //   worldY = groundY - h + py * (h/1024)
+          // On positionne 6 places en arc devant la porte du dépôt.
+          const groundY = depotXY.y;
           const scale = admin.hqScale;
           const rot = (admin.hqRotation * Math.PI) / 180;
           const cosR = Math.cos(rot);
           const sinR = Math.sin(rot);
-          const K = 320 / 1024; // facteur image → unités monde (pre-scale)
-          // 7 places peintes sur l'entrepôt (vue isométrique → léger tilt :
-          // y augmente avec x). Positions mesurées sur l'image 1024×768.
+          const hqCx = depotXY.x;
+          const PX_TO_WORLD = (320 / 1024) * scale; // ≈ 0.3125 * scale
+          // Places mesurées en pixels sur l'image 1024×1024, base = bas image.
+          // Bays peints sur le tarmac devant le warehouse.
           const slotsPx: Array<{ x: number; y: number }> = [
-            { x: 232, y: 340 },
-            { x: 332, y: 360 },
-            { x: 432, y: 380 },
-            { x: 527, y: 400 },
-            { x: 612, y: 425 },
-            { x: 702, y: 445 },
-            { x: 792, y: 465 },
+            { x: 280, y: 880 },
+            { x: 400, y: 895 },
+            { x: 520, y: 905 },
+            { x: 640, y: 905 },
+            { x: 760, y: 895 },
+            { x: 870, y: 880 },
           ];
           const SLOTS_MAX = slotsPx.length;
-          // Angle isométrique des voitures peintes (capot vers le garage = haut-droite)
           const SLOT_ANGLE_DEG = -18;
           const parked: { taxi: Taxi; slot: number }[] = [];
           const parkedIds = new Set<number>();
@@ -3051,17 +3052,17 @@ export default function TaxiTycoon() {
           });
           const slotWorld = (i: number) => {
             const s = slotsPx[i % SLOTS_MAX];
-            const lx = (s.x - 512) * K;
-            const ly = (s.y - 384) * K;
-            const sx = lx * scale;
-            const sy = ly * scale;
+            // Position locale relative au point (depotX, groundY)
+            const lx = (s.x - 512) * PX_TO_WORLD;
+            const ly = (s.y - 1024) * PX_TO_WORLD; // négatif → au-dessus du sol
             return {
-              x: hqCx + sx * cosR - sy * sinR,
-              y: hqCy + sx * sinR + sy * cosR,
+              x: hqCx + lx * cosR - ly * sinR,
+              y: groundY + lx * sinR + ly * cosR,
               angle: admin.hqRotation + SLOT_ANGLE_DEG,
             };
           };
           parked.forEach((p, i) => { p.slot = i; });
+
 
           // Plus de masque "tarmac" : le sol peint du nouvel entrepôt sert de parking.
 
