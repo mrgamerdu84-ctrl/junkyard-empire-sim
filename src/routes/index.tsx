@@ -194,6 +194,8 @@ function TaxiTycoonPage() {
       <AdminPanel />
       <MafiaGodfather />
       <VersionBanner />
+      <UltraFluidPanel />
+
 
     </div>
   );
