@@ -2385,6 +2385,34 @@ export default function TaxiTycoon() {
     showToast(`${def.emoji} ${def.title} — récupère le client !`);
   };
 
+  // === Client doré récurrent : 5 000 $ toutes les 30 minutes ===
+  // Spawn automatique d'un job spécial à très gros tarif fixe.
+  useEffect(() => {
+    const spawnRichVip = () => {
+      if (jobsRef.current.some((j) => j.specialMissionId === "rich_vip_5k")) return;
+      const base = genJob(saveRef.current.depotTier);
+      const vip: Job = {
+        ...base,
+        tier: "special",
+        specialMissionId: "rich_vip_5k",
+        specialFareMult: 1,
+        specialXp: 100,
+        fare: 5000,
+        duration: 90_000,
+        deadline: Date.now() + 90_000,
+        status: "offered",
+      };
+      setJobs((js) => [...js, vip]);
+      window.dispatchEvent(new CustomEvent("jce:mission-offered", { detail: { id: vip.id, fare: vip.fare } }));
+      showToast("💎 Client en or — 5 000 $ !");
+    };
+    const first = window.setTimeout(spawnRichVip, 30 * 60_000);
+    const iv = window.setInterval(spawnRichVip, 30 * 60_000);
+    return () => { window.clearTimeout(first); window.clearInterval(iv); };
+  }, []);
+
+
+
 
 
   // === Météo réelle : pousse une brève radio dès qu'on a les données, puis toutes les ~6 min ===
