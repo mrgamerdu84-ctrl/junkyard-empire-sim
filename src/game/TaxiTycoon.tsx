@@ -3266,10 +3266,10 @@ export default function TaxiTycoon() {
               {manualTargetRef.current && (
                 <circle cx={manualTargetRef.current.x} cy={manualTargetRef.current.y} r={14}
                   fill="none" stroke="#ec4899" strokeWidth={3} opacity={0.9}>
-                  <animate attributeName="r" values="14;22;14" dur="0.9s" repeatCount="indefinite" />
+                  {!reducedFx && <animate attributeName="r" values="14;22;14" dur="0.9s" repeatCount="indefinite" />}
                 </circle>
               )}
-              <g transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter="url(#taxi-shadow)">
+              <g transform={`translate(${p.x},${p.y}) rotate(${p.angle})`} filter={reducedFx ? undefined : "url(#taxi-shadow)"}>
                 <circle r={22} fill="#ec4899" opacity={0.25} />
                 <TaxiSprite image={currentLivery.image} faceRight={currentLivery.faceRight}
                   paintFilter="hue-rotate(290deg) saturate(1.4)" markerColor="#ec4899"
