@@ -1,9 +1,3 @@
-// =============================================================
-// Lot 4 — Événements scriptés : criminalité, accidents, contrôles.
-// Lot 6 — Les marqueurs sont CLIQUABLES : selon le type d'incident,
-// un véhicule d'intervention adapté (police / ambulance / pompiers)
-// est dépêché sur place. Voir InterventionDispatcher.tsx.
-// =============================================================
 import { useEffect, useState } from "react";
 import { getGameTime } from "./cityClock";
 import { getAdmin } from "./adminConfig";
@@ -21,11 +15,10 @@ type CrimeEvent = {
   ttl: number;        // ms restant avant disparition
   label: string;
   dispatched?: boolean;
-  aiClaimAt: number;  // performance.now ms — au-delà, l'AI prend la mission
+  aiClaimAt: number;  // performance.now ms
   stolenByAI?: boolean;
 };
 
-// Lit le niveau de QG du joueur depuis la sauvegarde locale.
 function readDepotTier(): number {
   try {
     const raw = window.localStorage.getItem("taxi-tycoon-v4");
@@ -43,7 +36,6 @@ const KIND_META: Record<CrimeKind, { icon: string; color: string; label: string;
   fire:     { icon: "🔥", color: "#dc2626", label: "Incendie",       category: "firetruck" },
 };
 
-// Zones plausibles pour faire apparaître des incidents (évite l'eau / vide).
 const HOTSPOTS: { x: number; y: number; isolated?: boolean }[] = [
   { x: 420,  y: 340 },
   { x: 780,  y: 520, isolated: true },
@@ -56,8 +48,6 @@ const HOTSPOTS: { x: number; y: number; isolated?: boolean }[] = [
 ];
 
 let nextId = 1;
-
-// Mémoire jour-en-cours pour cap braquage : 5% max d'apparition par jour de jeu.
 let lastDayKey = "";
 let robberyRolledToday = false;
 let robberyAllowedToday = false;
@@ -68,7 +58,7 @@ function rollRobberyForDay(now: number) {
   if (key !== lastDayKey) {
     lastDayKey = key;
     robberyRolledToday = true;
-    robberyAllowedToday = Math.random() < 0.05; // 5% par jour
+    robberyAllowedToday = Math.random() < 0.05;
   }
   return robberyAllowedToday;
 }
@@ -94,7 +84,7 @@ export default function CrimeEvents() {
   const reducedFx = reduceMotion();
   const [events, setEvents] = useState<CrimeEvent[]>([]);
 
-  // Génération
+  // Génération des incidents
   useEffect(() => {
     const id = window.setInterval(() => {
       const now = performance.now();
@@ -112,9 +102,7 @@ export default function CrimeEvents() {
 
       if (Math.random() < p) {
         const isolatedPool = HOTSPOTS.filter(h => h.isolated);
-        const pool = isNight && Math.random() < 0.6 && isolatedPool.length > 0
-          ? isolatedPool
-          : HOTSPOTS;
+        const pool = isNight && Math.random() < 0.6 && isolatedPool.length > 0 ? isolatedPool : HOTSPOTS;
         const spot = pool[Math.floor(Math.random() * pool.length)];
         const robberyOk = rollRobberyForDay(now);
         const kind = pickKind(isNight, robberyOk);
@@ -140,19 +128,19 @@ export default function CrimeEvents() {
     return () => window.clearInterval(id);
   }, [ultraLite]);
 
-  // Expiration + résolution
+  // Optimisation Mobile : Calé sur 1000ms pour stopper les saccades de rendu de l'interface SVG
   useEffect(() => {
     const id = window.setInterval(() => {
       const now = performance.now();
       setEvents(es => {
         const next: CrimeEvent[] = [];
         for (const e of es) {
-          if (now - e.startedAt >= e.ttl) continue; // expiré
+          if (now - e.startedAt >= e.ttl) continue;
           next.push(e);
         }
         return next;
       });
-    }, ultraLite ? 1000 : 300);
+    }, 1000);
 
     const onResolved = (ev: Event) => {
       const detail = (ev as CustomEvent<{ id: number }>).detail;
@@ -214,7 +202,6 @@ export default function CrimeEvents() {
 
   return (
     <>
-      {/* Injection de la règle d'animation matérielle GPU */}
       <style>{`
         @keyframes jceCrimePulse {
           0% { transform: scale(0.85); opacity: 0.18; }
@@ -227,7 +214,6 @@ export default function CrimeEvents() {
         }
       `}</style>
 
-      {/* Marqueurs sur la carte — CLIQUABLES */}
       <svg
         viewBox="0 0 1920 1080"
         preserveAspectRatio="xMidYMid slice"
@@ -276,7 +262,7 @@ export default function CrimeEvents() {
         })}
       </svg>
 
-      {/* Log d'événements */}
+      {/* Log d'événements : Nettoyé du flou d'arrière-plan pour libérer le GPU du téléphone */}
       <div
         style={{
           position: "absolute",
@@ -295,12 +281,11 @@ export default function CrimeEvents() {
             <div key={e.id} style={{
               padding: "5px 8px",
               borderRadius: 8,
-              background: "rgba(12,14,22,0.82)",
-              border: `1px solid ${meta.color}66`,
+              background: "rgba(10, 12, 18, 0.96)", // Légèrement plus opaque pour rester lisible sans flou
+              border: `1px solid ${meta.color}55`,
               color: "#e8edf5",
               font: "600 10.5px/1.25 ui-sans-serif, system-ui",
               display: "flex", alignItems: "center", gap: 6,
-              backdropFilter: reducedFx ? undefined : "blur(6px)",
             }}>
               <span style={{ fontSize: 13 }}>{meta.icon}</span>
               <span style={{ flex: 1 }}>{e.label}{e.dispatched ? " · en route" : ""}</span>
