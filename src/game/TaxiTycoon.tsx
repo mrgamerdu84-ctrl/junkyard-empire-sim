@@ -479,4 +479,4 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
       {/* Plots Ã©clairÃ©s entrÃ©e */}
       <g>
         {[-W / 2 + 8, W / 2 - 8].map((cx, i) => (
-          <g key={i} transform={`translate(${cx},${H / 
+          <g key={i} transform={`translate(${cx},${H / 2 - 26})`}>
