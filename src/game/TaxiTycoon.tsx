@@ -483,4 +483,3 @@ function RivalDepot({ x, y }: { x: number; y: number }) {
     <circle r="5" fill="#0a0608" stroke="#ff3040" strokeWidth="1.2" />
     <circle r="2.5" fill="#ff5566" opacity="0.85" />
   </g>
-))}
