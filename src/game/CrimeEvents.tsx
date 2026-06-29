@@ -216,10 +216,23 @@ export default function CrimeEvents() {
     }));
   };
 
-  const recent = events.slice(-4).reverse();
+  }  const recent = events.slice(-4).reverse();
 
   return (
     <>
+      {/* Injection de la règle d'animation matérielle GPU (Zéro calcul JS par frame) */}
+      <style>{`
+        @keyframes jceCrimePulse {
+          0% { transform: scale(0.85); opacity: 0.18; }
+          50% { transform: scale(1.15); opacity: 0.32; }
+          100% { transform: scale(0.85); opacity: 0.18; }
+        }
+        .jce-gpu-pulse {
+          animation: jceCrimePulse 1.4s infinite ease-in-out;
+          transform-origin: center;
+        }
+      `}</style>
+
       {/* Marqueurs sur la carte — CLIQUABLES */}
       <svg
         viewBox="0 0 1920 1080"
@@ -233,8 +246,6 @@ export default function CrimeEvents() {
         {events.map(e => {
           const meta = KIND_META[e.kind];
           const age = (performance.now() - e.startedAt) / e.ttl;
-          const pulse = reducedFx ? 1 : 1 + Math.sin(performance.now() / 180 + e.id) * 0.15;
-          // Compte à rebours avant que l'AI rafle la mission
           const aiRemain = Math.max(0, e.aiClaimAt - performance.now());
           const aiPct = e.dispatched || e.stolenByAI ? 0 : Math.max(0, Math.min(1, aiRemain / (e.aiClaimAt - e.startedAt)));
           const urgent = !e.dispatched && !e.stolenByAI && aiRemain < 1800;
@@ -250,9 +261,18 @@ export default function CrimeEvents() {
             >
               {/* zone cliquable élargie */}
               <circle r={34} fill="transparent" />
-              <circle r={26 * pulse} fill={meta.color} opacity={urgent ? 0.32 : 0.18} />
+              
+              {/* Le pulse tourne désormais en CSS natif pur */}
+              <circle 
+                r={26} 
+                fill={meta.color} 
+                className={reducedFx ? "" : "jce-gpu-pulse"} 
+                style={{ opacity: urgent ? 0.32 : 0.18 }} 
+              />
+              
               <circle r={16} fill={e.stolenByAI ? "#6b7280" : meta.color} opacity={0.85} stroke="#0a0c12" strokeWidth={2} />
               <text textAnchor="middle" dominantBaseline="central" fontSize={18} pointerEvents="none">{e.stolenByAI ? "❌" : meta.icon}</text>
+              
               {/* Arc de compte à rebours AI */}
               {!e.dispatched && !e.stolenByAI && aiPct > 0 && (
                 <circle r={20} fill="none" stroke={urgent ? "#ef4444" : "#fbbf24"} strokeWidth={2.5}
@@ -303,3 +323,4 @@ export default function CrimeEvents() {
     </>
   );
 }
+
