@@ -178,103 +178,151 @@ const PED_CROSSING_RADIUS = 44;
 function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGPathElement | null)[]> }) {
   const nodes = useRef<(SVGGElement | null)[]>([]);
   const pedSpecs = isUltraLite() ? [] : (perfTier() === "low" ? PHOTO_PEDS.slice(0, 3) : PHOTO_PEDS);
-  // Rotation aléatoire des sprites parmi tous ceux dispos (défaut + custom admin).
   const [pool, setPool] = useState<string[]>(() => getPedPhotoImages());
+  
   useEffect(() => {
     const onChange = () => setPool(getPedPhotoImages());
     window.addEventListener("jce.customPedestrians.changed", onChange);
     return () => window.removeEventListener("jce.customPedestrians.changed", onChange);
   }, []);
+
   useEffect(() => {
     const lens = pathRefs.current.map(p => p ? p.getTotalLength() : 0);
     if (lens.some(l => l <= 1)) return;
     if (pedSpecs.length === 0) return;
-    const states = pedSpecs.map(spec => ({
-      spec,
-      pathLen: lens[spec.pathIdx],
-      s: spec.startFrac * lens[spec.pathIdx],
-    }));
+
+    // Initialisation d'une mémoire tampon par piéton pour éviter le triple getPointAtLength
+    const states = pedSpecs.map(spec => {
+      const pathLen = lens[spec.pathIdx];
+      const s = spec.startFrac * pathLen;
+      const path = pathRefs.current[spec.pathIdx];
+      let initialAngle = 0;
+      let initialNx = 0;
+      let initialNy = 1;
+      
+      if (path) {
+        const p1 = path.getPointAtLength(s);
+        const p2 = path.getPointAtLength(Math.min(pathLen, s + 1));
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const L = Math.sqrt(dx * dx + dy * dy) || 1;
+        initialNx = -dy / L;
+        initialNy = dx / L;
+        initialAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+      }
+
+      return {
+        spec,
+        pathLen,
+        s,
+        lastX: 0,
+        lastY: 0,
+        lastAngle: initialAngle,
+        lastNx: initialNx,
+        lastNy: initialNy,
+        isFirst: true
+      };
+    });
+
     let last = performance.now();
     let raf = 0;
+
     const step = (now: number) => {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const tSec = nowSeconds();
       const lights = getTrafficLights();
+
       for (let i = 0; i < states.length; i++) {
         const st = states[i];
         const node = nodes.current[i];
         const path = pathRefs.current[st.spec.pathIdx];
         if (!path || !node) continue;
-        // Position courante pour décider d'un éventuel arrêt au passage piéton.
-        const cur = path.getPointAtLength(st.s);
-        // Cherche un feu à proximité : si le feu PIÉTON est rouge (= feu voiture vert/orange),
-        // on bloque le piéton AU BORD du passage (il n'entre pas sur la chaussée).
+
+        // 1. UNIQUE appel à getPointAtLength par frame (Économie CPU : ~66%)
+        const p = path.getPointAtLength(st.s);
+
+        // 2. CULLING IMMÉDIAT : Si hors viewport, on stoppe instantanément les calculs du piéton
+        if (p.x < -200 || p.x > 2120 || p.y < -200 || p.y > 1280) continue;
+
+        // 3. Analyse d'arrêt aux feux
         let blocked = false;
-        for (const l of lights) {
-          const dx0 = l.x - cur.x;
-          const dy0 = l.y - cur.y;
+        for (let j = 0; j < lights.length; j++) {
+          const l = lights[j];
+          const dx0 = l.x - p.x;
+          const dy0 = l.y - p.y;
           if (dx0 * dx0 + dy0 * dy0 < PED_CROSSING_RADIUS * PED_CROSSING_RADIUS) {
-            const carState = getLightState(l, tSec);
-            // Feu piéton vert UNIQUEMENT quand le feu voiture est rouge.
-            if (carState !== "red") { blocked = true; break; }
+            if (getLightState(l, tSec) !== "red") {
+              blocked = true;
+              break;
+            }
           }
         }
+
         if (!blocked) {
           st.s = (st.s + st.spec.speed * dt) % st.pathLen;
         }
-        const p = blocked ? cur : path.getPointAtLength(st.s);
-        // CULLING : hors viewport SVG (avec marge) → skip getPointAtLength d'appoint + DOM write.
-        if (p.x < -200 || p.x > 2120 || p.y < -200 || p.y > 1280) continue;
-        const p2 = path.getPointAtLength(Math.min(st.pathLen, st.s + 1));
-        const dx = p2.x - p.x, dy = p2.y - p.y;
-        const L = Math.hypot(dx, dy) || 1;
-        // perpendiculaire = trottoir
-        const nx = -dy / L * PHOTO_PED_OFFSET * st.spec.side;
-        const ny =  dx / L * PHOTO_PED_OFFSET * st.spec.side;
-        // angle de marche (le sprite top-down tourne dans la direction du mouvement)
-        const ang = (Math.atan2(dy, dx) * 180) / Math.PI;
-        // 🔒 Verrou trottoir local (offset piéton, pas celui des clients taxi)
-        // Clamp la distance perpendiculaire à PHOTO_PED_MIN_OFFSET minimum.
-        let px = p.x + nx;
-        let py = p.y + ny;
-        const nUnitX = -dy / L;
-        const nUnitY = dx / L;
-        const signedDist = ((px - p.x) * nUnitX + (py - p.y) * nUnitY) * st.spec.side;
-        if (signedDist < PHOTO_PED_MIN_OFFSET) {
-          px = p.x + nUnitX * PHOTO_PED_MIN_OFFSET * st.spec.side;
-          py = p.y + nUnitY * PHOTO_PED_MIN_OFFSET * st.spec.side;
+
+        // 4. Interpolation mathématique de la direction basée sur la vélocité réelle de la frame précédente
+        let nx = st.lastNx;
+        let ny = st.lastNy;
+        let ang = st.lastAngle;
+
+        if (!blocked && !st.isFirst) {
+          const dx = p.x - st.lastX;
+          const dy = p.y - st.lastY;
+          const sqDist = dx * dx + dy * dy;
+          if (sqDist > 0.01) {
+            const L = Math.sqrt(sqDist);
+            nx = -dy / L;
+            ny = dx / L;
+            ang = (Math.atan2(dy, dx) * 180) / Math.PI;
+            st.lastNx = nx;
+            st.lastNy = ny;
+            st.lastAngle = ang;
+          }
         }
+        
+        st.lastX = p.x;
+        st.lastY = p.y;
+        st.isFirst = false;
+
+        // 5. Alignement direct sur le trottoir sans calculs redondants de signedDist
+        const px = p.x + nx * PHOTO_PED_OFFSET * st.spec.side;
+        const py = p.y + ny * PHOTO_PED_OFFSET * st.spec.side;
+
         node.setAttribute(
           "transform",
-          `translate(${px.toFixed(2)},${py.toFixed(2)}) rotate(${ang.toFixed(2)})`,
+          `translate(${px.toFixed(1)},${py.toFixed(1)}) rotate(${ang.toFixed(1)})`,
         );
       }
       raf = requestAnimationFrame(step);
     };
+
     raf = requestAnimationFrame(step);
     return () => cancelAnimationFrame(raf);
   }, [pathRefs, pedSpecs.length]);
+
   if (pedSpecs.length === 0) return null;
   return (
     <g pointerEvents="none">
       {pedSpecs.map((spec, i) => {
-        // Sprites top-down ~36px (vue du ciel), rotation = sens de marche
         const S = 36 * spec.scale;
         return (
           <g key={i} ref={el => { nodes.current[i] = el; }}>
             <ellipse cx="0" cy={S * 0.2} rx={S * 0.35} ry={S * 0.18} fill="rgba(0,0,0,0.45)" />
-            {/* +90° : sprite top-down "tête au nord", parent applique rotate(angle) basé sur +x */}
-            <g transform="rotate(90)">
+            {pool.length > 0 ? (
               <image
-                href={pool[(spec.imageIdx + i) % Math.max(1, pool.length)] ?? pool[0]}
+                href={pool[spec.imageIdx % pool.length]}
                 x={-S / 2}
                 y={-S / 2}
                 width={S}
                 height={S}
-                preserveAspectRatio="xMidYMid meet"
+                transform="rotate(90)"
               />
-            </g>
+            ) : (
+              <circle r={S / 3} fill="#94a3b8" />
+            )}
           </g>
         );
       })}
