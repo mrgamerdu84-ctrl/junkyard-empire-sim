@@ -26,7 +26,6 @@ type CrimeEvent = {
 };
 
 // Lit le niveau de QG du joueur depuis la sauvegarde locale.
-// Plus le niveau monte, plus l'AI réagit vite aux missions.
 function readDepotTier(): number {
   try {
     const raw = window.localStorage.getItem("taxi-tycoon-v4");
@@ -89,7 +88,6 @@ function pickKind(isNight: boolean, robberyOk: boolean): CrimeKind {
   if (robberyOk && r < 0.93) return "robbery";
   return "fire";
 }
-void robberyRolledToday;
 
 export default function CrimeEvents() {
   const ultraLite = isUltraLite();
@@ -98,7 +96,6 @@ export default function CrimeEvents() {
 
   // Génération
   useEffect(() => {
-    // Generation polled every second — pas besoin de rAF.
     const id = window.setInterval(() => {
       const now = performance.now();
       const t = getGameTime(now);
@@ -143,15 +140,11 @@ export default function CrimeEvents() {
     return () => window.clearInterval(id);
   }, [ultraLite]);
 
-
-  // Expiration + résolution + AI qui rafle les missions trop lentes
+  // Expiration + résolution
   useEffect(() => {
     const id = window.setInterval(() => {
       const now = performance.now();
       setEvents(es => {
-        // (Plus de concurrence IA : gameplay 100% Mafia. Les missions ne sont
-        // plus volées par une "AI rivale" — elles expirent simplement si on
-        // ne les attrape pas à temps.)
         const next: CrimeEvent[] = [];
         for (const e of es) {
           if (now - e.startedAt >= e.ttl) continue; // expiré
@@ -160,6 +153,7 @@ export default function CrimeEvents() {
         return next;
       });
     }, ultraLite ? 1000 : 300);
+
     const onResolved = (ev: Event) => {
       const detail = (ev as CustomEvent<{ id: number }>).detail;
       if (!detail) return;
@@ -216,11 +210,11 @@ export default function CrimeEvents() {
     }));
   };
 
-  }  const recent = events.slice(-4).reverse();
+  const recent = events.slice(-4).reverse();
 
   return (
     <>
-      {/* Injection de la règle d'animation matérielle GPU (Zéro calcul JS par frame) */}
+      {/* Injection de la règle d'animation matérielle GPU */}
       <style>{`
         @keyframes jceCrimePulse {
           0% { transform: scale(0.85); opacity: 0.18; }
@@ -259,21 +253,15 @@ export default function CrimeEvents() {
               role="button"
               aria-label={`Envoyer ${meta.category} sur ${meta.label}`}
             >
-              {/* zone cliquable élargie */}
               <circle r={34} fill="transparent" />
-              
-              {/* Le pulse tourne désormais en CSS natif pur */}
               <circle 
                 r={26} 
                 fill={meta.color} 
                 className={reducedFx ? "" : "jce-gpu-pulse"} 
                 style={{ opacity: urgent ? 0.32 : 0.18 }} 
               />
-              
               <circle r={16} fill={e.stolenByAI ? "#6b7280" : meta.color} opacity={0.85} stroke="#0a0c12" strokeWidth={2} />
               <text textAnchor="middle" dominantBaseline="central" fontSize={18} pointerEvents="none">{e.stolenByAI ? "❌" : meta.icon}</text>
-              
-              {/* Arc de compte à rebours AI */}
               {!e.dispatched && !e.stolenByAI && aiPct > 0 && (
                 <circle r={20} fill="none" stroke={urgent ? "#ef4444" : "#fbbf24"} strokeWidth={2.5}
                   strokeDasharray={`${aiPct * 125.6} 125.6`} transform="rotate(-90)" opacity={0.9} />
@@ -323,4 +311,3 @@ export default function CrimeEvents() {
     </>
   );
 }
-
