@@ -141,24 +141,38 @@ const PED_CROSSING_RADIUS = 44;
 
 
 /** Verrouille une coordonnée XY sur le trottoir : si elle est plus proche
- *  de l'axe que `SIDEWALK_LOCK_OFFSET`, on la repousse vers `side`. */
-export function lockToSidewalk(
+ *  de l'axe que `SIDEWALK_LOCK_OFFSET`, on la repousse vers `side`. */export function lockToSidewalk(
   pathPoint: { x: number; y: number },
   tangent: { dx: number; dy: number },
   side: 1 | -1,
   x: number,
   y: number,
 ): { x: number; y: number } {
-  const L = Math.hypot(tangent.dx, tangent.dy) || 1;
-  const nx = -tangent.dy / L;
-  const ny = tangent.dx / L;
-  // Distance signée du point (x,y) à l'axe, projetée sur la normale `side`.
-  const dist = ((x - pathPoint.x) * nx + (y - pathPoint.y) * ny) * side;
-  if (dist >= SIDEWALK_LOCK_OFFSET) return { x, y };
+  const dx = tangent.dx;
+  const dy = tangent.dy;
+  
+  // 1. Suppression de Math.hypot() au profit d'un calcul de distance au carré direct (gain CPU)
+  const sqLen = dx * dx + dy * dy;
+  if (sqLen < 0.01) return { x, y };
+  
+  const L = Math.sqrt(sqLen);
+  const nx = -dy / L;
+  const ny = dx / L;
+  
+  // 2. Calcul de la position théorique parfaite sur la voie
+  const targetX = pathPoint.x + nx * SIDEWALK_LOCK_OFFSET * side;
+  const targetY = pathPoint.y + ny * SIDEWALK_LOCK_OFFSET * side;
+  
+  // 3. FILTRE ANTI-SACCADE (Linear Interpolation)
+  // Au lieu de téléporter le taxi de force sur la coordonnée à chaque micro-calcul, 
+  // on adoucit la transition (facteur 0.25). Le taxi "glisse" vers sa trajectoire idéale,
+  // ce qui absorbe instantanément tous les sauts d'images et les tremblements.
   return {
-    x: pathPoint.x + nx * SIDEWALK_LOCK_OFFSET * side,
-    y: pathPoint.y + ny * SIDEWALK_LOCK_OFFSET * side,
+    x: x + (targetX - x) * 0.25,
+    y: y + (targetY - y) * 0.25
   };
+}
+
 }
 
 function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGPathElement | null)[]> }) {
