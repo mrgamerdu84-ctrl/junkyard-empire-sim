@@ -173,7 +173,7 @@ const PED_CROSSING_RADIUS = 44;
   };
 }
 
-}
+
 
 function PhotoPedestrians({ pathRefs }: { pathRefs: React.MutableRefObject<(SVGPathElement | null)[]> }) {
   const nodes = useRef<(SVGGElement | null)[]>([]);
