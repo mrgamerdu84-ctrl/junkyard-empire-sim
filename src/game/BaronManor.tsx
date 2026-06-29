@@ -6,9 +6,8 @@ const MAP_H = 1080;
 // Position du manoir : coin bas-droite de la map, loin des routes
 // Les routes principales passent à ~x=879 (vertical) et ~y=591 (horizontal)
 // À x=1750, y=880 on est bien dans la zone résidentielle bas-droite
-const MX = 1750;
-const MY = 880;
-
+const MX = 260;
+const MY = 150;
 // Échelle réduite pour ne pas déborder : manoir compact 200x160px
 function ManorGroup() {
   const [gateOpen, setGateOpen] = useState(false);
